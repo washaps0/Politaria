@@ -1,0 +1,224 @@
+options:
+	prefix: <#7C9CFF><bold>POLITARIA</bold><reset> <dark_gray>»</dark_gray>
+	minimum-password-length: 8
+	maximum-password-length: 64
+	maximum-login-attempts: 5
+	login-timeout: 60 seconds
+	# Keep this value private. Changing it invalidates all registered passwords.
+	password-pepper: 81C61F25564525B228D873BFD43C7119EA1102CEAF16074F128116FDF3307D32
+
+# Authentication prototype for an offline-mode server.
+# Persistent account data:
+#   {auth.password::<player name>} - salted password hash
+#   {auth.salt::<player name>}     - unique salt
+# Session and registration state is removed on quit/load.
+
+function authHash(password: text, salt: text) :: text:
+	set {_hash} to "%{_salt}%:%{_password}%:{@password-pepper}" hashed with SHA-256
+	# Multiple rounds slow down simple hash-list attacks. For a public server,
+	# replace this Skript prototype with Argon2id/bcrypt in a Java auth plugin.
+	loop 1999 times:
+		set {_hash} to "%{_hash}%:%{_salt}%:{@password-pepper}" hashed with SHA-256
+	return {_hash}
+
+function clearAuthInput(p: player):
+	delete {auth.mode::%name of {_p}%}
+	delete {auth.pending-hash::%name of {_p}%}
+	delete {auth.pending-salt::%name of {_p}%}
+
+function showAuthPrompt(p: player):
+	send "" to {_p}
+	send formatted "<dark_gray><strikethrough>                                              </strikethrough>" to {_p}
+	send formatted "{@prefix} <white>Авторизация на сервере</white>" to {_p}
+	if {auth.password::%name of {_p}%} is set:
+		send formatted "<gray>Аккаунт найден. Нажмите кнопку ниже, чтобы войти.</gray>" to {_p}
+		send formatted "<command:/auth-start login><tooltip:<gray>Нажмите, затем введите пароль в чат</gray>><#69DB7C><bold>[ ВОЙТИ ]</bold></#69DB7C></tooltip></command>" to {_p}
+	else:
+		send formatted "<gray>Вы впервые на сервере. Создайте пароль для аккаунта.</gray>" to {_p}
+		send formatted "<command:/auth-start register><tooltip:<gray>Нажмите, затем придумайте пароль</gray>><#FFD43B><bold>[ ЗАРЕГИСТРИРОВАТЬСЯ ]</bold></#FFD43B></tooltip></command>" to {_p}
+	send formatted "<dark_gray><strikethrough>                                              </strikethrough>" to {_p}
+	send "" to {_p}
+
+on load:
+	loop all players:
+		delete {auth.logged-in::%name of loop-player%}
+		delete {auth.attempts::%name of loop-player%}
+		clearAuthInput(loop-player)
+		showAuthPrompt(loop-player)
+
+on join:
+	delete {auth.logged-in::%name of player%}
+	delete {auth.attempts::%name of player%}
+	clearAuthInput(player)
+	wait 10 ticks
+	showAuthPrompt(player)
+	wait {@login-timeout}
+	if player is online:
+		if {auth.logged-in::%name of player%} is not true:
+			kick player due to "<red>Время авторизации истекло.<newline><gray>Подключитесь к серверу ещё раз."
+
+on quit:
+	delete {auth.logged-in::%name of player%}
+	delete {auth.attempts::%name of player%}
+	clearAuthInput(player)
+
+command /auth-start <text>:
+	executable by: players
+	trigger:
+		if {auth.logged-in::%name of player%} is true:
+			send formatted "{@prefix} <gray>Вы уже авторизованы.</gray>" to player
+			stop
+
+		if text-argument is "register":
+			if {auth.password::%name of player%} is set:
+				send formatted "{@prefix} <red>Этот аккаунт уже зарегистрирован.</red>" to player
+				showAuthPrompt(player)
+				stop
+			clearAuthInput(player)
+			set {auth.mode::%name of player%} to "register-password"
+			send formatted "{@prefix} <white>Введите новый пароль в чат.</white>" to player
+			send formatted "<gray>От {@minimum-password-length} до {@maximum-password-length} символов, без пробелов. Сообщение не увидят другие игроки.</gray>" to player
+			stop
+
+		if text-argument is "login":
+			if {auth.password::%name of player%} is not set:
+				send formatted "{@prefix} <red>Аккаунт ещё не зарегистрирован.</red>" to player
+				showAuthPrompt(player)
+				stop
+			clearAuthInput(player)
+			set {auth.mode::%name of player%} to "login"
+			send formatted "{@prefix} <white>Введите пароль в чат.</white>" to player
+			send formatted "<gray>Сообщение не будет отправлено другим игрокам.</gray>" to player
+			stop
+
+		showAuthPrompt(player)
+
+command /logout:
+	executable by: players
+	trigger:
+		if {auth.logged-in::%name of player%} is not true:
+			showAuthPrompt(player)
+			stop
+		delete {auth.logged-in::%name of player%}
+		clearAuthInput(player)
+		send formatted "{@prefix} <yellow>Вы вышли из аккаунта.</yellow>" to player
+		showAuthPrompt(player)
+
+on chat:
+	if {auth.logged-in::%name of player%} is true:
+		stop
+	cancel event
+
+	if {auth.mode::%name of player%} is not set:
+		send formatted "{@prefix} <red>Сначала выберите действие кнопкой в сообщении.</red>" to player
+		showAuthPrompt(player)
+		stop
+
+	set {_password} to unformatted message
+	if length of {_password} is less than {@minimum-password-length}:
+		send formatted "{@prefix} <red>Пароль должен содержать не менее {@minimum-password-length} символов.</red>" to player
+		stop
+	if length of {_password} is greater than {@maximum-password-length}:
+		send formatted "{@prefix} <red>Пароль должен содержать не более {@maximum-password-length} символов.</red>" to player
+		stop
+	if {_password} contains " ":
+		send formatted "{@prefix} <red>Пароль не должен содержать пробелы.</red>" to player
+		stop
+
+	if {auth.mode::%name of player%} is "register-password":
+		set {_salt} to "%random uuid%"
+		set {auth.pending-salt::%name of player%} to {_salt}
+		set {auth.pending-hash::%name of player%} to authHash({_password}, {_salt})
+		set {auth.mode::%name of player%} to "register-confirm"
+		delete {_password}
+		send formatted "{@prefix} <white>Введите пароль ещё раз для подтверждения.</white>" to player
+		stop
+
+	if {auth.mode::%name of player%} is "register-confirm":
+		set {_hash} to authHash({_password}, {auth.pending-salt::%name of player%})
+		delete {_password}
+		if {_hash} is not {auth.pending-hash::%name of player%}:
+			clearAuthInput(player)
+			send formatted "{@prefix} <red>Пароли не совпадают. Регистрация отменена.</red>" to player
+			showAuthPrompt(player)
+			stop
+		set {auth.salt::%name of player%} to {auth.pending-salt::%name of player%}
+		set {auth.password::%name of player%} to {_hash}
+		set {auth.logged-in::%name of player%} to true
+		clearAuthInput(player)
+		send formatted "{@prefix} <#69DB7C><bold>Регистрация завершена!</bold></#69DB7C> <gray>Вы вошли на сервер.</gray>" to player
+		stop
+
+	if {auth.mode::%name of player%} is "login":
+		set {_hash} to authHash({_password}, {auth.salt::%name of player%})
+		delete {_password}
+		if {_hash} is {auth.password::%name of player%}:
+			set {auth.logged-in::%name of player%} to true
+			delete {auth.attempts::%name of player%}
+			clearAuthInput(player)
+			send formatted "{@prefix} <#69DB7C><bold>Вход выполнен.</bold></#69DB7C> <gray>Добро пожаловать!</gray>" to player
+			stop
+
+		add 1 to {auth.attempts::%name of player%}
+		set {_remaining} to {@maximum-login-attempts} - {auth.attempts::%name of player%}
+		if {_remaining} is less than or equal to 0:
+			kick player due to "<red>Слишком много неверных попыток входа."
+			stop
+		send formatted "{@prefix} <red>Неверный пароль.</red> <gray>Осталось попыток: %{_remaining}%.</gray>" to player
+		stop
+
+	clearAuthInput(player)
+	showAuthPrompt(player)
+
+# Do not expose the server to an unauthenticated player.
+on command:
+	if executor is a player:
+		if {auth.logged-in::%name of player%} is not true:
+			if command is not "auth-start":
+				cancel event
+				send formatted "{@prefix} <red>Сначала войдите в аккаунт.</red>" to player
+
+on send command list:
+	if {auth.logged-in::%name of player%} is not true:
+		clear command list
+
+on player move:
+	if {auth.logged-in::%name of player%} is not true:
+		cancel event
+
+on break:
+	if {auth.logged-in::%name of player%} is not true:
+		cancel event
+
+on place:
+	if {auth.logged-in::%name of player%} is not true:
+		cancel event
+
+on click:
+	if {auth.logged-in::%name of player%} is not true:
+		cancel event
+
+on inventory open:
+	if {auth.logged-in::%name of player%} is not true:
+		cancel event
+
+on inventory click:
+	if {auth.logged-in::%name of player%} is not true:
+		cancel event
+
+on drop:
+	if {auth.logged-in::%name of player%} is not true:
+		cancel event
+
+on pickup:
+	if {auth.logged-in::%name of player%} is not true:
+		cancel event
+
+on damage of player:
+	if {auth.logged-in::%name of victim%} is not true:
+		cancel event
+
+on damage:
+	if attacker is a player:
+		if {auth.logged-in::%name of attacker%} is not true:
+			cancel event
