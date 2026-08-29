@@ -1,0 +1,15 @@
+command /testbar:
+    trigger:
+            # Создаем босс-бар и сохраняем его в переменную
+                    set {mybar} to new bossbar
+                            # Устанавливаем текст (поддерживает цветовые коды)
+                                    set name of bossbar {mybar} to "&c&lВнимание, босс на подходе!"
+                                            # Устанавливаем цвет (red, green, blue, yellow и др.)
+                                                    set color of bossbar {mybar} to red
+                                                            # Добавляем игрока, чтобы он увидел бар
+                                                                    add player to bossbar {mybar}
+
+                                                                                    # Через 5 секунд удаляем босс-бар
+                                                                                            wait 5 seconds
+                                                                                                    delete bossbar {mybar}
+                                                                                                    
