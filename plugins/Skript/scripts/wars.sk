@@ -1,0 +1,1054 @@
+options:
+
+    war-duration: 2 days
+
+    war-front-interval: 30 minutes
+
+    war-spawn-protection: 30 seconds
+
+    war-truce-offer-duration: 5 minutes
+
+    war-menu-title: <dark gray>Объявление войны
+
+# One country can participate in one active war at a time.
+
+# {war.active::<war>} = true
+
+# {war.attacker::<war>}, {war.defender::<war>}
+
+# {war.ends::<war>}, {war.next-front::<war>}
+
+# {war.kills::<war>::attacker}, {war.kills::<war>::defender}
+
+# {war.truce.offerer::<war>} = country id; {war.truce.expires::<war>} = date
+
+# {war.country::<country>} = war id
+
+# {war.front::<war>::<v2 chunk key>} = true
+
+function warBetween(first: text, second: text) :: text:
+
+    if {_first} is "":
+
+        return ""
+
+    if {_second} is "":
+
+        return ""
+
+    set {_war} to {war.country::%{_first}%}
+
+    if {_war} is not set:
+
+        return ""
+
+    if {war.active::%{_war}%} is not true:
+
+        return ""
+
+    set {_attacker} to {war.attacker::%{_war}%}
+
+    set {_defender} to {war.defender::%{_war}%}
+
+    if {_first} is {_attacker}:
+
+        if {_second} is {_defender}:
+
+            return "%{_war}%"
+
+    if {_first} is {_defender}:
+
+        if {_second} is {_attacker}:
+
+            return "%{_war}%"
+
+    return ""
+
+function warBossbarColor(country: text) :: text:
+
+    set {_color} to countryColor({_country})
+
+    if {_color} is "<#FF7EB6>":
+
+        return "pink"
+
+    if {_color} contains "red":
+
+        return "red"
+
+    if {_color} contains "blue":
+
+        return "blue"
+
+    if {_color} contains "aqua":
+
+        return "blue"
+
+    if {_color} contains "green":
+
+        return "green"
+
+    if {_color} contains "yellow":
+
+        return "yellow"
+
+    if {_color} contains "gold":
+
+        return "yellow"
+
+    if {_color} contains "purple":
+
+        return "purple"
+
+    if {_color} contains "pink":
+
+        return "pink"
+
+    return "white"
+
+function warCreateBossbar(war: text):
+
+    execute console command "bossbar add politaria:war_%{_war}% {""text"":""Война""}"
+
+    execute console command "bossbar set politaria:war_%{_war}% max 100"
+
+    execute console command "bossbar set politaria:war_%{_war}% value 50"
+
+    execute console command "bossbar set politaria:war_%{_war}% color white"
+
+    execute console command "bossbar set politaria:war_%{_war}% style notched_20"
+
+    execute console command "bossbar set politaria:war_%{_war}% players @a"
+
+    execute console command "bossbar set politaria:war_%{_war}% visible true"
+
+
+
+function warUpdateBossbar(war: text):
+
+    if {war.active::%{_war}%} is not true:
+
+        stop
+
+    set {_attacker} to {war.attacker::%{_war}%}
+
+    set {_defender} to {war.defender::%{_war}%}
+
+    set {_attacker-kills} to {war.kills::%{_war}%::attacker}
+
+    set {_defender-kills} to {war.kills::%{_war}%::defender}
+
+    if {_attacker-kills} is not set:
+
+        set {_attacker-kills} to 0
+
+    if {_defender-kills} is not set:
+
+        set {_defender-kills} to 0
+
+    set {_attacker-name} to countryName({_attacker})
+
+    set {_defender-name} to countryName({_defender})
+
+    replace all """" with "'" in {_attacker-name}
+
+    replace all """" with "'" in {_defender-name}
+
+    set {_title} to "%{_attacker-name}% %{_attacker-kills}% ⚔ %{_defender-kills}% %{_defender-name}%"
+
+    set {_total} to {_attacker-kills} + {_defender-kills}
+
+    if {_total} is less than 1:
+
+        set {_value} to 50
+
+        set {_bar-color} to "white"
+
+    else if {_attacker-kills} is greater than or equal to {_defender-kills}:
+
+        set {_value} to rounded ({_attacker-kills} * 100 / {_total})
+
+        set {_bar-color} to warBossbarColor({_attacker})
+
+    else:
+
+        set {_value} to rounded ({_defender-kills} * 100 / {_total})
+
+        set {_bar-color} to warBossbarColor({_defender})
+
+    execute console command "bossbar set politaria:war_%{_war}% name {""text"":""%{_title}%""}"
+
+    execute console command "bossbar set politaria:war_%{_war}% value %{_value}%"
+
+    execute console command "bossbar set politaria:war_%{_war}% color %{_bar-color}%"
+
+    execute console command "bossbar set politaria:war_%{_war}% players @a"
+
+function warSelectFront(war: text):
+
+    delete {war.front::%{_war}%::*}
+
+    set {_defender} to {war.defender::%{_war}%}
+
+    delete {_border::*}
+
+    loop {country.claims::%{_defender}%::*}:
+
+        set {_key} to loop-index
+
+        set {_parts::*} to {_key} split at "|"
+
+        if size of {_parts::*} is 4:
+
+            set {_world} to {_parts::2}
+
+            set {_cx} to {_parts::3} parsed as number
+
+            set {_cz} to {_parts::4} parsed as number
+
+            if {_cx} is set:
+
+                if {_cz} is set:
+
+                    set {_east} to {_cx} + 1
+
+                    set {_west} to {_cx} - 1
+
+                    set {_south} to {_cz} + 1
+
+                    set {_north} to {_cz} - 1
+
+                    set {_is-border} to false
+
+                    if {country.claim::v2|%{_world}%|%{_east}%|%{_cz}%} is not {_defender}:
+
+                        set {_is-border} to true
+
+                    if {country.claim::v2|%{_world}%|%{_west}%|%{_cz}%} is not {_defender}:
+
+                        set {_is-border} to true
+
+                    if {country.claim::v2|%{_world}%|%{_cx}%|%{_south}%} is not {_defender}:
+
+                        set {_is-border} to true
+
+                    if {country.claim::v2|%{_world}%|%{_cx}%|%{_north}%} is not {_defender}:
+
+                        set {_is-border} to true
+
+                    if {_is-border} is true:
+
+                        add {_key} to {_border::*}
+
+    set {_selected} to 0
+
+    loop 4 times:
+
+        if size of {_border::*} is less than 1:
+
+            stop loop
+
+        set {_pick} to random element out of {_border::*}
+
+        set {war.front::%{_war}%::%{_pick}%} to true
+
+        remove {_pick} from {_border::*}
+
+        add 1 to {_selected}
+
+    set {war.next-front::%{_war}%} to {@war-front-interval} from now
+
+    set {_attacker} to {war.attacker::%{_war}%}
+
+    loop all players:
+
+        set {_country} to countryId(loop-player)
+
+        set {_notify} to false
+
+        if {_country} is {_attacker}:
+
+            set {_notify} to true
+
+        if {_country} is {_defender}:
+
+            set {_notify} to true
+
+        if {_notify} is true:
+
+            send formatted "<gold><bold>ФРОНТ ОБНОВЛЁН</bold> <gray>Выбрано пограничных чанков: <white>%{_selected}%<gray>. Только убийства в них идут в счёт войны." to loop-player
+
+            loop {war.front::%{_war}%::*}:
+
+                set {_parts::*} to loop-index split at "|"
+
+                send formatted "<dark gray>• <white>%{_parts::2}% <gray>— чанк <white>%{_parts::3}%, %{_parts::4}%" to loop-player
+
+function warStart(attacker: text, defender: text):
+
+    if {war.next-id} is not set:
+
+        set {war.next-id} to 0
+
+    add 1 to {war.next-id}
+
+    set {_war} to "%{war.next-id}%"
+
+    set {war.active::%{_war}%} to true
+
+    set {war.attacker::%{_war}%} to {_attacker}
+
+    set {war.defender::%{_war}%} to {_defender}
+
+    set {war.country::%{_attacker}%} to {_war}
+
+    set {war.country::%{_defender}%} to {_war}
+
+    set {war.kills::%{_war}%::attacker} to 0
+
+    set {war.kills::%{_war}%::defender} to 0
+
+    set {war.ends::%{_war}%} to {@war-duration} from now
+
+    warCreateBossbar({_war})
+
+    warSelectFront({_war})
+
+    warUpdateBossbar({_war})
+
+    broadcast formatted "<red><bold>ОБЪЯВЛЕНА ВОЙНА!</bold> %countryColor({_attacker})%%countryName({_attacker})% <gray>напала на %countryColor({_defender})%%countryName({_defender})%<gray>. Война продлится 2 реальных дня."
+
+function warFinish(war: text):
+
+    set {_attacker} to {war.attacker::%{_war}%}
+
+    set {_defender} to {war.defender::%{_war}%}
+
+    set {_attacker-kills} to {war.kills::%{_war}%::attacker}
+
+    set {_defender-kills} to {war.kills::%{_war}%::defender}
+
+    if {_attacker-kills} is not set:
+
+        set {_attacker-kills} to 0
+
+    if {_defender-kills} is not set:
+
+        set {_defender-kills} to 0
+
+    if {_attacker-kills} is greater than {_defender-kills}:
+
+        broadcast formatted "<gold><bold>ВОЙНА ОКОНЧЕНА!</bold> Победитель: %countryColor({_attacker})%%countryName({_attacker})%<gray>. Счёт <white>%{_attacker-kills}%:%{_defender-kills}%<gray>."
+
+    else if {_defender-kills} is greater than {_attacker-kills}:
+
+        broadcast formatted "<gold><bold>ВОЙНА ОКОНЧЕНА!</bold> Победитель: %countryColor({_defender})%%countryName({_defender})%<gray>. Счёт <white>%{_defender-kills}%:%{_attacker-kills}%<gray>."
+
+    else:
+
+        broadcast formatted "<gold><bold>ВОЙНА ОКОНЧЕНА НИЧЬЕЙ.</bold> <gray>Счёт <white>%{_attacker-kills}%:%{_defender-kills}%<gray>."
+
+    execute console command "bossbar remove politaria:war_%{_war}%"
+
+    delete {war.country::%{_attacker}%}
+
+    delete {war.country::%{_defender}%}
+
+    delete {war.front::%{_war}%::*}
+
+    delete {war.kills::%{_war}%::*}
+
+    delete {war.truce.offerer::%{_war}%}
+
+    delete {war.truce.expires::%{_war}%}
+
+    delete {war.attacker::%{_war}%}
+
+    delete {war.defender::%{_war}%}
+
+    delete {war.ends::%{_war}%}
+
+    delete {war.next-front::%{_war}%}
+
+    delete {war.active::%{_war}%}
+
+function warClear(war: text):
+
+    set {_attacker} to {war.attacker::%{_war}%}
+
+    set {_defender} to {war.defender::%{_war}%}
+
+    execute console command "bossbar remove politaria:war_%{_war}%"
+
+    delete {war.country::%{_attacker}%}
+
+    delete {war.country::%{_defender}%}
+
+    delete {war.front::%{_war}%::*}
+
+    delete {war.kills::%{_war}%::*}
+
+    delete {war.truce.offerer::%{_war}%}
+
+    delete {war.truce.expires::%{_war}%}
+
+    delete {war.attacker::%{_war}%}
+
+    delete {war.defender::%{_war}%}
+
+    delete {war.ends::%{_war}%}
+
+    delete {war.next-front::%{_war}%}
+
+    delete {war.active::%{_war}%}
+
+function warOpenStatus(p: player):
+
+    set {_country} to countryId({_p})
+
+    if {_country} is "":
+
+        send "<red>Вы не состоите в стране." to {_p}
+
+        stop
+
+    set {_war} to {war.country::%{_country}%}
+
+    if {war.active::%{_war}%} is not true:
+
+        send "<red>Ваша страна сейчас не участвует в войне." to {_p}
+
+        stop
+
+    set {_attacker} to {war.attacker::%{_war}%}
+
+    set {_defender} to {war.defender::%{_war}%}
+
+    set {_attacker-kills} to {war.kills::%{_war}%::attacker}
+
+    set {_defender-kills} to {war.kills::%{_war}%::defender}
+
+    if {_attacker-kills} is not set:
+
+        set {_attacker-kills} to 0
+
+    if {_defender-kills} is not set:
+
+        set {_defender-kills} to 0
+
+    set {_remaining} to difference between {war.ends::%{_war}%} and now
+
+    set {_menu} to chest inventory with 3 rows named "<dark red>Текущая война"
+
+    loop integers between 0 and 26:
+
+        set slot loop-value of {_menu} to gray stained glass pane named " "
+
+    set {_attacker-icon} to {country.icon::%{_attacker}%} parsed as item type
+
+    if {_attacker-icon} is not set:
+
+        set {_attacker-icon} to white banner
+
+    set {_defender-icon} to {country.icon::%{_defender}%} parsed as item type
+
+    if {_defender-icon} is not set:
+
+        set {_defender-icon} to white banner
+
+    set slot 3 of {_menu} to {_attacker-icon} named "%countryColor({_attacker})%<bold>%countryName({_attacker})%" with lore "<gray>Счёт: <white>%{_attacker-kills}%"
+
+    set slot 5 of {_menu} to {_defender-icon} named "%countryColor({_defender})%<bold>%countryName({_defender})%" with lore "<gray>Счёт: <white>%{_defender-kills}%"
+
+    set slot 4 of {_menu} to clock named "<gold><bold>СТАТУС ВОЙНЫ" with lore "<gray>До завершения: <white>%{_remaining}%" and "<gray>Счёт: <white>%{_attacker-kills}% <dark gray>— <white>%{_defender-kills}%"
+
+    if {war.truce.offerer::%{_war}%} is set:
+
+        if {war.truce.expires::%{_war}%} is in the future:
+
+            if {war.truce.offerer::%{_war}%} is {_country}:
+
+                set slot 11 of {_menu} to gray concrete named "<gray><bold>ПЕРЕМИРИЕ ПРЕДЛОЖЕНО" with lore "<gray>Ожидайте ответа другой страны"
+
+            else:
+
+                set slot 11 of {_menu} to lime concrete named "<green><bold>ПРИНЯТЬ ПЕРЕМИРИЕ" with lore "<gray>Другая страна предлагает закончить войну"
+
+        else:
+
+            set slot 11 of {_menu} to yellow concrete named "<gold><bold>ПРЕДЛОЖИТЬ ПЕРЕМИРИЕ" with lore "<gray>Предложение будет действительно 5 минут"
+
+    else:
+
+        set slot 11 of {_menu} to yellow concrete named "<gold><bold>ПРЕДЛОЖИТЬ ПЕРЕМИРИЕ" with lore "<gray>Предложение будет действительно 5 минут"
+
+    set slot 15 of {_menu} to barrier named "<red>Закрыть"
+
+    open {_menu} to {_p}
+
+    set {war.menu::%uuid of {_p}%} to "status"
+
+function warOfferTruce(p: player):
+
+    set {_country} to countryId({_p})
+
+    if {_country} is "":
+
+        send "<red>Вы не состоите в стране." to {_p}
+
+        stop
+
+    if countryHasPermission({_p}, "DECLARE_WAR") is not true:
+
+        send "<red>У вашей роли нет права предлагать перемирие." to {_p}
+
+        stop
+
+    set {_war} to {war.country::%{_country}%}
+
+    if {war.active::%{_war}%} is not true:
+
+        send "<red>Ваша страна сейчас не участвует в войне." to {_p}
+
+        stop
+
+    if {war.truce.offerer::%{_war}%} is {_country}:
+
+        if {war.truce.expires::%{_war}%} is in the future:
+
+            send "<yellow>Ваша страна уже предложила перемирие. Ожидайте ответа." to {_p}
+
+            stop
+
+    set {war.truce.offerer::%{_war}%} to {_country}
+
+    set {war.truce.expires::%{_war}%} to {@war-truce-offer-duration} from now
+
+    set {_attacker} to {war.attacker::%{_war}%}
+
+    set {_defender} to {war.defender::%{_war}%}
+
+    if {_country} is {_attacker}:
+
+        set {_recipient} to {_defender}
+
+    else:
+
+        set {_recipient} to {_attacker}
+
+    send formatted "<green>Вы предложили перемирие стране %countryColor({_recipient})%%countryName({_recipient})%<green>." to {_p}
+
+    loop all players:
+
+        if countryId(loop-player) is {_recipient}:
+
+            send formatted "<gold><bold>ПРЕДЛОЖЕНИЕ ПЕРЕМИРИЯ</bold> <gray>Страна %countryColor({_country})%%countryName({_country})% <gray>предлагает закончить войну. Используйте <white>/war accept <gray>для принятия." to loop-player
+
+function warAcceptTruce(p: player):
+
+    set {_country} to countryId({_p})
+
+    if {_country} is "":
+
+        send "<red>Вы не состоите в стране." to {_p}
+
+        stop
+
+    if countryHasPermission({_p}, "DECLARE_WAR") is not true:
+
+        send "<red>У вашей роли нет права принимать перемирие." to {_p}
+
+        stop
+
+    set {_war} to {war.country::%{_country}%}
+
+    if {war.active::%{_war}%} is not true:
+
+        send "<red>Ваша страна сейчас не участвует в войне." to {_p}
+
+        stop
+
+    if {war.truce.offerer::%{_war}%} is not set:
+
+        send "<red>Для этой войны нет активного предложения перемирия." to {_p}
+
+        stop
+
+    if {war.truce.expires::%{_war}%} is not in the future:
+
+        delete {war.truce.offerer::%{_war}%}
+
+        delete {war.truce.expires::%{_war}%}
+
+        send "<red>Срок предложения перемирия истёк." to {_p}
+
+        stop
+
+    if {war.truce.offerer::%{_war}%} is {_country}:
+
+        send "<red>Ваша страна не может принять собственное предложение." to {_p}
+
+        stop
+
+    set {_offerer} to {war.truce.offerer::%{_war}%}
+
+    broadcast formatted "<light green><bold>ПЕРЕМИРИЕ ПРИНЯТО!</bold> <gray>Страны %countryColor({_offerer})%%countryName({_offerer})% <gray>и %countryColor({_country})%%countryName({_country})% <gray>закончили войну по соглашению."
+
+    warClear({_war})
+
+function warProcess():
+
+    loop {war.active::*}:
+
+        set {_war} to loop-index
+
+        if {war.ends::%{_war}%} is not set:
+
+            warFinish({_war})
+
+        else if {war.ends::%{_war}%} is in the past:
+
+            warFinish({_war})
+
+        else:
+
+            if {war.next-front::%{_war}%} is not set:
+
+                warSelectFront({_war})
+
+            else if {war.next-front::%{_war}%} is in the past:
+
+                warSelectFront({_war})
+
+            warUpdateBossbar({_war})
+
+function warOpenList(p: player):
+
+    set {_own} to countryId({_p})
+
+    if {_own} is "":
+
+        send "<red>Вы не состоите в стране." to {_p}
+
+        stop
+
+    if countryHasPermission({_p}, "DECLARE_WAR") is not true:
+
+        send "<red>У вашей роли нет права объявлять войну." to {_p}
+
+        stop
+
+    if {war.country::%{_own}%} is set:
+
+        send "<red>Ваша страна уже участвует в войне." to {_p}
+
+        stop
+
+    set {_menu} to chest inventory with 6 rows named "{@war-menu-title}"
+
+    loop integers between 0 and 53:
+
+        set slot loop-value of {_menu} to gray stained glass pane named " "
+
+    delete {war.menu-country::%uuid of {_p}%::*}
+
+    set {_slot} to 0
+
+    loop {country.name::*}:
+
+        set {_country} to loop-index
+
+        if {_country} is not {_own}:
+
+            if {_slot} is less than 45:
+
+                set {_type} to {country.icon::%{_country}%} parsed as item type
+
+                if {_type} is not set:
+
+                    set {_type} to white banner
+
+                if {war.country::%{_country}%} is set:
+
+                    set slot {_slot} of {_menu} to barrier named "%countryColor({_country})%<bold>%loop-value%" with lore "<red>Страна уже участвует в войне"
+
+                else:
+
+                    set slot {_slot} of {_menu} to {_type} named "%countryColor({_country})%<bold>%loop-value%" with lore "<gray>Участников: <white>%countryMemberCount({_country})%" and "<gray>Чанков: <white>%countryClaimCount({_country})%" and "" and "<red>Нажмите, чтобы объявить войну"
+
+                    set {war.menu-country::%uuid of {_p}%::%{_slot}%} to {_country}
+
+                add 1 to {_slot}
+
+    set slot 49 of {_menu} to barrier named "<red>Закрыть"
+
+    open {_menu} to {_p}
+
+    set {war.menu::%uuid of {_p}%} to "list"
+
+function warOpenConfirmation(p: player, defender: text):
+
+    set {_menu} to chest inventory with 3 rows named "<dark red>Подтверждение войны"
+
+    loop integers between 0 and 26:
+
+        set slot loop-value of {_menu} to gray stained glass pane named " "
+
+    set slot 4 of {_menu} to iron sword named "<red><bold>ВОЙНА С %countryName({_defender})%" with lore "<gray>Продолжительность: <white>2 реальных дня" and "<gray>Новый фронт: <white>каждые 30 минут" and "<gray>Победа: <white>больше убийств на фронте"
+
+    set slot 11 of {_menu} to lime concrete named "<green><bold>ОТМЕНА" with lore "<gray>Вернуться к списку стран"
+
+    set slot 15 of {_menu} to red concrete named "<red><bold>ОБЪЯВИТЬ ВОЙНУ" with lore "<red>Война начнётся немедленно"
+
+    set {war.selected-country::%uuid of {_p}%} to {_defender}
+
+    open {_menu} to {_p}
+
+    set {war.menu::%uuid of {_p}%} to "confirm"
+
+command /war [<text>]:
+
+    aliases: /wars
+
+    executable by: players
+
+    trigger:
+
+        if {auth.logged-in::%name of player%} is not true:
+
+            send "<red>Сначала войдите в аккаунт." to player
+
+            stop
+
+        if arg-1 is "truce":
+
+            warOfferTruce(player)
+
+            stop
+
+        if arg-1 is "accept":
+
+            warAcceptTruce(player)
+
+            stop
+
+        if arg-1 is set:
+
+            send "<yellow>Использование: <white>/war<gray>, <white>/war truce<gray> или <white>/war accept" to player
+
+            stop
+
+        warOpenStatus(player)
+
+on inventory click:
+
+    if {war.menu::%uuid of player%} is not set:
+
+        stop
+
+    cancel event
+
+    if {ui.click-until::%uuid of player%} is in the future:
+
+        stop
+
+    set {ui.click-until::%uuid of player%} to 8 ticks from now
+
+    if event-slot is not set:
+
+        stop
+
+    set {_slot} to raw index of event-slot
+
+    set {_menu} to {war.menu::%uuid of player%}
+
+    if {_menu} is "status":
+
+        if {_slot} is 15:
+
+            close player's inventory
+
+            stop
+
+        if {_slot} is 11:
+
+            set {_country} to countryId(player)
+
+            set {_war} to {war.country::%{_country}%}
+
+            close player's inventory
+
+            if {war.truce.offerer::%{_war}%} is set:
+
+                if {war.truce.expires::%{_war}%} is in the future:
+
+                    if {war.truce.offerer::%{_war}%} is {_country}:
+
+                        send "<yellow>Ваша страна уже предложила перемирие. Ожидайте ответа." to player
+
+                    else:
+
+                        warAcceptTruce(player)
+
+                    stop
+
+            warOfferTruce(player)
+
+        stop
+
+    if {_menu} is "list":
+
+        if {_slot} is 49:
+
+            close player's inventory
+
+            stop
+
+        set {_defender} to {war.menu-country::%uuid of player%::%{_slot}%}
+
+        if {_defender} is set:
+
+            warOpenConfirmation(player, {_defender})
+
+        stop
+
+    if {_menu} is "confirm":
+
+        if {_slot} is 11:
+
+            warOpenList(player)
+
+            stop
+
+        if {_slot} is 15:
+
+            set {_attacker} to countryId(player)
+
+            set {_defender} to {war.selected-country::%uuid of player%}
+
+            if {_attacker} is "":
+
+                close player's inventory
+
+                stop
+
+            if countryHasPermission(player, "DECLARE_WAR") is not true:
+
+                close player's inventory
+
+                send "<red>У вашей роли больше нет права объявлять войну." to player
+
+                stop
+
+            if {country.name::%{_defender}%} is not set:
+
+                close player's inventory
+
+                send "<red>Эта страна больше не существует." to player
+
+                stop
+
+            if {war.country::%{_attacker}%} is set:
+
+                close player's inventory
+
+                send "<red>Ваша страна уже участвует в войне." to player
+
+                stop
+
+            if {war.country::%{_defender}%} is set:
+
+                close player's inventory
+
+                send "<red>Выбранная страна уже участвует в войне." to player
+
+                stop
+
+            close player's inventory
+
+            warStart({_attacker}, {_defender})
+
+        stop
+
+on inventory drag:
+
+    if {war.menu::%uuid of player%} is set:
+
+        cancel event
+
+on inventory close:
+
+    if {war.menu::%uuid of player%} is set:
+
+        delete {war.menu::%uuid of player%}
+
+on respawn:
+
+    set {war.spawn-protection::%uuid of player%} to {@war-spawn-protection} from now
+
+    send "<light green>Защита после возрождения действует 30 секунд. Вы не можете получать и наносить урон." to player
+
+every 1 second:
+
+    loop all players:
+
+        if {war.spawn-protection::%uuid of loop-player%} is set:
+
+            if {war.spawn-protection::%uuid of loop-player%} is in the future:
+
+                set {_remaining} to difference between {war.spawn-protection::%uuid of loop-player%} and now
+
+                send action bar formatted "<light green><bold>ЗАЩИТА</bold> <gray>• <white>%{_remaining}%" to loop-player
+
+            else:
+
+                delete {war.spawn-protection::%uuid of loop-player%}
+
+                send action bar "<yellow>Защита после возрождения закончилась." to loop-player
+
+on damage of player:
+
+    if {war.spawn-protection::%uuid of victim%} is in the future:
+
+        cancel event
+
+        stop
+
+    if attacker is not a player:
+
+        stop
+
+    if {war.spawn-protection::%uuid of attacker%} is in the future:
+
+        cancel event
+
+        send action bar "<red>Вы не можете атаковать во время защиты после возрождения." to attacker
+
+        stop
+
+    set {_attacker-country} to countryId(attacker)
+
+    set {_victim-country} to countryId(victim)
+
+    if {_attacker-country} is not "":
+
+        if {_attacker-country} is {_victim-country}:
+
+            cancel event
+
+            send action bar "<red>Нельзя атаковать жителя своей страны." to attacker
+
+            stop
+
+    set {_war} to warBetween({_attacker-country}, {_victim-country})
+
+    if {_war} is not "":
+
+        set {_territory} to countryAtLocation(location of victim)
+
+        if {_territory} is not {_attacker-country}:
+
+            if {_territory} is not {_victim-country}:
+
+                cancel event
+
+                send action bar "<red>Воевать можно только на территории одной из конфликтующих стран." to attacker
+
+on death of player:
+
+    if attacker is not a player:
+
+        stop
+
+    set {_attacker-country} to countryId(attacker)
+
+    set {_victim-country} to countryId(victim)
+
+    set {_war} to warBetween({_attacker-country}, {_victim-country})
+
+    if {_war} is "":
+
+        stop
+
+    set {_key} to countryLocationKey(location of victim)
+
+    if {war.front::%{_war}%::%{_key}%} is not true:
+
+        send action bar "<gray>Убийство вне активного фронта не засчитано." to attacker
+
+        stop
+
+    if {_attacker-country} is {war.attacker::%{_war}%}:
+
+        add 1 to {war.kills::%{_war}%::attacker}
+
+    else:
+
+        add 1 to {war.kills::%{_war}%::defender}
+
+    set {_war-attacker} to {war.attacker::%{_war}%}
+
+    set {_war-defender} to {war.defender::%{_war}%}
+
+    broadcast formatted "<red>⚔ <white>%name of attacker% <gray>убил <white>%name of victim% <gray>на фронте войны %countryColor({_war-attacker})%%countryName({_war-attacker})% <dark gray>— %countryColor({_war-defender})%%countryName({_war-defender})%<gray>."
+
+    warUpdateBossbar({_war})
+
+on player move:
+
+    set {_country} to countryId(player)
+
+    if {_country} is "":
+
+        stop
+
+    set {_war} to {war.country::%{_country}%}
+
+    if {war.active::%{_war}%} is not true:
+
+        stop
+
+    set {_key} to countryLocationKey(location of player)
+
+    if {war.front::%{_war}%::%{_key}%} is true:
+
+        if {war.last-front::%uuid of player%} is not {_key}:
+
+            set {war.last-front::%uuid of player%} to {_key}
+
+            send action bar "<red><bold>АКТИВНЫЙ ФРОНТ</bold> <gray>• убийства здесь идут в счёт войны" to player
+
+    else:
+
+        delete {war.last-front::%uuid of player%}
+
+on load:
+    wait 1 tick
+
+    loop {war.active::*}:
+        set {_war} to loop-index
+        warCreateBossbar({_war})
+
+    warProcess()
+
+on unload:
+
+    loop {war.active::*}:
+
+        execute console command "bossbar remove politaria:war_%loop-index%"
+
+every 1 minute:
+
+    warProcess()
+
+on quit:
+
+    delete {war.menu::%uuid of player%}
+
+    delete {war.menu-country::%uuid of player%::*}
+
+    delete {war.selected-country::%uuid of player%}
+
+    delete {war.last-front::%uuid of player%}
+
+    delete {war.spawn-protection::%uuid of player%}

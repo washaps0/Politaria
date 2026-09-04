@@ -128,7 +128,7 @@ unsupported-settings:
   allow-tripwire-disarming-exploits: false
   allow-unsafe-end-portal-teleportation: false
   compression-format: ZLIB
-  perform-username-validation: true
+  perform-username-validation: false
   skip-vanilla-damage-tick-when-shield-blocked: false
 watchdog:
   early-warning-delay: 10000

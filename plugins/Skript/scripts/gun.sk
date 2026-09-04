@@ -1,0 +1,412 @@
+# ============================================================
+#  GUN.SK — система огнестрела на мотыгах (чистый Skript 2.15.4)
+#  Тестировалось на Paper 1.21.1 + Skript 2.15.4
+#  Управление: ПКМ — выстрел (автоматы — зажать), Shift+ПКМ — перезарядка
+#  Текстурпак: каждое оружие = материал + свой CustomModelData (см. лор)
+# ============================================================
+
+options:
+    prefix: <dark_gray>[<#ff4655>Оружие<dark_gray>]
+
+# ------------------------------------------------------------
+#  ЗАГРУЗКА ОРУЖИЯ
+# ------------------------------------------------------------
+on load:
+    delete {gun::*}
+    delete {gunids::*}
+    delete {guncat::*}
+    delete {ammotypes::*}
+    delete {ammo::name::*}
+    delete {guncatname::*}
+
+    # --- типы патронов ---
+    set {ammotypes::*} to "pistol", "rifle", "sniper" and "shells"
+    set {ammo::name::pistol} to "Пистолетные"
+    set {ammo::name::rifle} to "Автоматные"
+    set {ammo::name::sniper} to "Снайперские"
+    set {ammo::name::shells} to "Дробь"
+
+    # --- категории ---
+    set {guncatname::pistols} to "Пистолеты"
+    set {guncatname::smg} to "ПП и автоматы"
+    set {guncatname::sniper} to "Снайперки и дробовики"
+    set {guncat::pistols::ammo1at} to "pistol"
+    set {guncat::pistols::ammo1give} to 30
+    set {guncat::smg::ammo1at} to "rifle"
+    set {guncat::smg::ammo1give} to 60
+    set {guncat::sniper::ammo1at} to "sniper"
+    set {guncat::sniper::ammo1give} to 10
+    set {guncat::sniper::ammo2at} to "shells"
+    set {guncat::sniper::ammo2give} to 16
+
+    # ==========================================================
+    #  КАТЕГОРИЯ 1: ПИСТОЛЕТЫ
+    # ==========================================================
+    add "glock" to {gunids::*}
+    add "glock" to {guncat::pistols::*}
+    set {gun::glock::mat} to wooden hoe
+    set {gun::glock::cmd} to 1101
+    set {gun::glock::name} to "Глок-17"
+    set {gun::glock::cat} to "pistols"
+    set {gun::glock::dmg} to 5
+    set {gun::glock::hs} to 2
+    set {gun::glock::clip} to 17
+    set {gun::glock::rate} to 4 ticks
+    set {gun::glock::sp} to 0.04
+    set {gun::glock::dist} to 48
+    set {gun::glock::rl} to 1.5 seconds
+    set {gun::glock::at} to "pistol"
+    set {gun::glock::spd} to 3
+    set {gun::glock::snd} to "entity.blaze.shoot"
+    set {gun::glock::sndp} to 1.4
+    set {gun::glock::vol} to 0.8
+
+    add "makarov" to {gunids::*}
+    add "makarov" to {guncat::pistols::*}
+    set {gun::makarov::mat} to wooden hoe
+    set {gun::makarov::cmd} to 1102
+    set {gun::makarov::name} to "Макаров"
+    set {gun::makarov::cat} to "pistols"
+    set {gun::makarov::dmg} to 4
+    set {gun::makarov::hs} to 2
+    set {gun::makarov::clip} to 8
+    set {gun::makarov::rate} to 4 ticks
+    set {gun::makarov::sp} to 0.035
+    set {gun::makarov::dist} to 40
+    set {gun::makarov::rl} to 1.5 seconds
+    set {gun::makarov::at} to "pistol"
+    set {gun::makarov::spd} to 3
+    set {gun::makarov::snd} to "entity.blaze.shoot"
+    set {gun::makarov::sndp} to 1.5
+    set {gun::makarov::vol} to 0.8
+
+    add "deagle" to {gunids::*}
+    add "deagle" to {guncat::pistols::*}
+    set {gun::deagle::mat} to stone hoe
+    set {gun::deagle::cmd} to 1103
+    set {gun::deagle::name} to "Дезерт Игл"
+    set {gun::deagle::cat} to "pistols"
+    set {gun::deagle::dmg} to 9
+    set {gun::deagle::hs} to 2.5
+    set {gun::deagle::clip} to 7
+    set {gun::deagle::rate} to 8 ticks
+    set {gun::deagle::sp} to 0.03
+    set {gun::deagle::dist} to 55
+    set {gun::deagle::rl} to 2 seconds
+    set {gun::deagle::at} to "pistol"
+    set {gun::deagle::spd} to 3.5
+    set {gun::deagle::snd} to "entity.blaze.shoot"
+    set {gun::deagle::sndp} to 1
+    set {gun::deagle::vol} to 1
+
+    # ==========================================================
+    #  КАТЕГОРИЯ 2: ПП И АВТОМАТЫ  (авто — зажать ПКМ)
+    # ==========================================================
+    add "mp5" to {gunids::*}
+    add "mp5" to {guncat::smg::*}
+    set {gun::mp5::mat} to iron hoe
+    set {gun::mp5::cmd} to 2101
+    set {gun::mp5::name} to "МП-5"
+    set {gun::mp5::cat} to "smg"
+    set {gun::mp5::dmg} to 4
+    set {gun::mp5::hs} to 2
+    set {gun::mp5::clip} to 30
+    set {gun::mp5::rate} to 4 ticks
+    set {gun::mp5::sp} to 0.07
+    set {gun::mp5::dist} to 45
+    set {gun::mp5::rl} to 2 seconds
+    set {gun::mp5::at} to "rifle"
+    set {gun::mp5::spd} to 3
+    set {gun::mp5::snd} to "entity.blaze.shoot"
+    set {gun::mp5::sndp} to 1.3
+    set {gun::mp5::vol} to 0.8
+
+    add "ak74" to {gunids::*}
+    add "ak74" to {guncat::smg::*}
+    set {gun::ak74::mat} to iron hoe
+    set {gun::ak74::cmd} to 2102
+    set {gun::ak74::name} to "АК-74"
+    set {gun::ak74::cat} to "smg"
+    set {gun::ak74::dmg} to 7
+    set {gun::ak74::hs} to 2
+    set {gun::ak74::clip} to 30
+    set {gun::ak74::rate} to 4 ticks
+    set {gun::ak74::sp} to 0.09
+    set {gun::ak74::dist} to 60
+    set {gun::ak74::rl} to 2.5 seconds
+    set {gun::ak74::at} to "rifle"
+    set {gun::ak74::spd} to 3.5
+    set {gun::ak74::snd} to "entity.blaze.shoot"
+    set {gun::ak74::sndp} to 1.1
+    set {gun::ak74::vol} to 1
+
+    add "m4" to {gunids::*}
+    add "m4" to {guncat::smg::*}
+    set {gun::m4::mat} to iron hoe
+    set {gun::m4::cmd} to 2103
+    set {gun::m4::name} to "М4А1"
+    set {gun::m4::cat} to "smg"
+    set {gun::m4::dmg} to 6
+    set {gun::m4::hs} to 2
+    set {gun::m4::clip} to 30
+    set {gun::m4::rate} to 4 ticks
+    set {gun::m4::sp} to 0.08
+    set {gun::m4::dist} to 60
+    set {gun::m4::rl} to 2.2 seconds
+    set {gun::m4::at} to "rifle"
+    set {gun::m4::spd} to 3.5
+    set {gun::m4::snd} to "entity.blaze.shoot"
+    set {gun::m4::sndp} to 1.2
+    set {gun::m4::vol} to 0.9
+
+    # ==========================================================
+    #  КАТЕГОРИЯ 3: СНАЙПЕРКИ И ДРОБОВИКИ
+    # ==========================================================
+    add "m870" to {gunids::*}
+    add "m870" to {guncat::sniper::*}
+    set {gun::m870::mat} to golden hoe
+    set {gun::m870::cmd} to 3101
+    set {gun::m870::name} to "Ремингтон 870"
+    set {gun::m870::cat} to "sniper"
+    set {gun::m870::dmg} to 2.5
+    set {gun::m870::hs} to 1.5
+    set {gun::m870::clip} to 6
+    set {gun::m870::rate} to 12 ticks
+    set {gun::m870::sp} to 0.25
+    set {gun::m870::dist} to 18
+    set {gun::m870::rl} to 3 seconds
+    set {gun::m870::at} to "shells"
+    set {gun::m870::pel} to 6
+    set {gun::m870::spd} to 2.5
+    set {gun::m870::snd} to "entity.blaze.shoot"
+    set {gun::m870::sndp} to 0.6
+    set {gun::m870::vol} to 1.2
+
+    add "svd" to {gunids::*}
+    add "svd" to {guncat::sniper::*}
+    set {gun::svd::mat} to diamond hoe
+    set {gun::svd::cmd} to 3102
+    set {gun::svd::name} to "СВД"
+    set {gun::svd::cat} to "sniper"
+    set {gun::svd::dmg} to 12
+    set {gun::svd::hs} to 2.5
+    set {gun::svd::clip} to 10
+    set {gun::svd::rate} to 15 ticks
+    set {gun::svd::sp} to 0.012
+    set {gun::svd::dist} to 100
+    set {gun::svd::rl} to 3 seconds
+    set {gun::svd::at} to "sniper"
+    set {gun::svd::spd} to 6
+    set {gun::svd::snd} to "entity.lightning_bolt.impact"
+    set {gun::svd::sndp} to 0.8
+    set {gun::svd::vol} to 0.8
+
+    add "awp" to {gunids::*}
+    add "awp" to {guncat::sniper::*}
+    set {gun::awp::mat} to netherite hoe
+    set {gun::awp::cmd} to 3103
+    set {gun::awp::name} to "АВП"
+    set {gun::awp::cat} to "sniper"
+    set {gun::awp::dmg} to 16
+    set {gun::awp::hs} to 2.5
+    set {gun::awp::clip} to 5
+    set {gun::awp::rate} to 25 ticks
+    set {gun::awp::sp} to 0.008
+    set {gun::awp::dist} to 130
+    set {gun::awp::rl} to 3.5 seconds
+    set {gun::awp::at} to "sniper"
+    set {gun::awp::spd} to 8
+    set {gun::awp::snd} to "entity.lightning_bolt.impact"
+    set {gun::awp::sndp} to 0.7
+    set {gun::awp::vol} to 1
+
+    broadcast "{@prefix} <gray>Загружено стволов: <yellow>%size of {gunids::*}%"
+
+# ------------------------------------------------------------
+#  ФУНКЦИИ
+# ------------------------------------------------------------
+# предмет оружия (мотыга + CMD + лор)
+function gunItem(id: text) :: itemtype:
+    if {gun::%{_id}%::name} is not set:
+        stop
+    set {_i} to unbreakable {gun::%{_id}%::mat} named {gun::%{_id}%::name}
+    set custom model data of {_i} to {gun::%{_id}%::cmd}
+    set {_an} to {ammo::name::%{gun::%{_id}%::at}%}
+    set lore of {_i} to "<dark_gray>Категория: <gray>%{guncatname::%{gun::%{_id}%::cat}%}%", "<dark_gray>Урон: <gray>%{gun::%{_id}%::dmg}% <dark_gray>×%{gun::%{_id}%::hs}% в голову <gray>| <dark_gray>Магазин: <gray>%{gun::%{_id}%::clip}%", "<dark_gray>Патроны: <gray>%{_an}%", "<dark_gray>Перезарядка: <gray>%{gun::%{_id}%::rl}%" and "<dark_gray>CMD: <gray>%{gun::%{_id}%::cmd}% <dark_gray>(под текстурпак)"
+    return {_i}
+
+# определить id оружия по предмету в руке
+function gunIdOf(i: itemtype) :: text:
+    loop {gunids::*}:
+        if {_i} is {gun::%loop-value%::mat}:
+            if custom model data of {_i} is {gun::%loop-value%::cmd}:
+                return loop-value
+
+# выстрел
+function fire(p: player, id: text):
+    set {_u} to uuid of {_p}
+    if {rl::%{_u}%} is set:
+        stop
+    if {shot::%{_u}%} is set:
+        if difference between {shot::%{_u}%} and now < {gun::%{_id}%::rate}:
+            stop
+    set {_at} to {gun::%{_id}%::at}
+    if {ammo::%{_u}%::%{_at}%} is not set:
+        set {ammo::%{_u}%::%{_at}%} to 0
+    if {ammo::%{_u}%::%{_at}%} <= 0:
+        play sound "block.dispenser.fail" with volume 0.5 and pitch 1.5 at {_p}
+        send action bar "<red>Пусто! Перезарядка — <yellow>Shift + ПКМ" to {_p}
+        doReload({_p}, {_id})
+        stop
+    remove 1 from {ammo::%{_u}%::%{_at}%}
+    set {shot::%{_u}%} to now
+    play sound {gun::%{_id}%::snd} with volume {gun::%{_id}%::vol} and pitch {gun::%{_id}%::sndp} at {_p}
+    set {_pel} to {gun::%{_id}%::pel}
+    if {_pel} is not set:
+        set {_pel} to 1
+    set {_spd} to {gun::%{_id}%::spd}
+    loop {_pel} times:
+        # направление взгляда + разброс
+        set {_v} to vector from facing of {_p}
+        set {_sp} to {gun::%{_id}%::sp}
+        set {_lo} to 0 - {_sp}
+        set x-coordinate of {_v} to (x-coordinate of {_v}) + random number between {_lo} and {_sp}
+        set y-coordinate of {_v} to (y-coordinate of {_v}) + random number between {_lo} and {_sp}
+        set z-coordinate of {_v} to (z-coordinate of {_v}) + random number between {_lo} and {_sp}
+        if {_pel} is 1:
+            # видимая пуля-трассер (снежок) — для одиночных стволов
+            set x-coordinate of {_v} to (x-coordinate of {_v}) * {_spd}
+            set y-coordinate of {_v} to (y-coordinate of {_v}) * {_spd}
+            set z-coordinate of {_v} to (z-coordinate of {_v}) * {_spd}
+            make {_p} shoot a snowball with velocity {_v}
+            # вернуть единичный вектор для луча
+            set x-coordinate of {_v} to (x-coordinate of {_v}) / {_spd}
+            set y-coordinate of {_v} to (y-coordinate of {_v}) / {_spd}
+            set z-coordinate of {_v} to (z-coordinate of {_v}) / {_spd}
+        bulletHit({_p}, {_id}, {_v}, {gun::%{_id}%::dmg})
+    draw 2 smoke particles at eye location of {_p}
+
+# луч пули (hitscan): стены, сущности, хедшоты
+function bulletHit(shooter: player, id: text, dir: vector, dmg: number):
+    set {_l} to eye location of {_shooter}
+    set {_hs} to {gun::%{_id}%::hs}
+    set {_stop} to false
+    loop {gun::%{_id}%::dist} times:
+        add {_dir} to {_l}
+        if block at {_l} is not air:
+            if block at {_l} is not water:
+                set {_stop} to true
+        if {_stop} is false:
+            set {_e::*} to living entities within radius 1.2 of {_l}
+            loop {_e::*}:
+                set {_ent} to loop-value-2
+                if {_ent} is not {_shooter}:
+                    if {_hit::%uuid of {_ent}%} is not set:
+                        if distance between {_l} and head location of {_ent} < 0.45:
+                            set {_d} to {_dmg} * {_hs}
+                            play sound "block.note_block.bell" with volume 0.6 and pitch 1.6 at {_shooter}
+                            send action bar "<red>✸ ХЕДШОТ <gray>×%{_hs}%" to {_shooter}
+                        else:
+                            set {_d} to {_dmg}
+                        damage {_ent} by {_d}
+                        set {lastHitBy::%uuid of {_ent}%} to {_shooter}
+                        set {_hit::%uuid of {_ent}%} to true
+                        set {_stop} to true
+        if {_stop} is true:
+            draw 3 smoke particles at {_l}
+            exit 1 section
+
+# перезарядка
+function doReload(p: player, id: text):
+    set {_u} to uuid of {_p}
+    if {rl::%{_u}%} is set:
+        stop
+    set {_at} to {gun::%{_id}%::at}
+    if {ammo::%{_u}%::%{_at}%} is not set:
+        set {ammo::%{_u}%::%{_at}%} to 0
+    if {ammo::%{_u}%::%{_at}%} >= {gun::%{_id}%::clip}:
+        send action bar "<yellow>Магазин полон" to {_p}
+        stop
+    set {rl::%{_u}%} to true
+    send action bar "<yellow>⟳ Перезарядка..." to {_p}
+    play sound "item.crossbow.loading_start" with volume 0.7 and pitch 1 at {_p}
+    wait {gun::%{_id}%::rl}
+    delete {rl::%{_u}%}
+    if {_p} is online:
+        set {ammo::%{_u}%::%{gun::%{_id}%::at}%} to {gun::%{_id}%::clip}
+        play sound "item.crossbow.loading_end" with volume 0.7 and pitch 1.2 at {_p}
+        send action bar "<green>Готов! <gray>Патронов: <yellow>%{gun::%{_id}%::clip}%" to {_p}
+
+# ------------------------------------------------------------
+#  СОБЫТИЯ
+# ------------------------------------------------------------
+on right click:
+    set {_id} to gunIdOf(player's tool)
+    if {_id} is not set:
+        stop
+    cancel event
+    if player is sneaking:
+        doReload(player, {_id})
+        stop
+    fire(player, {_id})
+
+on death of player:
+    set {_u} to uuid of victim
+    delete {rl::%{_u}%}
+    delete {shot::%{_u}%}
+    if {lastHitBy::%{_u}%} is set:
+        if difference between {lastHitBy::%{_u}%} and now < 8 seconds:
+            set death message to "<gray>%victim% <dark_gray>был застрелен игроком <gray>%{lastHitBy::%{_u}%}%"
+        delete {lastHitBy::%{_u}%}
+
+on quit:
+    set {_u} to uuid of player
+    delete {rl::%{_u}%}
+    delete {shot::%{_u}%}
+    delete {lastHitBy::%{_u}%}
+
+# ------------------------------------------------------------
+#  КОМАНДЫ
+# ------------------------------------------------------------
+command /guns:
+    description: Список всего оружия
+    trigger:
+        send "{@prefix} <gray>Оружие (<yellow>%size of {gunids::*}%<gray>):"
+        loop {gunids::*}:
+            send "<dark_gray> - <yellow>%{gun::%loop-value%::name}% <dark_gray>(id: <gray>%loop-value%<dark_gray>, %{guncatname::%{gun::%loop-value%::cat}%}%<dark_gray>)"
+
+command /gstats:
+    description: Боезапас игрока
+    executable by: players
+    trigger:
+        send "{@prefix} <gray>Твой боезапас:"
+        loop {ammotypes::*}:
+            if {ammo::%uuid of player%::%loop-value%} is not set:
+                set {ammo::%uuid of player%::%loop-value%} to 0
+            send "<dark_gray> - <gray>%{ammo::name::%loop-value%}%: <yellow>%{ammo::%uuid of player%::%loop-value%}%"
+
+command /gunreload:
+    description: Перезарядка оружия в руке
+    executable by: players
+    trigger:
+        set {_id} to gunIdOf(player's tool)
+        if {_id} is not set:
+            send "{@prefix} <red>В руке не оружие."
+            stop
+        doReload(player, {_id})
+
+command /givegun <player> <text>:
+    description: Выдать оружие (админ)
+    permission: guns.admin
+    permission message: <red>Нет прав.
+    executable by: players and console
+    trigger:
+        if {gun::%arg-2%::name} is not set:
+            send "{@prefix} <red>Оружие «<gray>%arg-2%<red>» не найдено. Список: /guns"
+            stop
+        give arg-1 gunItem(arg-2)
+        set {_at} to {gun::%arg-2%::at}
+        if {ammo::%uuid of arg-1%::%{_at}%} < {gun::%arg-2%::clip}:
+            set {ammo::%uuid of arg-1%::%{_at}%} to {gun::%arg-2%::clip}
+        send "{@prefix} <green>Выдано: <yellow>%{gun::%arg-2%::name}% <gray>→ %arg-1%"
+        send "{@prefix} <green>Получено: <yellow>%{gun::%arg-2%::name}% <gray>+ %{gun::%arg-2%::clip}% патронов" to arg-1

@@ -36,7 +36,7 @@ settings:
   restart-script: ./start.sh
 commands:
   tab-complete: 0
-  send-namespaced: true
+  send-namespaced: false
   spam-exclusions:
   - /skill
   silent-commandblock-console: false
@@ -165,6 +165,8 @@ world-settings:
     merge-radius:
       item: 0.5
       exp: -1.0
+    verbose: false
+  worldeditregentempworld:
     verbose: false
 players:
   disable-saving: false

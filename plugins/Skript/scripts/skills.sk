@@ -1,0 +1,1079 @@
+# =========================================================
+# POLITARIA SKILLS
+# Purpur 1.21.1
+# Skript 2.15.4
+#
+# Skills:
+# - Mining
+# - Crafting
+# =========================================================
+
+options:
+    skills-prefix: &b&lPOLITARIA&r &8»
+
+
+# =========================================================
+# LEVELS
+#
+# Total XP:
+# 1  = 0
+# 2  = 25
+# 3  = 75
+# 4  = 150
+# 5  = 250
+# 6  = 375
+# 7  = 525
+# 8  = 700
+# 9  = 900
+# 10 = 1125
+# =========================================================
+
+
+function skillLevelFromXP(xp: number) :: number:
+
+    if {_xp} >= 1125:
+        return 10
+
+    if {_xp} >= 900:
+        return 9
+
+    if {_xp} >= 700:
+        return 8
+
+    if {_xp} >= 525:
+        return 7
+
+    if {_xp} >= 375:
+        return 6
+
+    if {_xp} >= 250:
+        return 5
+
+    if {_xp} >= 150:
+        return 4
+
+    if {_xp} >= 75:
+        return 3
+
+    if {_xp} >= 25:
+        return 2
+
+    return 1
+
+
+function skillXPForLevel(level: number) :: number:
+
+    if {_level} is 1:
+        return 0
+
+    if {_level} is 2:
+        return 25
+
+    if {_level} is 3:
+        return 75
+
+    if {_level} is 4:
+        return 150
+
+    if {_level} is 5:
+        return 250
+
+    if {_level} is 6:
+        return 375
+
+    if {_level} is 7:
+        return 525
+
+    if {_level} is 8:
+        return 700
+
+    if {_level} is 9:
+        return 900
+
+    return 1125
+
+
+function skillNextXP(level: number) :: number:
+
+    if {_level} >= 10:
+        return 1125
+
+    return skillXPForLevel({_level} + 1)
+
+
+# =========================================================
+# MINING DATA
+# =========================================================
+
+
+function miningXP(p: player) :: number:
+
+    if {skills.mining.xp::%uuid of {_p}%} is not set:
+        set {skills.mining.xp::%uuid of {_p}%} to 0
+
+    return {skills.mining.xp::%uuid of {_p}%}
+
+
+function miningLevel(p: player) :: number:
+
+    return skillLevelFromXP(miningXP({_p}))
+
+
+function miningChance(p: player) :: number:
+
+    return miningLevel({_p}) * 2
+
+
+# =========================================================
+# MINING ORE XP
+#
+# Same basic approach as jobs.sk:
+# type of event-block -> function -> reward
+# =========================================================
+
+
+function miningOreXP(kind: item type) :: number:
+
+    if {_kind} is coal ore:
+        return 1
+
+    if {_kind} is deepslate coal ore:
+        return 1
+
+    if {_kind} is copper ore:
+        return 1
+
+    if {_kind} is deepslate copper ore:
+        return 1
+
+    if {_kind} is nether quartz ore:
+        return 1
+
+
+    if {_kind} is iron ore:
+        return 2
+
+    if {_kind} is deepslate iron ore:
+        return 2
+
+    if {_kind} is redstone ore:
+        return 2
+
+    if {_kind} is deepslate redstone ore:
+        return 2
+
+    if {_kind} is lapis ore:
+        return 2
+
+    if {_kind} is deepslate lapis ore:
+        return 2
+
+
+    if {_kind} is gold ore:
+        return 3
+
+    if {_kind} is deepslate gold ore:
+        return 3
+
+    if {_kind} is nether gold ore:
+        return 3
+
+
+    if {_kind} is diamond ore:
+        return 5
+
+    if {_kind} is deepslate diamond ore:
+        return 5
+
+
+    if {_kind} is emerald ore:
+        return 6
+
+    if {_kind} is deepslate emerald ore:
+        return 6
+
+
+    if {_kind} is ancient debris:
+        return 8
+
+
+    return 0
+
+
+# =========================================================
+# MINING BONUS ITEM
+# =========================================================
+
+
+function miningBonus(kind: item type) :: item type:
+
+    if {_kind} is coal ore:
+        return coal
+
+    if {_kind} is deepslate coal ore:
+        return coal
+
+
+    if {_kind} is copper ore:
+        return raw copper
+
+    if {_kind} is deepslate copper ore:
+        return raw copper
+
+
+    if {_kind} is iron ore:
+        return raw iron
+
+    if {_kind} is deepslate iron ore:
+        return raw iron
+
+
+    if {_kind} is gold ore:
+        return raw gold
+
+    if {_kind} is deepslate gold ore:
+        return raw gold
+
+
+    if {_kind} is nether gold ore:
+        return gold nugget
+
+
+    if {_kind} is redstone ore:
+        return redstone
+
+    if {_kind} is deepslate redstone ore:
+        return redstone
+
+
+    if {_kind} is lapis ore:
+        return lapis lazuli
+
+    if {_kind} is deepslate lapis ore:
+        return lapis lazuli
+
+
+    if {_kind} is diamond ore:
+        return diamond
+
+    if {_kind} is deepslate diamond ore:
+        return diamond
+
+
+    if {_kind} is emerald ore:
+        return emerald
+
+    if {_kind} is deepslate emerald ore:
+        return emerald
+
+
+    if {_kind} is nether quartz ore:
+        return quartz
+
+
+    if {_kind} is ancient debris:
+        return ancient debris
+
+
+# =========================================================
+# MINING XP ADD
+# =========================================================
+
+
+function miningAddXP(p: player, amount: number):
+
+    set {_old-level} to miningLevel({_p})
+
+    if {_old-level} >= 10:
+        stop
+
+
+    add {_amount} to {skills.mining.xp::%uuid of {_p}%}
+
+
+    set {_new-level} to miningLevel({_p})
+    set {_xp} to miningXP({_p})
+
+
+    # =====================================================
+    # LEVEL UP
+    # =====================================================
+
+    if {_new-level} > {_old-level}:
+
+        send "{@skills-prefix} &fНавык &bШахтёрство &fповышен до &b%{_new-level}% уровня&f!" to {_p}
+
+
+        # Jobs также выводит action bar при добыче.
+        # Поэтому ждём чуть-чуть, чтобы Jobs его не перекрыл.
+
+        wait 2 ticks
+
+        send action bar formatted "<aqua><bold>⛏ ШАХТЁРСТВО</bold> <dark gray>» <green><bold>УРОВЕНЬ %{_new-level}%!" to {_p}
+
+
+        # -------------------------------------------------
+        # LEVEL 4 AUTO PICKUP
+        # -------------------------------------------------
+
+        if {_old-level} < 4:
+            if {_new-level} >= 4:
+
+                send "{@skills-prefix} &fОткрыт навык: &bАвтоподбор&f." to {_p}
+
+                wait 15 ticks
+
+                send action bar formatted "<green><bold>✔</bold> <white>Открыт навык: <aqua><bold>Автоподбор" to {_p}
+
+
+        if {_new-level} >= 10:
+
+            wait 15 ticks
+
+            send action bar formatted "<aqua><bold>⛏ ШАХТЁРСТВО</bold> <dark gray>» <gold><bold>МАКСИМАЛЬНЫЙ УРОВЕНЬ!" to {_p}
+
+        stop
+
+
+    # =====================================================
+    # NORMAL XP MESSAGE
+    # =====================================================
+
+    set {_needed} to skillNextXP({_new-level})
+
+    wait 2 ticks
+
+    send action bar formatted "<aqua>⛏ Шахтёрство <dark gray>• <white>%{_xp}%<gray>/%{_needed}% XP <dark gray>• <green>+%{_amount}% XP" to {_p}
+
+
+# =========================================================
+# PLAYER-PLACED ORE
+#
+# Самостоятельно поставленная руда XP не даёт.
+# =========================================================
+
+
+#on place:
+
+#    set {_kind} to type of event-block
+#    set {_xp} to miningOreXP({_kind})
+#
+#    if {_xp} <= 0:
+#        stop
+#
+#    set {skills.mining.placed::%location of event-block%} to true 
+
+
+# =========================================================
+# MINING EVENT
+# =========================================================
+
+on break with priority monitor:
+    if event is cancelled:
+        stop
+
+    # =====================================================
+    # IDENTIFY BLOCK
+    # =====================================================
+
+    set {_kind} to type of event-block
+    set {_earned-xp} to miningOreXP({_kind})
+
+    # Not an ore
+    if {_earned-xp} <= 0:
+        stop
+
+    # =====================================================
+    # PLAYER-PLACED ORE
+    # =====================================================
+
+    if {skills.mining.placed::%location of event-block%} is set:
+        delete {skills.mining.placed::%location of event-block%}
+        stop
+
+    # =====================================================
+    # SAVE VANILLA DROPS
+    # =====================================================
+
+    set {_drops::*} to drops of event-block using player's tool as player
+
+    # =====================================================
+    # ADD XP
+    # =====================================================
+
+    miningAddXP(player, {_earned-xp})
+
+    set {_level} to miningLevel(player)
+
+    # =====================================================
+    # AUTO PICKUP
+    # Level 4+
+    # =====================================================
+
+    if {_level} >= 4:
+        clear drops
+
+        loop {_drops::*}:
+            if player can hold loop-value:
+                give loop-value to player
+            else:
+                drop loop-value at location of player
+
+    # =====================================================
+    # BONUS DROP
+    # =====================================================
+
+    if player's tool is enchanted with silk touch:
+        stop
+
+    set {_chance} to miningChance(player)
+
+    chance of {_chance}%:
+
+        set {_bonus} to miningBonus({_kind})
+
+        if {_bonus} is not set:
+            stop
+
+        if {_level} >= 4:
+
+            if player can hold 1 of {_bonus}:
+                give 1 of {_bonus} to player
+            else:
+                drop 1 of {_bonus} at location of player
+
+        else:
+            drop 1 of {_bonus} at location of event-block
+
+        wait 2 ticks
+
+        send action bar formatted "<aqua>⛏ <green><bold>УДАЧА!</bold> <white>Получен дополнительный ресурс." to player
+
+        
+
+# =========================================================
+# CRAFTING DATA
+# =========================================================
+
+
+function craftingXP(p: player) :: number:
+
+    if {skills.crafting.xp::%uuid of {_p}%} is not set:
+
+        set {skills.crafting.xp::%uuid of {_p}%} to 0
+
+
+    return {skills.crafting.xp::%uuid of {_p}%}
+
+
+function craftingLevel(p: player) :: number:
+
+    return skillLevelFromXP(craftingXP({_p}))
+
+
+function craftingChance(p: player) :: number:
+
+    return craftingLevel({_p}) * 0.5
+
+
+# =========================================================
+# CRAFTING XP
+# =========================================================
+
+
+function craftingItemXP(kind: item type) :: number:
+
+    # =====================================================
+    # WOODEN
+    # =====================================================
+
+    if {_kind} is wooden sword:
+        return 1
+
+    if {_kind} is wooden pickaxe:
+        return 1
+
+    if {_kind} is wooden axe:
+        return 1
+
+    if {_kind} is wooden shovel:
+        return 1
+
+    if {_kind} is wooden hoe:
+        return 1
+
+
+    # =====================================================
+    # STONE
+    # =====================================================
+
+    if {_kind} is stone sword:
+        return 2
+
+    if {_kind} is stone pickaxe:
+        return 2
+
+    if {_kind} is stone axe:
+        return 2
+
+    if {_kind} is stone shovel:
+        return 2
+
+    if {_kind} is stone hoe:
+        return 2
+
+
+    # =====================================================
+    # IRON TOOLS
+    # =====================================================
+
+    if {_kind} is iron sword:
+        return 5
+
+    if {_kind} is iron pickaxe:
+        return 5
+
+    if {_kind} is iron axe:
+        return 5
+
+    if {_kind} is iron shovel:
+        return 5
+
+    if {_kind} is iron hoe:
+        return 5
+
+
+    # =====================================================
+    # DIAMOND TOOLS
+    # =====================================================
+
+    if {_kind} is diamond sword:
+        return 10
+
+    if {_kind} is diamond pickaxe:
+        return 10
+
+    if {_kind} is diamond axe:
+        return 10
+
+    if {_kind} is diamond shovel:
+        return 10
+
+    if {_kind} is diamond hoe:
+        return 10
+
+
+    # =====================================================
+    # LEATHER ARMOR
+    # =====================================================
+
+    if {_kind} is leather helmet:
+        return 2
+
+    if {_kind} is leather chestplate:
+        return 3
+
+    if {_kind} is leather leggings:
+        return 3
+
+    if {_kind} is leather boots:
+        return 2
+
+
+    # =====================================================
+    # IRON ARMOR
+    # =====================================================
+
+    if {_kind} is iron helmet:
+        return 5
+
+    if {_kind} is iron chestplate:
+        return 8
+
+    if {_kind} is iron leggings:
+        return 7
+
+    if {_kind} is iron boots:
+        return 4
+
+
+    # =====================================================
+    # DIAMOND ARMOR
+    # =====================================================
+
+    if {_kind} is diamond helmet:
+        return 10
+
+    if {_kind} is diamond chestplate:
+        return 15
+
+    if {_kind} is diamond leggings:
+        return 13
+
+    if {_kind} is diamond boots:
+        return 8
+
+
+    return 0
+
+
+# =========================================================
+# CRAFTING UPGRADE
+# =========================================================
+
+
+function craftingUpgrade(kind: item type) :: item type:
+
+    # =====================================================
+    # WOOD -> STONE
+    # =====================================================
+
+    if {_kind} is wooden sword:
+        return stone sword
+
+    if {_kind} is wooden pickaxe:
+        return stone pickaxe
+
+    if {_kind} is wooden axe:
+        return stone axe
+
+    if {_kind} is wooden shovel:
+        return stone shovel
+
+    if {_kind} is wooden hoe:
+        return stone hoe
+
+
+    # =====================================================
+    # STONE -> IRON
+    # =====================================================
+
+    if {_kind} is stone sword:
+        return iron sword
+
+    if {_kind} is stone pickaxe:
+        return iron pickaxe
+
+    if {_kind} is stone axe:
+        return iron axe
+
+    if {_kind} is stone shovel:
+        return iron shovel
+
+    if {_kind} is stone hoe:
+        return iron hoe
+
+
+    # =====================================================
+    # IRON -> DIAMOND
+    # =====================================================
+
+    if {_kind} is iron sword:
+        return diamond sword
+
+    if {_kind} is iron pickaxe:
+        return diamond pickaxe
+
+    if {_kind} is iron axe:
+        return diamond axe
+
+    if {_kind} is iron shovel:
+        return diamond shovel
+
+    if {_kind} is iron hoe:
+        return diamond hoe
+
+
+    # =====================================================
+    # LEATHER -> IRON
+    # =====================================================
+
+    if {_kind} is leather helmet:
+        return iron helmet
+
+    if {_kind} is leather chestplate:
+        return iron chestplate
+
+    if {_kind} is leather leggings:
+        return iron leggings
+
+    if {_kind} is leather boots:
+        return iron boots
+
+
+    # =====================================================
+    # IRON ARMOR -> DIAMOND
+    # =====================================================
+
+    if {_kind} is iron helmet:
+        return diamond helmet
+
+    if {_kind} is iron chestplate:
+        return diamond chestplate
+
+    if {_kind} is iron leggings:
+        return diamond leggings
+
+    if {_kind} is iron boots:
+        return diamond boots
+
+
+# =========================================================
+# CRAFTING XP ADD
+# =========================================================
+
+
+function craftingAddXP(p: player, amount: number):
+
+    set {_old-level} to craftingLevel({_p})
+
+    if {_old-level} >= 10:
+        stop
+
+
+    add {_amount} to {skills.crafting.xp::%uuid of {_p}%}
+
+
+    set {_new-level} to craftingLevel({_p})
+    set {_xp} to craftingXP({_p})
+
+
+    # =====================================================
+    # LEVEL UP
+    # =====================================================
+
+    if {_new-level} > {_old-level}:
+
+        send "{@skills-prefix} &fНавык &eКрафт &fповышен до &b%{_new-level}% уровня&f!" to {_p}
+
+        wait 2 ticks
+
+        send action bar formatted "<yellow><bold>⚒ КРАФТ</bold> <dark gray>» <green><bold>УРОВЕНЬ %{_new-level}%!" to {_p}
+
+
+        if {_new-level} >= 10:
+
+            wait 15 ticks
+
+            send action bar formatted "<yellow><bold>⚒ КРАФТ</bold> <dark gray>» <gold><bold>МАКСИМАЛЬНЫЙ УРОВЕНЬ!" to {_p}
+
+        stop
+
+
+    # =====================================================
+    # NORMAL XP
+    # =====================================================
+
+    set {_needed} to skillNextXP({_new-level})
+
+    wait 2 ticks
+
+    send action bar formatted "<yellow>⚒ Крафт <dark gray>• <white>%{_xp}%<gray>/%{_needed}% XP <dark gray>• <green>+%{_amount}% XP" to {_p}
+
+
+# =========================================================
+# CRAFT EVENT
+#
+# НЕ используем preparing craft.
+# НЕ пытаемся менять event-item.
+#
+# После фактического крафта:
+#
+# normal click:
+# crafted item находится на cursor slot
+#
+# shift-click:
+# crafted item находится в inventory
+# =========================================================
+
+
+on craft:
+
+    set {_crafted} to event-item
+
+    if {_crafted} is not set:
+        stop
+
+    set {_kind} to type of {_crafted}
+
+    set {_base-xp} to craftingItemXP({_kind})
+
+    if {_base-xp} <= 0:
+        stop
+
+
+    # =====================================================
+    # SAVE AMOUNT BEFORE CRAFT
+    # =====================================================
+
+    set {_before} to amount of {_kind} in player's inventory
+
+    set {_crafted-per-recipe} to amount of {_crafted}
+
+
+    # =====================================================
+    # WAIT UNTIL MINECRAFT MOVES CRAFTED ITEMS
+    # =====================================================
+
+    wait 1 tick
+
+
+    # =====================================================
+    # CALCULATE HOW MANY ITEMS WERE ACTUALLY CREATED
+    # =====================================================
+
+    set {_after} to amount of {_kind} in player's inventory
+
+    set {_difference} to {_after} - {_before}
+
+
+    # Обычный клик:
+    # предмет может находиться на курсоре, а не в inventory.
+
+    if {_difference} <= 0:
+
+        set {_cursor} to cursor slot of player
+
+        if {_cursor} is set:
+
+            if type of {_cursor} is {_kind}:
+
+                set {_difference} to amount of {_cursor}
+
+
+    # Если по какой-то причине определить не удалось,
+    # считаем минимум один крафт.
+
+    if {_difference} <= 0:
+        set {_difference} to {_crafted-per-recipe}
+
+
+    # =====================================================
+    # HOW MANY RECIPE CRAFTS?
+    # =====================================================
+
+    set {_craft-count} to {_difference} / {_crafted-per-recipe}
+
+    set {_craft-count} to floor({_craft-count})
+
+    if {_craft-count} < 1:
+        set {_craft-count} to 1
+
+
+    # =====================================================
+    # XP
+    # =====================================================
+
+    set {_earned-xp} to {_base-xp} * {_craft-count}
+
+    craftingAddXP(player, {_earned-xp})
+
+
+    # =====================================================
+    # UPGRADE
+    # =====================================================
+
+    set {_upgrade} to craftingUpgrade({_kind})
+
+    if {_upgrade} is not set:
+        stop
+
+    set {_chance} to craftingChance(player)
+
+
+    # Для каждого фактического крафта кидаем отдельный шанс.
+
+    loop {_craft-count} times:
+
+        chance of {_chance}%:
+
+            # -------------------------------------------------
+            # NORMAL CLICK
+            # -------------------------------------------------
+
+            set {_cursor} to cursor slot of player
+
+            if {_cursor} is set:
+
+                if type of {_cursor} is {_kind}:
+
+                    remove {_crafted-per-recipe} of {_kind} from cursor slot of player
+
+                    give {_crafted-per-recipe} of {_upgrade} to player
+
+                    send "{@skills-prefix} &aУдачный крафт! &fПредмет улучшился: &b%{_kind}% &8→ &b%{_upgrade}%&f." to player
+
+                    send action bar formatted "<yellow>⚒ <green><bold>УДАЧНЫЙ КРАФТ!</bold> <white>%{_upgrade}%" to player
+
+                    stop
+
+
+            # -------------------------------------------------
+            # SHIFT CLICK
+            # -------------------------------------------------
+
+            if player has {_crafted-per-recipe} of {_kind}:
+
+                remove {_crafted-per-recipe} of {_kind} from player
+
+                give {_crafted-per-recipe} of {_upgrade} to player
+
+                send "{@skills-prefix} &aУдачный крафт! &fПредмет улучшился: &b%{_kind}% &8→ &b%{_upgrade}%&f." to player
+
+                send action bar formatted "<yellow>⚒ <green><bold>УДАЧНЫЙ КРАФТ!</bold> <white>%{_upgrade}%" to player
+
+
+# =========================================================
+# /SKILLS
+# =========================================================
+
+
+command /skills:
+
+    executable by: players
+
+    trigger:
+
+        set {_mining-xp} to miningXP(player)
+        set {_mining-level} to miningLevel(player)
+
+        set {_crafting-xp} to craftingXP(player)
+        set {_crafting-level} to craftingLevel(player)
+
+
+        send ""
+        send "&b&lPOLITARIA &8— &fНавыки"
+        send ""
+
+
+        # =================================================
+        # MINING
+        # =================================================
+
+        if {_mining-level} >= 10:
+
+            send "&fШахтёрство: &b10&7/10 &8(&aMAX&8)"
+
+        else:
+
+            set {_next} to skillNextXP({_mining-level})
+
+            send "&fШахтёрство: &b%{_mining-level}%&7/10 &8(&f%{_mining-xp}%&7/%{_next}% XP&8)"
+
+
+        set {_chance} to miningChance(player)
+
+        send "  &7Шанс дополнительной руды: &b%{_chance}%%%"
+
+        if {_mining-level} >= 4:
+
+            send "  &a✔ &7Автоподбор"
+
+        else:
+
+            send "  &8✖ &7Автоподбор &8— уровень 4"
+
+
+        send ""
+
+
+        # =================================================
+        # CRAFTING
+        # =================================================
+
+        if {_crafting-level} >= 10:
+
+            send "&fКрафт: &e10&7/10 &8(&aMAX&8)"
+
+        else:
+
+            set {_next} to skillNextXP({_crafting-level})
+
+            send "&fКрафт: &e%{_crafting-level}%&7/10 &8(&f%{_crafting-xp}%&7/%{_next}% XP&8)"
+
+
+        set {_chance} to craftingChance(player)
+
+        send "  &7Шанс улучшения: &e%{_chance}%%%"
+
+        send ""
+
+
+# =========================================================
+# ADMIN
+#
+# /skillset mining 4
+# /skillset crafting 10
+# =========================================================
+
+
+command /skillset <text> <number>:
+
+    permission: politaria.admin
+    executable by: players
+
+    trigger:
+
+        if arg-2 < 1:
+
+            send "{@skills-prefix} &cМинимальный уровень: 1"
+
+            stop
+
+
+        if arg-2 > 10:
+
+            send "{@skills-prefix} &cМаксимальный уровень: 10"
+
+            stop
+
+
+        set {_skill} to lowercase arg-1
+
+        set {_xp} to skillXPForLevel(arg-2)
+
+
+        if {_skill} is "mining":
+
+            set {skills.mining.xp::%uuid of player%} to {_xp}
+
+            send "{@skills-prefix} &fШахтёрство установлено на уровень &b%arg-2%&f."
+
+            stop
+
+
+        if {_skill} is "crafting":
+
+            set {skills.crafting.xp::%uuid of player%} to {_xp}
+
+            send "{@skills-prefix} &fКрафт установлен на уровень &e%arg-2%&f."
+
+            stop
+
+
+        send "{@skills-prefix} &7Использование: &f/skillset <mining/crafting> <1-10>"
+
+
+# =========================================================
+# DEBUG
+#
+# Позволяет нормально тестировать, не ставя руду.
+#
+# /skilldebug
+# =========================================================
+
+
+command /skilldebug:
+
+    permission: politaria.admin
+    executable by: players
+
+    trigger:
+
+        send ""
+        send "&b&lSKILLS DEBUG"
+        send "&7Mining XP: &f%miningXP(player)%"
+        send "&7Mining level: &f%miningLevel(player)%"
+        send "&7Crafting XP: &f%craftingXP(player)%"
+        send "&7Crafting level: &f%craftingLevel(player)%"
+        send ""

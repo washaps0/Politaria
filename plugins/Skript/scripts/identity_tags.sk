@@ -1,0 +1,58 @@
+# ==================================================
+# PolitariaIdentity - теги через Skript
+# Purpur / Paper 1.21.1
+# ==================================================
+#
+# Переменная:
+# {identity.tag::%uuid of player%}
+#
+# Плагин PolitariaIdentity автоматически читает эту
+# переменную и добавляет её к надписи над игроком.
+#
+# Команды:
+# /identity <NickName> <Tag>  - установить тег
+# /identity <NickName> none    - удалить тег
+# ==================================================
+
+options:
+    identity-permission: politaria.identity.manage
+
+on command:
+    # Нас интересует только /identity
+    if command is not "identity":
+        stop
+
+    if sender is not a player:
+        stop
+
+    if sender does not have permission "{@identity-permission}":
+        stop
+
+    # Должно быть ровно два аргумента: игрок + тег
+    if number of arguments is not 2:
+        send "&cИспользование: &f/identity <NickName> <Tag>" to sender
+        send "&7Удалить тег: &f/identity <NickName> none" to sender
+        cancel event
+        stop
+
+    set {_target} to argument 1 parsed as offlineplayer
+    if {_target} is not set:
+        send "&cИгрок &f%argument 1% &cне найден." to sender
+        cancel event
+        stop
+
+    set {_tag} to argument 2
+
+    # Удаление
+    if {_tag} is "none":
+        delete {identity.tag::%uuid of {_target}%}
+        send "&aТег игрока &f%name of {_target}% &aудалён." to sender
+        cancel event
+        stop
+
+    # Сохраняем тег в Skript Variable.
+    # Сам PolitariaIdentity прочитает его при обновлении таблички.
+    set {identity.tag::%uuid of {_target}%} to {_tag}
+
+    send "&aТег игрока &f%name of {_target}% &aустановлен: &f%{identity.tag::%uuid of {_target}%}%" to sender
+    cancel event

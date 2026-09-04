@@ -1,9 +1,10 @@
 options:
-	prefix: <#7C9CFF><bold>POLITARIA</bold><reset> <dark_gray>»</dark_gray>
+	prefix: <light blue><bold>POLITARIA</bold><reset> <dark gray>»<reset>
 	minimum-password-length: 8
 	maximum-password-length: 64
 	maximum-login-attempts: 5
-	login-timeout: 60 seconds
+	login-timeout-seconds: 60
+	remember-ip-for: 7 days
 	# Keep this value private. Changing it invalidates all registered passwords.
 	password-pepper: 81C61F25564525B228D873BFD43C7119EA1102CEAF16074F128116FDF3307D32
 
@@ -21,22 +22,48 @@ function authHash(password: text, salt: text) :: text:
 		set {_hash} to "%{_hash}%:%{_salt}%:{@password-pepper}" hashed with SHA-256
 	return {_hash}
 
+function authIpFingerprint(p: player) :: text:
+	return "%IP address of {_p}%:{@password-pepper}" hashed with SHA-256
+
+function rememberAuthIp(p: player):
+	set {auth.trusted-ip::%name of {_p}%} to authIpFingerprint({_p})
+	set {auth.trusted-until::%name of {_p}%} to {@remember-ip-for} from now
+	execute console command "identity auth-trust %uuid of {_p}%"
+
+function authProgress(seconds: number) :: text:
+	set {_filled} to rounded up ({_seconds} * 20 / {@login-timeout-seconds})
+	set {_bar} to ""
+	loop 20 times:
+		if loop-number <= {_filled}:
+			if {_seconds} <= 10:
+				set {_bar} to "%{_bar}%<red>■"
+			else if {_seconds} <= 30:
+				set {_bar} to "%{_bar}%<yellow>■"
+			else:
+				set {_bar} to "%{_bar}%<light green>■"
+		else:
+			set {_bar} to "%{_bar}%<dark gray>■"
+	return "<gray>Авторизация <dark gray>[%{_bar}%<dark gray>] <white>%{_seconds}% сек."
+
 function clearAuthInput(p: player):
 	delete {auth.mode::%name of {_p}%}
 	delete {auth.pending-hash::%name of {_p}%}
 	delete {auth.pending-salt::%name of {_p}%}
+	delete {auth.change-attempts::%name of {_p}%}
 
 function showAuthPrompt(p: player):
 	send "" to {_p}
-	send formatted "<dark_gray><strikethrough>                                              </strikethrough>" to {_p}
-	send formatted "{@prefix} <white>Авторизация на сервере</white>" to {_p}
+	send formatted "<dark gray><strikethrough>                                                <reset>" to {_p}
+	send formatted "<light blue><bold>POLITARIA</bold><reset> <dark gray>•<reset> <white><bold>АВТОРИЗАЦИЯ</bold>" to {_p}
+	send "" to {_p}
 	if {auth.password::%name of {_p}%} is set:
-		send formatted "<gray>Аккаунт найден. Нажмите кнопку ниже, чтобы войти.</gray>" to {_p}
-		send formatted "<command:/auth-start login><tooltip:<gray>Нажмите, затем введите пароль в чат</gray>><#69DB7C><bold>[ ВОЙТИ ]</bold></#69DB7C></tooltip></command>" to {_p}
+		set {auth.mode::%name of {_p}%} to "login"
+		send formatted "<gray>Аккаунт найден. Введите пароль прямо в чат." to {_p}
+		send formatted "<dark gray>Сообщение с паролем не увидят другие игроки." to {_p}
 	else:
-		send formatted "<gray>Вы впервые на сервере. Создайте пароль для аккаунта.</gray>" to {_p}
-		send formatted "<command:/auth-start register><tooltip:<gray>Нажмите, затем придумайте пароль</gray>><#FFD43B><bold>[ ЗАРЕГИСТРИРОВАТЬСЯ ]</bold></#FFD43B></tooltip></command>" to {_p}
-	send formatted "<dark_gray><strikethrough>                                              </strikethrough>" to {_p}
+		send formatted "<gray>Вы здесь впервые. Создайте пароль для аккаунта." to {_p}
+		send formatted "<command:/auth-start register><tooltip:Нажмите, чтобы создать пароль><yellow><bold>[  ЗАРЕГИСТРИРОВАТЬСЯ  ]" to {_p}
+	send formatted "<dark gray><strikethrough>                                                <reset>" to {_p}
 	send "" to {_p}
 
 on load:
@@ -51,11 +78,30 @@ on join:
 	delete {auth.attempts::%name of player%}
 	clearAuthInput(player)
 	wait 10 ticks
+	# The Java trust store restores this session shortly after joining.
+	if {auth.logged-in::%name of player%} is true:
+		send action bar "" to player
+		stop
+	if {auth.password::%name of player%} is set:
+		if {auth.trusted-ip::%name of player%} is authIpFingerprint(player):
+			if {auth.trusted-until::%name of player%} is in the future:
+				set {auth.logged-in::%name of player%} to true
+				send formatted "{@prefix} <light green><bold>Автоматический вход выполнен.</bold>" to player
+				send formatted "<gray>Это устройство запомнено по IP ещё на срок до 7 дней." to player
+				stop
 	showAuthPrompt(player)
-	wait {@login-timeout}
+	loop {@login-timeout-seconds} times:
+		if player is not online:
+			stop
+		if {auth.logged-in::%name of player%} is true:
+			send action bar "" to player
+			stop
+		set {_remaining} to {@login-timeout-seconds} - loop-number + 1
+		send action bar formatted authProgress({_remaining}) to player
+		wait 1 second
 	if player is online:
-		if {auth.logged-in::%name of player%} is not true:
-			kick player due to "<red>Время авторизации истекло.<newline><gray>Подключитесь к серверу ещё раз."
+		send action bar "" to player
+		kick player due to "<red>Время авторизации истекло. <gray>Подключитесь к серверу ещё раз."
 
 on quit:
 	delete {auth.logged-in::%name of player%}
@@ -100,13 +146,36 @@ command /logout:
 			showAuthPrompt(player)
 			stop
 		delete {auth.logged-in::%name of player%}
+		delete {auth.trusted-ip::%name of player%}
+		delete {auth.trusted-until::%name of player%}
+		execute console command "identity auth-forget %uuid of player%"
 		clearAuthInput(player)
-		send formatted "{@prefix} <yellow>Вы вышли из аккаунта.</yellow>" to player
+		send formatted "{@prefix} <yellow>Вы вышли из аккаунта. Запомненный IP удалён.</yellow>" to player
 		showAuthPrompt(player)
+
+command /changepassword:
+	executable by: players
+	trigger:
+		if {auth.logged-in::%name of player%} is not true:
+			send formatted "{@prefix} <red>Сначала войдите в аккаунт.</red>" to player
+			stop
+		clearAuthInput(player)
+		set {auth.mode::%name of player%} to "change-current"
+		send "" to player
+		send formatted "<dark gray><strikethrough>                                                <reset>" to player
+		send formatted "<light blue><bold>POLITARIA</bold><reset> <dark gray>•<reset> <white><bold>СМЕНА ПАРОЛЯ</bold>" to player
+		send "" to player
+		send formatted "<gray>Введите <white>текущий пароль <gray>прямо в чат." to player
+		send formatted "<dark gray>Сообщение с паролем не увидят другие игроки." to player
+		send formatted "<dark gray><strikethrough>                                                <reset>" to player
+		send "" to player
 
 on chat:
 	if {auth.logged-in::%name of player%} is true:
-		stop
+		if {auth.mode::%name of player%} is not "change-current":
+			if {auth.mode::%name of player%} is not "change-new":
+				if {auth.mode::%name of player%} is not "change-confirm":
+					stop
 	cancel event
 
 	if {auth.mode::%name of player%} is not set:
@@ -123,6 +192,47 @@ on chat:
 		stop
 	if {_password} contains " ":
 		send formatted "{@prefix} <red>Пароль не должен содержать пробелы.</red>" to player
+		stop
+
+	if {auth.mode::%name of player%} is "change-current":
+		set {_hash} to authHash({_password}, {auth.salt::%name of player%})
+		delete {_password}
+		if {_hash} is not {auth.password::%name of player%}:
+			add 1 to {auth.change-attempts::%name of player%}
+			if {auth.change-attempts::%name of player%} is greater than or equal to 3:
+				clearAuthInput(player)
+				send formatted "{@prefix} <red>Слишком много неверных попыток. Смена пароля отменена.</red>" to player
+				stop
+			set {_remaining} to 3 - {auth.change-attempts::%name of player%}
+			send formatted "{@prefix} <red>Текущий пароль указан неверно.</red> <gray>Осталось попыток: %{_remaining}%.</gray>" to player
+			stop
+		delete {auth.change-attempts::%name of player%}
+		set {auth.mode::%name of player%} to "change-new"
+		send formatted "{@prefix} <white>Введите новый пароль в чат.</white>" to player
+		send formatted "<gray>От {@minimum-password-length} до {@maximum-password-length} символов, без пробелов.</gray>" to player
+		stop
+
+	if {auth.mode::%name of player%} is "change-new":
+		set {_salt} to "%random uuid%"
+		set {auth.pending-salt::%name of player%} to {_salt}
+		set {auth.pending-hash::%name of player%} to authHash({_password}, {_salt})
+		set {auth.mode::%name of player%} to "change-confirm"
+		delete {_password}
+		send formatted "{@prefix} <white>Введите новый пароль ещё раз для подтверждения.</white>" to player
+		stop
+
+	if {auth.mode::%name of player%} is "change-confirm":
+		set {_hash} to authHash({_password}, {auth.pending-salt::%name of player%})
+		delete {_password}
+		if {_hash} is not {auth.pending-hash::%name of player%}:
+			clearAuthInput(player)
+			send formatted "{@prefix} <red>Новые пароли не совпадают. Смена пароля отменена.</red>" to player
+			stop
+		set {auth.salt::%name of player%} to {auth.pending-salt::%name of player%}
+		set {auth.password::%name of player%} to {_hash}
+		rememberAuthIp(player)
+		clearAuthInput(player)
+		send formatted "{@prefix} <#69DB7C><bold>Пароль успешно изменён.</bold></#69DB7C>" to player
 		stop
 
 	if {auth.mode::%name of player%} is "register-password":
@@ -145,6 +255,8 @@ on chat:
 		set {auth.salt::%name of player%} to {auth.pending-salt::%name of player%}
 		set {auth.password::%name of player%} to {_hash}
 		set {auth.logged-in::%name of player%} to true
+		rememberAuthIp(player)
+		send action bar "" to player
 		clearAuthInput(player)
 		send formatted "{@prefix} <#69DB7C><bold>Регистрация завершена!</bold></#69DB7C> <gray>Вы вошли на сервер.</gray>" to player
 		stop
@@ -154,6 +266,8 @@ on chat:
 		delete {_password}
 		if {_hash} is {auth.password::%name of player%}:
 			set {auth.logged-in::%name of player%} to true
+			rememberAuthIp(player)
+			send action bar "" to player
 			delete {auth.attempts::%name of player%}
 			clearAuthInput(player)
 			send formatted "{@prefix} <#69DB7C><bold>Вход выполнен.</bold></#69DB7C> <gray>Добро пожаловать!</gray>" to player
@@ -177,10 +291,6 @@ on command:
 			if command is not "auth-start":
 				cancel event
 				send formatted "{@prefix} <red>Сначала войдите в аккаунт.</red>" to player
-
-on send command list:
-	if {auth.logged-in::%name of player%} is not true:
-		clear command list
 
 on player move:
 	if {auth.logged-in::%name of player%} is not true:

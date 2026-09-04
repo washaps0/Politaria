@@ -37,7 +37,7 @@ language: english
 # If you want to translate Skript to your language please read the readme.txt located in the /lang/ folder in the jar
 # (open the jar as zip or rename it to Skript.zip to access it)
 
-check for new version: true
+check for new version: false
 # Whether Skript should check for whether a new version of Skript is available when the server starts.
 # If this is set to true Skript will announce a new version to all players with the "skript.admin" permission.
 # If set to false you can still check for a new version with '/skript update check'.

@@ -84,7 +84,7 @@ commands:
     # Players cooldown in seconds when changing skins (set to 0 to disable).
     # SkinErrorCooldown is used when an error or invalid url occurs.
     # Can be bypassed with 'skinsrestorer.bypasscooldown'.
-    skinChangeCooldown: 30
+    skinChangeCooldown: 3
     # Players cooldown in seconds when getting skulls (set to 0 to disable).
     # SkullErrorCooldown is used when an error or invalid url occurs.
     # Can be bypassed with 'skinsrestorer.bypasscooldown'.

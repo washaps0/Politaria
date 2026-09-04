@@ -34,7 +34,7 @@ settings:
       run-with-scissors: <player> slipped and fell on their shears
       stonecutter: <player> has sawed themself in half
   disable-give-dropping: false
-  use-alternate-keepalive: false
+  use-alternate-keepalive: true
   server-mod-name: Purpur
   network:
     upnp-port-forwarding: false

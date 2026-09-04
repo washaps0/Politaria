@@ -1,0 +1,58 @@
+# OreMultiplier for Purpur/Paper 1.21.1
+#
+# IMPORTANT:
+# - This plugin processes NEWLY POPULATED chunks only.
+# - Existing/pregenerated chunks are not changed.
+# - Multiplier 1.0 = vanilla amount.
+# - Multiplier 3.0 = approximately 3x as many ore BLOCKS.
+# - Values between 0.0 and 1.0 reduce ore amount.
+# - 0.0 removes that ore from newly generated chunks.
+
+# Turns the plugin on/off.
+enabled: true
+
+# Applied to every ore first.
+global-multiplier: 3.0
+
+# Search radius for extra ore blocks around vanilla ore blocks.
+# 2 is recommended.
+duplicate-radius: 2
+
+# Attempts to find a valid block to replace for each extra ore block.
+placement-attempts: 18
+
+# Final multiplier = global-multiplier * individual value.
+# Example: global 3.0 and diamond 0.5 => ~1.5x diamonds.
+ores:
+  coal: 1.0
+  deepslate-coal: 1.0
+
+  iron: 1.0
+  deepslate-iron: 1.0
+
+  copper: 1.0
+  deepslate-copper: 1.0
+
+  gold: 1.0
+  deepslate-gold: 1.0
+
+  redstone: 1.0
+  deepslate-redstone: 1.0
+
+  lapis: 1.0
+  deepslate-lapis: 1.0
+
+  diamond: 1.0
+  deepslate-diamond: 1.0
+
+  emerald: 1.0
+  deepslate-emerald: 1.0
+
+  nether-gold: 1.0
+  nether-quartz: 1.0
+  ancient-debris: 1.0
+
+messages:
+  prefix: "&8[&6OreMultiplier&8] "
+  reloaded: "&aConfiguration reloaded."
+  no-permission: "&cYou do not have permission."
