@@ -8,7 +8,7 @@ if (menuButton && nav) {
   });
 }
 
-// Use one reliable logo implementation on every page.
+// Use the same logo implementation on every page.
 document.querySelectorAll('.brand-mark').forEach((node) => {
   if (node.tagName === 'IMG') {
     const logo = document.createElement('span');
@@ -18,15 +18,15 @@ document.querySelectorAll('.brand-mark').forEach((node) => {
   }
 });
 
-// Force the current favicon instead of an old cached JPG.
+// Keep favicon in sync with the header logo.
 let favicon = document.querySelector('link[rel="icon"]');
 if (!favicon) {
   favicon = document.createElement('link');
   favicon.rel = 'icon';
   document.head.appendChild(favicon);
 }
-favicon.type = 'image/png';
-favicon.href = 'assets/images/politaria-logo-v3.png?v=3';
+favicon.type = 'image/jpeg';
+favicon.href = 'assets/images/icon.jpg?v=4';
 
 document.querySelectorAll('[data-copy]').forEach((button) => {
   button.addEventListener('click', async () => {
