@@ -9,8 +9,10 @@
     url('../images/town.webp') center/cover no-repeat;
 }
 
-/* Important: do not override .container width here. */
+/* Explicitly mirror the global container so flex sizing can't pull the hero to the left. */
 .home-hero-inner {
+  width: min(calc(100% - 40px), var(--container));
+  margin-inline: auto;
   padding-block: 76px;
 }
 
