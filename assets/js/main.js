@@ -8,6 +8,26 @@ if (menuButton && nav) {
   });
 }
 
+// Use one reliable logo implementation on every page.
+document.querySelectorAll('.brand-mark').forEach((node) => {
+  if (node.tagName === 'IMG') {
+    const logo = document.createElement('span');
+    logo.className = 'brand-mark';
+    logo.setAttribute('aria-hidden', 'true');
+    node.replaceWith(logo);
+  }
+});
+
+// Force the current favicon instead of an old cached JPG.
+let favicon = document.querySelector('link[rel="icon"]');
+if (!favicon) {
+  favicon = document.createElement('link');
+  favicon.rel = 'icon';
+  document.head.appendChild(favicon);
+}
+favicon.type = 'image/png';
+favicon.href = 'assets/images/politaria-logo-v3.png?v=3';
+
 document.querySelectorAll('[data-copy]').forEach((button) => {
   button.addEventListener('click', async () => {
     const text = button.dataset.copy || '';
