@@ -1,17 +1,13 @@
 .brand-mark {
-  display: inline-block;
+  display: block;
   flex: 0 0 auto;
   width: 34px;
   height: 34px;
   border-radius: 8px;
-  background-image: url('../images/icon.jpg?v=4') !important;
-  background-position: center center !important;
-  background-size: cover !important;
-  background-repeat: no-repeat !important;
+  object-fit: cover;
+  object-position: center;
+  background: transparent !important;
   box-shadow: none !important;
-  color: transparent !important;
-  font-size: 0 !important;
-  overflow: hidden;
 }
 
 .footer .brand-mark {
