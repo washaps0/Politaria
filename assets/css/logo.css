@@ -1,0 +1,15 @@
+.brand-mark {
+  display: block;
+  width: 34px;
+  height: 34px;
+  aspect-ratio: auto;
+  object-fit: cover;
+  border-radius: 8px;
+  background: none;
+  box-shadow: none;
+}
+
+.footer .brand-mark {
+  width: 32px;
+  height: 32px;
+}
