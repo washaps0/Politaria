@@ -1,4 +1,0 @@
-listeners:
-    - host: 0.0.0.0:26088
-      query_port: 26088
-network_compression_threshold: 64

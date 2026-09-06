@@ -1,6 +1,0 @@
-_DEFAULT_:
-  tabprefix: ""
-  tagprefix: ""
-  customtabname: "%player%"
-  tabsuffix: ""
-  tagsuffix: ""

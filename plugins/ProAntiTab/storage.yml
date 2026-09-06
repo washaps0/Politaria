@@ -1,8 +1,0 @@
-global:
-  commands: []
-groups:
-  examplegroup:
-    priority: 1
-    commands:
-    - tell
-    - msg
