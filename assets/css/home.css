@@ -9,8 +9,8 @@
     url('../images/town.webp') center/cover no-repeat;
 }
 
+/* Important: do not override .container width here. */
 .home-hero-inner {
-  width: 100%;
   padding-block: 76px;
 }
 
