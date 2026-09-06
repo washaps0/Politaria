@@ -1,12 +1,14 @@
 .brand-mark {
-  display: block;
+  display: inline-block;
+  flex: 0 0 auto;
   width: 34px;
   height: 34px;
-  aspect-ratio: auto;
-  object-fit: cover;
   border-radius: 8px;
-  background: none;
-  box-shadow: none;
+  background: url('../images/politaria-logo-v3.png?v=3') center/cover no-repeat !important;
+  box-shadow: none !important;
+  color: transparent !important;
+  font-size: 0 !important;
+  overflow: hidden;
 }
 
 .footer .brand-mark {
