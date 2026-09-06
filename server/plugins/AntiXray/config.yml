@@ -1,0 +1,41 @@
+# Enable or disable the plugin
+enabled: true
+
+# Engine Mode:
+# 1 = Hide ores as stone/deepslate (recommended - faster)
+# 2 = Random blocks from obfuscate-with list
+engine-mode: 1
+
+# Update blocks when player starts mining
+update-on-damage: true
+
+# Radius for revealing blocks around mined/damaged blocks (in blocks)
+update-radius: 2
+
+# Blocks to hide (all valuable ores)
+hidden-blocks:
+  - DIAMOND_ORE
+  - DEEPSLATE_DIAMOND_ORE
+  - EMERALD_ORE
+  - DEEPSLATE_EMERALD_ORE
+  - GOLD_ORE
+  - DEEPSLATE_GOLD_ORE
+  - IRON_ORE
+  - DEEPSLATE_IRON_ORE
+  - COAL_ORE
+  - DEEPSLATE_COAL_ORE
+  - LAPIS_ORE
+  - DEEPSLATE_LAPIS_ORE
+  - REDSTONE_ORE
+  - DEEPSLATE_REDSTONE_ORE
+  - COPPER_ORE
+  - DEEPSLATE_COPPER_ORE
+  - ANCIENT_DEBRIS
+  - NETHER_GOLD_ORE
+  - NETHER_QUARTZ_ORE
+
+# What to obfuscate as (used in Engine Mode 2)
+obfuscate-with:
+  - STONE
+  - DEEPSLATE
+  - NETHERRACK

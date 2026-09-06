@@ -1,0 +1,142 @@
+# =========================================================
+# БОЖЕСТВЕННЫЙ ЛУК
+# =========================================================
+
+command /bow:
+    permission: bow.use
+    permission message: &cУ тебя нет прав на эту команду!
+    trigger:
+
+        give player bow named "&b⚡ ЛУК 1000 МОЛНИЙ ⚡" with lore "&7Одна стрела — и конец." and "&eНевозможная сила." and "&b⚡ Владыка молний ⚡"
+
+        enchant player's tool with power 255
+        enchant player's tool with unbreaking 255
+        enchant player's tool with infinity 255
+        enchant player's tool with flame 255
+        enchant player's tool with punch 10
+
+        give player 64 arrows
+
+        send "&b⚡ Ты получил &fЛУК 1000 МОЛНИЙ &b⚡"
+
+
+# =========================================================
+# УДАР ЛУКОМ ВБЛИЗИ
+# =========================================================
+
+on damage:
+    attacker is a player
+    victim is a living entity
+
+    if attacker's tool is bow:
+
+        if name of attacker's tool is "&b⚡ ЛУК 1000 МОЛНИЙ ⚡":
+
+            # Огромный урон
+            set damage to 1000000
+
+            # ⚡ Молнии
+            loop 10 times:
+                strike lightning effect at victim
+                play sound "entity.lightning_bolt.thunder" with volume 10 and pitch 1 at victim
+
+            # ✨ Частицы
+            loop 100 times:
+                play 10 end rod particles at location of victim
+
+            # 💥 Звуки
+            play sound "entity.lightning_bolt.impact" with volume 10 and pitch 0.5 at victim
+            play sound "entity.generic.explode" with volume 10 and pitch 0.5 at victim
+
+            # 🔥 Огонь
+            set victim on fire for 10 seconds
+
+            # ☠️ Мгновенное убийство
+            kill victim
+
+
+# =========================================================
+# ПОПАДАНИЕ СТРЕЛЫ
+# =========================================================
+
+on projectile hit:
+
+    projectile is an arrow
+
+    shooter is a player
+
+    # Проверяем, что у стрелка в руках наш лук
+    if shooter is holding bow:
+
+        if name of shooter's tool is "&b⚡ ЛУК 1000 МОЛНИЙ ⚡":
+
+            # =================================================
+            # ⚡ МОЛНИИ В МЕСТЕ ПОПАДАНИЯ
+            # =================================================
+
+            loop 10 times:
+
+                strike lightning effect at event-location
+
+
+            # =================================================
+            # ✨ ЧАСТИЦЫ
+            # =================================================
+
+            loop 100 times:
+
+                play 10 end rod particles at event-location
+
+
+            loop 50 times:
+
+                play 8 electric spark particles at event-location
+
+
+            # =================================================
+            # 🔊 ЗВУКИ
+            # =================================================
+
+            play sound "entity.lightning_bolt.thunder" with volume 10 and pitch 0.7 at event-location
+
+            play sound "entity.lightning_bolt.impact" with volume 10 and pitch 0.5 at event-location
+
+            play sound "entity.generic.explode" with volume 5 and pitch 1 at event-location
+
+
+# =========================================================
+# ЗАЩИТА ВЛАДЕЛЬЦА ЛУКА
+# =========================================================
+
+on damage:
+
+    victim is a player
+
+    if victim's tool is bow:
+
+        if name of victim's tool is "&b⚡ ЛУК 1000 МОЛНИЙ ⚡":
+
+            # Полная защита
+            set damage to 0
+
+
+            # Если атакующий является живым существом
+            attacker is a living entity
+
+            # ⚡ Молния атакующему
+            strike lightning effect at attacker
+
+
+            # ✨ Частицы вокруг владельца
+            loop 30 times:
+
+                play 10 end rod particles at location of victim
+
+
+            loop 20 times:
+
+                play 5 electric spark particles at location of victim
+
+
+            # 🔊 Звук
+            play sound "entity.lightning_bolt.impact" with volume 5 and pitch 1 at victim

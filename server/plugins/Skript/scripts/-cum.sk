@@ -1,0 +1,53 @@
+command /cum <player>:
+    permission: op
+    permission message: &cУ тебя нет прав!
+    trigger:
+        set {_p} to arg-1
+        set {_loc} to location of {_p}
+
+        send "&f&lФонтан активирован!" to {_p}
+
+        # Запоминаем блоки
+        set {_l1} to {_loc}
+        set {_l2} to {_loc}
+        set {_l3} to {_loc}
+
+        add 1 to y-coordinate of {_l1}
+        add 2 to y-coordinate of {_l2}
+        add 3 to y-coordinate of {_l3}
+
+        set {_old1} to block at {_l1}
+        set {_old2} to block at {_l2}
+        set {_old3} to block at {_l3}
+
+        # Белая шерсть
+        set block at {_l1} to white wool
+        set block at {_l2} to white wool
+        set block at {_l3} to white wool
+
+        # Частицы
+        loop 30 times:
+            execute console command "particle minecraft:white_dust %x-coordinate of {_loc}% %y-coordinate of {_loc} + 1% %z-coordinate of {_loc}% 0.4 0.2 0.4 0.05 15 force"
+            wait 2 ticks
+
+        loop 20 times:
+            execute console command "particle minecraft:white_dust %x-coordinate of {_loc}% %y-coordinate of {_loc} + 2% %z-coordinate of {_loc}% 0.7 0.3 0.7 0.05 20 force"
+            wait 2 ticks
+
+        # Восстанавливаем блоки
+        set block at {_l1} to {_old1}
+        set block at {_l2} to {_old2}
+        set block at {_l3} to {_old3}
+
+        loop 30 times:
+            execute console command "particle minecraft:white_dust %x-coordinate of {_loc}% %y-coordinate of {_loc} + 1% %z-coordinate of {_loc}% 0.4 0.2 0.4 0.05 15 force"
+            wait 2 ticks
+
+        loop 20 times:
+            execute console command "particle minecraft:white_dust %x-coordinate of {_loc}% %y-coordinate of {_loc} + 2% %z-coordinate of {_loc}% 0.7 0.3 0.7 0.05 20 force"
+            wait 2 ticks
+
+        # Восстанавливаем блоки
+        set block at {_l1} to {_old1}
+        set block at {_l2} to {_old2}
+        set block at {_l3} to {_old3}

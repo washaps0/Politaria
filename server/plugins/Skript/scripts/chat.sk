@@ -1,0 +1,217 @@
+options:
+	local-chat-radius: 20
+	chat-menu-title: <dark gray>Выбор канала чата
+
+# Channels: local, global, country.
+# Every login starts in local chat.
+
+function chatVisibleName(viewer: player, sender: player) :: text:
+	if {_viewer} is {_sender}:
+		return name of {_sender}
+	if {social.known::%uuid of {_viewer}%::%uuid of {_sender}%} is true:
+		return name of {_sender}
+	set {_viewer-country} to {country.player::%uuid of {_viewer}%}
+	set {_sender-country} to {country.player::%uuid of {_sender}%}
+	if {_viewer-country} is set:
+		if {_viewer-country} is {_sender-country}:
+			return name of {_sender}
+	return "Неизвестно"
+
+function chatCopyableMessage(message: text) :: text:
+	set {_lower} to lowercase {_message}
+	set {_copyable} to false
+	if {_lower} contains "https://":
+		set {_copyable} to true
+	if {_lower} contains "http://":
+		set {_copyable} to true
+	if {_lower} contains "www.":
+		set {_copyable} to true
+	if {_lower} contains ".ru":
+		set {_copyable} to true
+	if {_lower} contains ".com":
+		set {_copyable} to true
+	if {_lower} contains ".net":
+		set {_copyable} to true
+	if {_lower} contains ".org":
+		set {_copyable} to true
+	if {_lower} contains ".io":
+		set {_copyable} to true
+	if {_lower} contains ".gg":
+		set {_copyable} to true
+	if {_lower} contains ".me":
+		set {_copyable} to true
+	if {_lower} contains ".рф":
+		set {_copyable} to true
+	# Also recognize numeric addresses and versions such as 163.5.201.8:12328.
+	if {_lower} contains "0.":
+		set {_copyable} to true
+	if {_lower} contains "1.":
+		set {_copyable} to true
+	if {_lower} contains "2.":
+		set {_copyable} to true
+	if {_lower} contains "3.":
+		set {_copyable} to true
+	if {_lower} contains "4.":
+		set {_copyable} to true
+	if {_lower} contains "5.":
+		set {_copyable} to true
+	if {_lower} contains "6.":
+		set {_copyable} to true
+	if {_lower} contains "7.":
+		set {_copyable} to true
+	if {_lower} contains "8.":
+		set {_copyable} to true
+	if {_lower} contains "9.":
+		set {_copyable} to true
+	if {_copyable} is false:
+		return "<white>%{_message}%"
+	set {_copied-text} to {_message}
+	replace all "'" with "’" in {_copied-text}
+	return "<copy:'%{_copied-text}%'><tooltip:'Нажмите, чтобы скопировать'><aqua><underlined>%{_message}%"
+
+function chatSetChannel(p: player, channel: text):
+	if {_channel} is "country":
+		if {country.player::%uuid of {_p}%} is not set:
+			send "<red>Вы не состоите в стране." to {_p}
+			stop
+	set {chat.channel::%uuid of {_p}%} to {_channel}
+	if {_channel} is "local":
+		send action bar "<gray>Выбран <white>локальный чат <dark gray>• <gray>радиус {@local-chat-radius} блоков" to {_p}
+	if {_channel} is "global":
+		send action bar "<gold>Выбран глобальный чат" to {_p}
+	if {_channel} is "country":
+		send action bar "<aqua>Выбран чат страны" to {_p}
+
+function chatOpenMenu(p: player):
+	set {_menu} to chest inventory with 3 rows named "{@chat-menu-title}"
+	loop integers between 0 and 26:
+		set slot loop-value of {_menu} to gray stained glass pane named " "
+	set {_current} to {chat.channel::%uuid of {_p}%}
+	if {_current} is not set:
+		set {_current} to "local"
+	set slot 11 of {_menu} to lime dye named "<light green><bold>ЛОКАЛЬНЫЙ" with lore "<gray>Слышно в радиусе {@local-chat-radius} блоков" and "<gray>Команда: <white>/l" and "<dark gray>Текущий: %{_current}%"
+	set slot 13 of {_menu} to firework star named "<gold><bold>ГЛОБАЛЬНЫЙ" with lore "<gray>Сообщение увидит весь сервер" and "<gray>Команда: <white>/g"
+	if {country.player::%uuid of {_p}%} is set:
+		set {_id} to {country.player::%uuid of {_p}%}
+		set slot 15 of {_menu} to cyan dye named "<aqua><bold>ЧАТ СТРАНЫ" with lore "<gray>Только жители %countryName({_id})%" and "<gray>Команда: <white>/cc"
+	else:
+		set slot 15 of {_menu} to barrier named "<red><bold>ЧАТ СТРАНЫ НЕДОСТУПЕН" with lore "<gray>Вы не состоите в стране"
+	open {_menu} to {_p}
+	set {chat.menu::%uuid of {_p}%} to true
+
+command /chat:
+	aliases: /ch
+	executable by: players
+	trigger:
+		if {auth.logged-in::%name of player%} is not true:
+			send "<red>Сначала войдите в аккаунт." to player
+			stop
+		chatOpenMenu(player)
+		# Quest ID 7 is displayed after /spawn; complete only after authenticated /chat.
+		questComplete(player, 7)
+
+command /local:
+	aliases: /l
+	executable by: players
+	trigger:
+		chatSetChannel(player, "local")
+
+command /global:
+	aliases: /g
+	executable by: players
+	trigger:
+		chatSetChannel(player, "global")
+
+command /countrychat:
+	aliases: /cc
+	executable by: players
+	trigger:
+		chatSetChannel(player, "country")
+
+on join:
+	set {chat.channel::%uuid of player%} to "local"
+
+on inventory click:
+	if {chat.menu::%uuid of player%} is not true:
+		stop
+	cancel event
+	if {ui.click-until::%uuid of player%} is in the future:
+		stop
+	set {ui.click-until::%uuid of player%} to 8 ticks from now
+	if event-slot is not set:
+		stop
+	set {_slot} to raw index of event-slot
+	if {_slot} is 11:
+		chatSetChannel(player, "local")
+		close player's inventory
+		stop
+	if {_slot} is 13:
+		chatSetChannel(player, "global")
+		close player's inventory
+		stop
+	if {_slot} is 15:
+		chatSetChannel(player, "country")
+		if {country.player::%uuid of player%} is set:
+			close player's inventory
+
+on inventory drag:
+	if {chat.menu::%uuid of player%} is true:
+		cancel event
+
+on inventory close:
+	if {chat.menu::%uuid of player%} is true:
+		delete {chat.menu::%uuid of player%}
+
+on chat:
+	# Passwords and text inputs are handled by their own systems.
+	if event is cancelled:
+		stop
+	if {country.input::%uuid of player%} is set:
+		stop
+	if {economy.input::%uuid of player%} is set:
+		stop
+	if {auth.logged-in::%name of player%} is not true:
+		stop
+	cancel event
+
+	set {_message} to unformatted message
+	replace all "<" with "‹" in {_message}
+	replace all ">" with "›" in {_message}
+	set {_display-message} to chatCopyableMessage({_message})
+	set {_channel} to {chat.channel::%uuid of player%}
+	if {_channel} is not set:
+		set {_channel} to "local"
+
+	if {_channel} is "country":
+		set {_country} to {country.player::%uuid of player%}
+		if {_country} is not set:
+			set {chat.channel::%uuid of player%} to "local"
+			send "<red>Вы больше не состоите в стране. Включён локальный чат." to player
+			stop
+		loop all players:
+			if {auth.logged-in::%name of loop-player%} is true:
+				if {country.player::%uuid of loop-player%} is {_country}:
+					set {_visible-name} to chatVisibleName(loop-player, player)
+					send formatted "<aqua>[С] %countryColor({_country})%%{_visible-name}% <dark gray>» %{_display-message}%" to loop-player
+		send "[Страна: %countryName({_country})%] %name of player%: %{_message}%" to console
+		stop
+
+	if {_channel} is "global":
+		loop all players:
+			if {auth.logged-in::%name of loop-player%} is true:
+				send formatted "<gold>[Г] <white>%name of player% <dark gray>» %{_display-message}%" to loop-player
+		send "[Глобальный] %name of player%: %{_message}%" to console
+		stop
+
+	# Local is the default channel.
+	loop all players:
+		if {auth.logged-in::%name of loop-player%} is true:
+			if world of loop-player is world of player:
+				if distance between loop-player and player is less than or equal to {@local-chat-radius}:
+					set {_visible-name} to chatVisibleName(loop-player, player)
+					send formatted "<dark gray>[Л] <gray>%{_visible-name}% <dark gray>» %{_display-message}%" to loop-player
+	send "[Локальный] %name of player%: %{_message}%" to console
+
+on quit:
+	delete {chat.channel::%uuid of player%}
+	delete {chat.menu::%uuid of player%}

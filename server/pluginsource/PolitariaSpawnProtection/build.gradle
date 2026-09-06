@@ -1,0 +1,14 @@
+plugins { id 'java' }
+group = 'ru.politaria'
+version = '1.0.0'
+dependencies {
+    compileOnly files(new File(System.getProperty('user.home'), '.m2/repository/io/papermc/paper/paper-api/1.21.1-R0.1-SNAPSHOT/paper-api-1.21.1-R0.1-SNAPSHOT.jar'))
+    compileOnly fileTree('../../libraries') { include '**/*.jar' }
+}
+java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }
+tasks.withType(JavaCompile).configureEach {
+    options.release = 21
+    options.encoding = 'UTF-8'
+    options.compilerArgs.add('-proc:none')
+}
+jar { archiveFileName = 'PolitariaSpawnProtection.jar' }

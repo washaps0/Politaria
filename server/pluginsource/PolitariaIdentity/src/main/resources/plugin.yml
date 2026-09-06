@@ -1,0 +1,52 @@
+name: PolitariaIdentity
+version: 1.6.0-tags
+main: ru.politaria.identity.PolitariaIdentityPlugin
+api-version: '1.21'
+depend: [ProtocolLib]
+softdepend: [Skript, TAB]
+authors: [Politaria]
+description: Per-player identity labels for the Politaria social system.
+
+commands:
+  identity:
+    description: Internal bridge for the Politaria social system.
+    permission: politaria.identity.manage
+
+  tags:
+    description: Manage Politaria player tags.
+    usage: /tags <player> <add|remove|list> [tag] | /tags create <name> <color>
+    permission: politaria.tags.manage
+
+  tpa:
+    description: Send a request to teleport to another player.
+    usage: /tpa <player>
+    permission: politaria.teleport.tpa
+
+  tpaccept:
+    description: Accept a teleport request.
+    usage: /tpaccept [player]
+    permission: politaria.teleport.tpa
+
+  tpdeny:
+    description: Decline a teleport request.
+    usage: /tpdeny [player]
+    permission: politaria.teleport.tpa
+
+  capital:
+    description: Teleport to your own or a public foreign capital.
+    usage: /capital [country]
+    permission: politaria.teleport.capital
+    permission-message: "§cЭта команда доступна только серверу."
+
+permissions:
+  politaria.identity.manage:
+    default: op
+
+  politaria.tags.manage:
+    default: op
+
+  politaria.teleport.tpa:
+    default: true
+
+  politaria.teleport.capital:
+    default: true

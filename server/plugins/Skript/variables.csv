@@ -1,0 +1,430 @@
+# === Skript's variable storage ===
+# Please do not modify this file manually!
+#
+# version: 2.15.4
+
+auth.logged-in::chainik_zxc, boolean, 01
+auth.logged-in::danilcxz, boolean, 01
+auth.logged-in::swaga2289, boolean, 01
+auth.logged-in::washapso, boolean, 01
+auth.password::amgered, string, 804030326463346138623238623638656332623831363566323238373630373531333030613562666535373166666261623931623533393463356131346266313464
+auth.password::chainik_zxc, string, 804034646630663439386236343437396136333539386336313966633663643333623830613633303232303835623662303962336431323665633233386433653532
+auth.password::danilcxz, string, 804066336363353439653863393464366366653862313935363161373538666438633166633830363131396464613161336435393865653538663231643564356534
+auth.password::lollightp, string, 804032666461643939633066316333353733326364396537613861663138653439646133633633653137383734653062363733356464353134383162396231663838
+auth.password::mister_hasker, string, 804037383935653233623065666566316632383333393361326136383465333365343565323464346461376661346233366662353761363264366265326338353538
+auth.password::rolubok, string, 804062633433306631363337613530613262343665353235306237363630636132313065373234306135353431343334373266363264653832663162343436666234
+auth.password::swaga2289, string, 804034646435643730386430373239646535346431326662333561386462653631643331353262333434333734326632366431363765393235393161383831656439
+auth.password::washapso, string, 804061306632343231366661393864336537613139303364636462356231343937353436623731353961356366353065663030373739343062636439613738373865
+auth.salt::amgered, string, 802466613131616433372D323739622D343962662D626537352D623931353166303334306637
+auth.salt::chainik_zxc, string, 802464613032666661312D333264662D343835642D396162362D383165373732626631383939
+auth.salt::danilcxz, string, 802462396263643837352D656433652D346432622D626439632D663931343363646632383733
+auth.salt::lollightp, string, 802461313832343365302D323563322D343566322D613131392D323762613364376638663062
+auth.salt::mister_hasker, string, 802433643639623432342D366561642D343033612D613465392D613564373361346330613762
+auth.salt::rolubok, string, 802466366266616333622D633130622D343139342D393438312D653835353936396661383865
+auth.salt::swaga2289, string, 802431646239626338302D643062362D343862332D386561352D323437646666633733393536
+auth.salt::washapso, string, 802431353464326662352D326264632D343162372D393931342D666135626531323866656266
+auth.trusted-ip::amgered, string, 804064393030383639666231363465333865303831313532303961383034356665303339326239396466346166613737353737313966363063386536343032646639
+auth.trusted-ip::chainik_zxc, string, 804063333537393066393364333833396435613264336134356136613263626461343038383832363333663037373039333439333839326435346362373837316164
+auth.trusted-ip::danilcxz, string, 804032353732316262623064393761393337373734393935326661333538653163333330333862366461643066313930326636636264633764323039376136363034
+auth.trusted-ip::lollightp, string, 804061373839356134356238343636386437376530646132393235653366326337313930383866326539326638626162393836656233653033333162326564356264
+auth.trusted-ip::mister_hasker, string, 804033386566303439633630646166643466343962626261626464613531313663356533666165323863323162386439333965353962333635353131623238636333
+auth.trusted-ip::rolubok, string, 804062636337393438633737653365616262306164623466306566663831383431343630346431633062303935333433666162383339653033313232333535613034
+auth.trusted-ip::swaga2289, string, 804065396538376364626630303561643333393333363735306562323765653564613965333866326532383634306265353637653964643765303764303530666237
+auth.trusted-ip::washapso, string, 804039346664363961383463653935616337613636636635653530613362383939666335396631613161313535303332636439646661663665363063303434663432
+auth.trusted-until::amgered, date, 810974696D657374616D7004000001A078F97CBE
+auth.trusted-until::chainik_zxc, date, 810974696D657374616D7004000001A077A5115E
+auth.trusted-until::danilcxz, date, 810974696D657374616D7004000001A0774809C9
+auth.trusted-until::lollightp, date, 810974696D657374616D7004000001A07B199FF9
+auth.trusted-until::mister_hasker, date, 810974696D657374616D7004000001A077D1D502
+auth.trusted-until::rolubok, date, 810974696D657374616D7004000001A077356D6A
+auth.trusted-until::swaga2289, date, 810974696D657374616D7004000001A079202787
+auth.trusted-until::washapso, date, 810974696D657374616D7004000001A078AF79C6
+chat.channel::8888f8b8-222a-3467-89bb-29f1aa0bce88, string, 8006676C6F62616C
+chat.channel::30117ceb-db68-3c7e-8ee3-5b696de4040d, string, 80056C6F63616C
+chat.channel::30848de2-f6d9-31f2-82b0-fe190805a709, string, 80056C6F63616C
+chat.channel::e0d26be5-011f-3438-8d20-e4ab70c5a889, string, 80056C6F63616C
+country.last-chunk::8888f8b8-222a-3467-89bb-29f1aa0bce88, string, 800D76327C776F726C647C307C3332
+country.last-chunk::30117ceb-db68-3c7e-8ee3-5b696de4040d, string, 800D76327C776F726C647C307C3332
+country.last-chunk::30848de2-f6d9-31f2-82b0-fe190805a709, string, 800D76327C776F726C647C327C3331
+country.last-chunk::e0d26be5-011f-3438-8d20-e4ab70c5a889, string, 800D76327C776F726C647C317C3332
+country.last-territory-state::8888f8b8-222a-3467-89bb-29f1aa0bce88, string, 80076E65757472616C
+country.last-territory-state::30117ceb-db68-3c7e-8ee3-5b696de4040d, string, 80076E65757472616C
+country.last-territory-state::30848de2-f6d9-31f2-82b0-fe190805a709, string, 80076E65757472616C
+country.last-territory-state::e0d26be5-011f-3438-8d20-e4ab70c5a889, string, 80076E65757472616C
+country.menu-member::30117ceb-db68-3c7e-8ee3-5b696de4040d::10, string, 802433303131376365622D646236382D336337652D386565332D356236393664653430343064
+country.menu-member::30117ceb-db68-3c7e-8ee3-5b696de4040d::11, string, 802465303639393364642D333363302D333437642D616665362D623432336536363531623462
+country.menu-role::30117ceb-db68-3c7e-8ee3-5b696de4040d::10, string, 802438343533313738622D313737372D343737612D616366352D373762636632643463316435
+country.menu-role::30117ceb-db68-3c7e-8ee3-5b696de4040d::11, string, 8007636974697A656E
+country.picker-context::30117ceb-db68-3c7e-8ee3-5b696de4040d, string, 8004726F6C65
+country.selected-member::30117ceb-db68-3c7e-8ee3-5b696de4040d, string, 802465303639393364642D333363302D333437642D616665362D623432336536363531623462
+country.selected-role::30117ceb-db68-3c7e-8ee3-5b696de4040d, string, 802438343533313738622D313737372D343737612D616366352D373762636632643463316435
+country.tax-per-chunk, long, 000000000000000F
+economy.balance::19d79768-c1aa-3d0f-9528-93125a583183, long, 00000000000000C8
+economy.balance::19fc191d-1b85-3cde-8631-aa9d5c2dd2f4, long, 00000000000000C8
+economy.balance::8888f8b8-222a-3467-89bb-29f1aa0bce88, long, 00000000000000C8
+economy.balance::30117ceb-db68-3c7e-8ee3-5b696de4040d, long, 0000000000000014
+economy.balance::30848de2-f6d9-31f2-82b0-fe190805a709, long, 00000000000000C8
+economy.balance::85526c51-87f3-30a3-8664-ccb99fdce0a6, long, 0000000000000118
+economy.balance::e0d26be5-011f-3438-8d20-e4ab70c5a889, long, 000000000000010B
+economy.balance::e06993dd-33c0-347d-afe6-b423e6651b4b, long, 0000000000000064
+gun.ammo::8888f8b8-222a-3467-89bb-29f1aa0bce88::mg, long, 0000000000000063
+gun.ammo::8888f8b8-222a-3467-89bb-29f1aa0bce88::rifle, long, 000000000000001A
+gun.ammo::e0d26be5-011f-3438-8d20-e4ab70c5a889::mg, long, 000000000000005B
+gun.ammo::e06993dd-33c0-347d-afe6-b423e6651b4b::mg, long, 000000000000005D
+gun.ammo::e06993dd-33c0-347d-afe6-b423e6651b4b::super, long, 000000000000005A
+gun.next_shot::8888f8b8-222a-3467-89bb-29f1aa0bce88, date, 810974696D657374616D7004000001A0543D11E3
+gun.next_shot::e0d26be5-011f-3438-8d20-e4ab70c5a889, date, 810974696D657374616D7004000001A054D85665
+gun.next_shot::e06993dd-33c0-347d-afe6-b423e6651b4b, date, 810974696D657374616D7004000001A054D86B5B
+gun.proj_hit::1b1365c5-e9e0-4850-aad6-b48823c9e141, boolean, 00
+gun.proj_hit::1f4c9d2e-ef7a-49a9-bfb5-59e7fd812e4b, boolean, 00
+gun.proj_hit::2c9a4be8-a295-491f-b268-112e8c1947c1, boolean, 00
+gun.proj_hit::2edfca8e-632d-476a-a9cb-91f2b5e80a37, boolean, 00
+gun.proj_hit::3a8f5c7c-3b50-417e-acd8-cdcf8b8f0b4c, boolean, 00
+gun.proj_hit::3fac0163-8140-467a-85c8-3222ff7b06e4, boolean, 00
+gun.proj_hit::4a438ec2-0be8-431c-a9f4-300640edb36f, boolean, 00
+gun.proj_hit::5af90a05-e012-465b-af83-4412a1b5d32f, boolean, 00
+gun.proj_hit::5c7a228a-8238-4730-9539-376abbd76f84, boolean, 00
+gun.proj_hit::5cb73881-a0af-4473-90e1-9b942beb22d9, boolean, 00
+gun.proj_hit::5e5c37a4-23b9-4e48-90be-a1e6c10044f9, boolean, 00
+gun.proj_hit::6c7ac7c4-91d3-4419-bc54-17c741dd6292, boolean, 00
+gun.proj_hit::6dd69dd8-0082-4cc5-bd35-d6aeb9743727, boolean, 00
+gun.proj_hit::6e9bde48-b9bd-4510-92f0-fde67c0d1603, boolean, 00
+gun.proj_hit::6ecd15f0-630c-4759-b3eb-f30e11acb2af, boolean, 00
+gun.proj_hit::6f6734ef-838d-4184-9fb9-9e77ce2541a3, boolean, 00
+gun.proj_hit::7d29a64f-92cf-499b-83f4-8ccf24191121, boolean, 00
+gun.proj_hit::8ef24d0c-857a-48ed-b5f5-b68582fb20eb, boolean, 00
+gun.proj_hit::9b81d64b-ff42-40cd-ace3-893729dc765b, boolean, 00
+gun.proj_hit::9de27e0f-3da8-4e9c-b611-207ddc09a7e0, boolean, 00
+gun.proj_hit::9e09e5de-5621-49ae-bd52-baa383df5298, boolean, 00
+gun.proj_hit::11c48a14-6902-438f-abb3-a978447d8c88, boolean, 00
+gun.proj_hit::18c10f0a-e522-41be-bc45-ffb877a80719, boolean, 00
+gun.proj_hit::24d01b89-f0da-414f-84ca-598f81fb2b43, boolean, 00
+gun.proj_hit::45d1d6cd-2186-4569-b6da-c72e599a7bb7, boolean, 00
+gun.proj_hit::49da5bce-3c48-44d9-bed5-18e0b520405f, boolean, 00
+gun.proj_hit::51ef4394-78d1-4282-99ec-82500dd5dda3, boolean, 00
+gun.proj_hit::52c8bd34-6d61-479a-a492-8a8c8db1f397, boolean, 00
+gun.proj_hit::55ffc5f6-d0b3-43f3-a470-d50ffa9c250e, boolean, 00
+gun.proj_hit::057b9dac-5049-412a-afe4-63b07ab9b747, boolean, 00
+gun.proj_hit::59c8c29d-1d70-4117-916b-065d1ea691a3, boolean, 00
+gun.proj_hit::62d87134-e452-4f80-9d98-585a333e659a, boolean, 00
+gun.proj_hit::63f79c8c-4770-43b2-9d5d-06d536a89096, boolean, 00
+gun.proj_hit::67c960a8-1271-4c9f-ad08-9b7dda32b9e8, boolean, 00
+gun.proj_hit::70ad8573-42c6-42db-adcb-ac7f1985211f, boolean, 00
+gun.proj_hit::77b4e245-46e3-4230-b614-dd78a86a5bb6, boolean, 00
+gun.proj_hit::79cee64f-fd7d-412b-a9ff-f45379da1af7, boolean, 00
+gun.proj_hit::81a086f4-5bc0-4da4-9544-bbd6c8384f90, boolean, 00
+gun.proj_hit::86cbcfaf-620d-4815-8c6e-5f181eaca4eb, boolean, 00
+gun.proj_hit::87f6a97c-25f2-40bd-b71e-514c8035e3e1, boolean, 00
+gun.proj_hit::90a2fe72-1a8d-4fe2-95bd-a83d9004e89e, boolean, 00
+gun.proj_hit::90bace12-cf15-4111-b95b-00f7df6683cc, boolean, 00
+gun.proj_hit::90c8b2f0-b695-42b6-b2bd-17227d1a48eb, boolean, 00
+gun.proj_hit::143c2107-0144-4085-80e2-d49a4bde7865, boolean, 00
+gun.proj_hit::208e2c3f-f391-4cd6-a964-dc620417fba9, boolean, 00
+gun.proj_hit::240b3882-dab5-480e-8c0d-80b0dc9401a0, boolean, 00
+gun.proj_hit::304b54a3-7095-4189-a68e-efbd76d68f1c, boolean, 00
+gun.proj_hit::314ac5e0-1348-4fab-ab62-01b31d2cbaf5, boolean, 00
+gun.proj_hit::366aa401-7e7d-48ed-a9f0-713d26d7c387, boolean, 00
+gun.proj_hit::473b4a13-012c-42dd-a419-58e33d7833b2, boolean, 00
+gun.proj_hit::624d444b-ce1d-47f4-b8fd-59062c07417b, boolean, 00
+gun.proj_hit::721c6bae-4876-44b1-8d88-4204aa89e3cd, boolean, 00
+gun.proj_hit::759f5d2a-c5b7-4a3b-b6de-3badbf6d0e20, boolean, 00
+gun.proj_hit::888b25c9-ce53-47a2-9351-05b1e87e222b, boolean, 00
+gun.proj_hit::944c4d57-7fff-431f-85bd-3d5014d23815, boolean, 00
+gun.proj_hit::982ff9e8-c3b1-4871-a2b1-b8503d1214b8, boolean, 00
+gun.proj_hit::3696a03a-5670-48ab-a7ae-2c11404b54c6, boolean, 00
+gun.proj_hit::5787b861-3618-47cd-93c1-0d6e6e8582c5, boolean, 00
+gun.proj_hit::08311b4b-6855-4fd1-ae43-534772de97ee, boolean, 00
+gun.proj_hit::23247b44-f26e-46c9-9c0f-591e8bba6455, boolean, 00
+gun.proj_hit::28678e6f-ece1-4702-9184-d7f38b6806a7, boolean, 00
+gun.proj_hit::55088b5a-f915-45bc-b297-314193222849, boolean, 00
+gun.proj_hit::56767daa-74ec-40df-8337-d87f8258d385, boolean, 00
+gun.proj_hit::69136c84-5899-4f14-9ad2-0809acf0f511, boolean, 00
+gun.proj_hit::82635eef-c12f-4440-ac88-1a7e6baec806, boolean, 00
+gun.proj_hit::85089fcf-4f6a-4e77-9716-7b7ba2510ca1, boolean, 00
+gun.proj_hit::362135d0-7d3a-4fdb-a714-130f74db573d, boolean, 00
+gun.proj_hit::2465633e-fe99-49a7-b4ff-8381f126b311, boolean, 00
+gun.proj_hit::05416330-b643-4389-b258-d0058ca932cb, boolean, 00
+gun.proj_hit::6877728e-3054-488f-98b9-5e310bdad588, boolean, 00
+gun.proj_hit::7115146a-0c60-493d-82a1-4d1cbef51548, boolean, 00
+gun.proj_hit::23068908-3bed-4f5e-95c1-3c09c14fd45f, boolean, 00
+gun.proj_hit::a7e88a22-5429-449d-9140-1b8871d315fd, boolean, 00
+gun.proj_hit::a09cc4af-aebf-44cf-a197-92e01961b73d, boolean, 00
+gun.proj_hit::a953cc6d-2afd-4818-8e45-fb424d1dbf35, boolean, 00
+gun.proj_hit::a962dcdf-8fa8-4880-8e52-da7949d18468, boolean, 00
+gun.proj_hit::a5047c85-b466-429c-b2af-0a1c82975a70, boolean, 00
+gun.proj_hit::a96720e9-3f69-4f78-b676-3249b845a270, boolean, 00
+gun.proj_hit::aa49f735-5222-475a-8b0e-37edf66af074, boolean, 00
+gun.proj_hit::aa074374-33f9-47bc-94fd-028d3d37ef1f, boolean, 00
+gun.proj_hit::adfb2202-ad31-4501-af14-358735ebc1e7, boolean, 00
+gun.proj_hit::b2b0a6a8-8236-4a27-a168-489d49dd1c49, boolean, 00
+gun.proj_hit::b6b1a63e-8ca2-49b9-a916-aab9a1d8e792, boolean, 00
+gun.proj_hit::b6e000cb-83c5-4e7e-baab-1ae785ecd8ed, boolean, 00
+gun.proj_hit::b06d2fd3-f62a-44f3-9d07-90d16b23875f, boolean, 00
+gun.proj_hit::b52a3ec0-f4d7-4092-8ca6-4b9c79374d6c, boolean, 00
+gun.proj_hit::b787f6ec-5673-4279-b1b3-2e538b7d4d2e, boolean, 00
+gun.proj_hit::b99666ef-fec8-41d8-8654-24a74ec3978e, boolean, 00
+gun.proj_hit::b479807c-a346-42dc-af10-035d4ef930af, boolean, 00
+gun.proj_hit::bb0de4fc-6401-4f63-ad1c-5a81f7a395cb, boolean, 00
+gun.proj_hit::bbddb274-424d-4bfc-b1ad-762a8ee5d002, boolean, 00
+gun.proj_hit::c2f6ebb1-8869-4d1f-94fd-ca5fdfdcc172, boolean, 00
+gun.proj_hit::c8d23a5e-68c9-4f3d-a80e-300cae1b55f2, boolean, 00
+gun.proj_hit::c994e513-90fd-4190-a606-7ae02ef052c2, boolean, 00
+gun.proj_hit::c835049f-de14-4066-9c23-950dae7fbb47, boolean, 00
+gun.proj_hit::cb1fa27d-2879-4ccc-9058-48ea084c8d9e, boolean, 00
+gun.proj_hit::ce1329ad-d1c2-431e-bb01-f6412df67178, boolean, 00
+gun.proj_hit::cef978cd-449e-4d94-bc17-141ec5ec72bf, boolean, 00
+gun.proj_hit::d1aa9a09-4863-44bc-8f1c-7e15a5ebbc04, boolean, 00
+gun.proj_hit::d05e9c34-891d-4eaa-ae80-a0126e827786, boolean, 00
+gun.proj_hit::d39aea1f-f70f-41c1-859b-fc7467c2f456, boolean, 00
+gun.proj_hit::dd12115b-0d41-4510-a77b-cd4139a8b7cd, boolean, 00
+gun.proj_hit::e5b4587b-8ded-49b2-bb2e-3521feec0e63, boolean, 00
+gun.proj_hit::e19fa264-c079-4719-a1aa-726b03dc57c3, boolean, 00
+gun.proj_hit::e36e6943-6344-4666-8523-3cc265cbb2a9, boolean, 00
+gun.proj_hit::e53fcedd-5a3e-4197-9855-0075b1ff005d, boolean, 00
+gun.proj_hit::e94e4b16-5d01-4110-b211-363b342afc91, boolean, 00
+gun.proj_hit::e351f5a6-88e9-475d-892c-b58acc462574, boolean, 00
+gun.proj_hit::e794ab47-b686-42df-9b9a-ee9d032868a6, boolean, 00
+gun.proj_hit::e33187bd-2c4f-4094-9857-ae8dfbbb9889, boolean, 00
+gun.proj_hit::e707539a-b0c5-45ac-bac8-2a52bfd0ca79, boolean, 00
+gun.proj_hit::eb632246-d119-4c17-a45f-f46e9feac097, boolean, 00
+gun.proj_hit::ed5f4262-3f5a-4de6-b269-a50c993a495c, boolean, 00
+gun.proj_hit::eeb45055-c7b0-4673-9bc2-4d396b037f8f, boolean, 00
+gun.proj_hit::f3d6f699-e0e5-4bb3-8b87-0a7c495dadc4, boolean, 00
+gun.proj_hit::f3ec5e8e-4265-4518-afd2-097518729254, boolean, 00
+gun.proj_hit::f6cdcf05-4c4f-4873-81d9-1f9093b6f37d, boolean, 00
+gun.proj_hit::f7fbf057-a490-4b3e-80b3-93dbf2d674f9, boolean, 00
+gun.proj_hit::f40d6a8b-e67e-4724-a019-bf4f84cdd678, boolean, 00
+gun.proj_hit::f80d3bdd-28af-40f4-9f8f-fb3e6ddb1b24, boolean, 00
+gun.proj_hit::f84e17de-0c2a-42de-9404-4e1735c173d2, boolean, 00
+gun.proj_hit::f86ab92c-ea58-4dc9-8f77-9ef2663a69d6, boolean, 00
+gun.proj_hit::fb4d76c3-c591-4655-a05e-8fbdf769d34d, boolean, 00
+jobs.bonus-bank::e0d26be5-011f-3438-8d20-e4ab70c5a889::miner, long, 0000000000000000
+jobs.current::e0d26be5-011f-3438-8d20-e4ab70c5a889, string, 80056D696E6572
+"jobs.placed::x: -152.5, y: 122.5, z: -63.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -102.5, y: 76.5, z: 108.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 72.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 72.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 72.5, z: 534.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 72.5, z: 535.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 72.5, z: 536.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 72.5, z: 537.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 72.5, z: 538.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 72.5, z: 539.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 72.5, z: 540.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 72.5, z: 541.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 72.5, z: 542.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 72.5, z: 543.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 72.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 72.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 73.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 73.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 74.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 74.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 75.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 75.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 76.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 76.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 76.5, z: 534.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 76.5, z: 535.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 76.5, z: 536.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 76.5, z: 537.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 76.5, z: 538.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 76.5, z: 539.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 76.5, z: 540.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 76.5, z: 541.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 76.5, z: 542.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 76.5, z: 543.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 76.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -3.5, y: 76.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -2.5, y: 72.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -2.5, y: 72.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -2.5, y: 72.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -2.5, y: 72.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -2.5, y: 73.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -2.5, y: 73.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -2.5, y: 74.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -2.5, y: 74.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -2.5, y: 75.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -2.5, y: 75.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -2.5, y: 76.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -2.5, y: 76.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -1.5, y: 72.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -1.5, y: 72.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -1.5, y: 72.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -1.5, y: 72.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -1.5, y: 73.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -1.5, y: 73.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -1.5, y: 76.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -1.5, y: 76.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -1.5, y: 76.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -1.5, y: 76.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -0.5, y: 72.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -0.5, y: 72.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -0.5, y: 72.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -0.5, y: 72.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -0.5, y: 73.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -0.5, y: 73.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -0.5, y: 76.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -0.5, y: 76.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -0.5, y: 76.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: -0.5, y: 76.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 0.5, y: 72.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 0.5, y: 72.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 0.5, y: 72.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 0.5, y: 72.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 0.5, y: 73.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 0.5, y: 73.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 0.5, y: 74.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 0.5, y: 74.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 0.5, y: 75.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 0.5, y: 75.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 0.5, y: 76.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 0.5, y: 76.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 0.5, y: 76.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 1.5, y: 72.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 1.5, y: 72.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 1.5, y: 72.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 1.5, y: 72.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 1.5, y: 73.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 1.5, y: 73.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 1.5, y: 74.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 1.5, y: 74.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 1.5, y: 75.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 1.5, y: 75.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 1.5, y: 76.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 1.5, y: 76.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 2.5, y: 72.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 2.5, y: 72.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 2.5, y: 72.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 2.5, y: 72.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 2.5, y: 73.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 2.5, y: 73.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 2.5, y: 74.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 2.5, y: 74.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 2.5, y: 75.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 2.5, y: 75.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 2.5, y: 76.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 2.5, y: 76.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 3.5, y: 72.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 3.5, y: 72.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 3.5, y: 72.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 3.5, y: 72.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 3.5, y: 73.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 3.5, y: 73.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 3.5, y: 74.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 3.5, y: 74.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 3.5, y: 75.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 3.5, y: 75.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 3.5, y: 76.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 3.5, y: 76.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 4.5, y: 72.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 4.5, y: 72.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 4.5, y: 72.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 4.5, y: 72.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 4.5, y: 73.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 4.5, y: 73.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 4.5, y: 76.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 4.5, y: 76.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 4.5, y: 76.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 4.5, y: 76.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 5.5, y: 72.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 5.5, y: 72.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 5.5, y: 72.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 5.5, y: 72.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 5.5, y: 73.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 5.5, y: 73.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 5.5, y: 76.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 5.5, y: 76.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 5.5, y: 76.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 5.5, y: 76.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 72.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 72.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 72.5, z: 534.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 72.5, z: 535.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 72.5, z: 536.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 72.5, z: 537.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 72.5, z: 538.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 72.5, z: 539.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 72.5, z: 540.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 72.5, z: 541.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 72.5, z: 542.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 72.5, z: 543.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 72.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 72.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 73.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 73.5, z: 538.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 73.5, z: 539.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 73.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 74.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 74.5, z: 538.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 74.5, z: 539.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 74.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 75.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 75.5, z: 538.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 75.5, z: 539.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 75.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 76.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 76.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 76.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 6.5, y: 76.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 72.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 72.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 72.5, z: 534.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 72.5, z: 535.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 72.5, z: 536.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 72.5, z: 537.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 72.5, z: 538.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 72.5, z: 539.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 72.5, z: 540.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 72.5, z: 541.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 72.5, z: 542.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 72.5, z: 543.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 72.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 72.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 73.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 73.5, z: 536.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 73.5, z: 541.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 73.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 74.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 74.5, z: 536.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 74.5, z: 541.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 74.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 75.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 75.5, z: 536.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 75.5, z: 541.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 75.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 76.5, z: 532.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 76.5, z: 533.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 76.5, z: 534.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 76.5, z: 535.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 76.5, z: 536.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 76.5, z: 537.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 76.5, z: 538.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 76.5, z: 539.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 76.5, z: 540.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 76.5, z: 541.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 76.5, z: 542.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 76.5, z: 543.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 76.5, z: 544.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+"jobs.placed::x: 7.5, y: 76.5, z: 545.5, yaw: 0, pitch: 0 in 'world'", boolean, 01
+jobs.xp::e0d26be5-011f-3438-8d20-e4ab70c5a889::hunter, long, 0000000000000000
+jobs.xp::e0d26be5-011f-3438-8d20-e4ab70c5a889::lumberjack, long, 0000000000000000
+jobs.xp::e0d26be5-011f-3438-8d20-e4ab70c5a889::miner, long, 0000000000000043
+rtp.cooldown::30117ceb-db68-3c7e-8ee3-5b696de4040d, date, 810974696D657374616D7004000001A054BE36A1
+rtp.cooldown::e0d26be5-011f-3438-8d20-e4ab70c5a889, date, 810974696D657374616D7004000001A054C45AAF
+social.known::19d79768-c1aa-3d0f-9528-93125a583183::19fc191d-1b85-3cde-8631-aa9d5c2dd2f4, boolean, 01
+social.known::19fc191d-1b85-3cde-8631-aa9d5c2dd2f4::19d79768-c1aa-3d0f-9528-93125a583183, boolean, 01
+social.known::19fc191d-1b85-3cde-8631-aa9d5c2dd2f4::8888f8b8-222a-3467-89bb-29f1aa0bce88, boolean, 01
+social.known::8888f8b8-222a-3467-89bb-29f1aa0bce88::19fc191d-1b85-3cde-8631-aa9d5c2dd2f4, boolean, 01
+social.known::8888f8b8-222a-3467-89bb-29f1aa0bce88::30117ceb-db68-3c7e-8ee3-5b696de4040d, boolean, 01
+social.known::30117ceb-db68-3c7e-8ee3-5b696de4040d::8888f8b8-222a-3467-89bb-29f1aa0bce88, boolean, 01
+social.known::30117ceb-db68-3c7e-8ee3-5b696de4040d::e0d26be5-011f-3438-8d20-e4ab70c5a889, boolean, 01
+social.known::85526c51-87f3-30a3-8664-ccb99fdce0a6::e06993dd-33c0-347d-afe6-b423e6651b4b, boolean, 01
+social.known::e0d26be5-011f-3438-8d20-e4ab70c5a889::30117ceb-db68-3c7e-8ee3-5b696de4040d, boolean, 01
+social.known::e0d26be5-011f-3438-8d20-e4ab70c5a889::e06993dd-33c0-347d-afe6-b423e6651b4b, boolean, 01
+social.known::e06993dd-33c0-347d-afe6-b423e6651b4b::30117ceb-db68-3c7e-8ee3-5b696de4040d, boolean, 01
+social.known::e06993dd-33c0-347d-afe6-b423e6651b4b::85526c51-87f3-30a3-8664-ccb99fdce0a6, boolean, 01
+social.known::e06993dd-33c0-347d-afe6-b423e6651b4b::e0d26be5-011f-3438-8d20-e4ab70c5a889, boolean, 01
+ui.click-until::8888f8b8-222a-3467-89bb-29f1aa0bce88, date, 810974696D657374616D7004000001A0581AA9A3
+ui.click-until::30848de2-f6d9-31f2-82b0-fe190805a709, date, 810974696D657374616D7004000001A05399A1DA
+
