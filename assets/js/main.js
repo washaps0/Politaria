@@ -8,26 +8,6 @@ if (menuButton && nav) {
   });
 }
 
-// Use the same logo implementation on every page.
-document.querySelectorAll('.brand-mark').forEach((node) => {
-  if (node.tagName === 'IMG') {
-    const logo = document.createElement('span');
-    logo.className = 'brand-mark';
-    logo.setAttribute('aria-hidden', 'true');
-    node.replaceWith(logo);
-  }
-});
-
-// Keep favicon in sync with the header logo.
-let favicon = document.querySelector('link[rel="icon"]');
-if (!favicon) {
-  favicon = document.createElement('link');
-  favicon.rel = 'icon';
-  document.head.appendChild(favicon);
-}
-favicon.type = 'image/jpeg';
-favicon.href = 'assets/images/icon.jpg?v=4';
-
 document.querySelectorAll('[data-copy]').forEach((button) => {
   button.addEventListener('click', async () => {
     const text = button.dataset.copy || '';
