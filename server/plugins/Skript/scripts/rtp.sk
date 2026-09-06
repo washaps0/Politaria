@@ -28,79 +28,72 @@ options:
 # =========================================================
 
 command /spawn:
-	permission: op
 	executable by: players
 	trigger:
 		if {auth.logged-in::%name of player%} is not true:
 			send "&cСначала войдите в аккаунт." to player
 			stop
+
 		if {spawn.pending::%uuid of player%} is set:
 			send "&eТелепортация на спавн уже ожидается." to player
 			stop
 
-		# Основной мир
+		# Проверяем основной мир
 		set {_world} to world "world"
 
 		if {_world} is not set:
 			send "&cНе найден мир world." to player
 			stop
 
+		# Фиксированная точка спавна
+		# Блок под ногами: 28 69 528
+		# Игрок стоит на нём: 28.5 70 528.5
+		set {_x} to 28.5
+		set {_y} to 69
+		set {_z} to 528.5
 
-		# Получаем WORLD SPAWN
-		set {_spawn} to spawn point of {_world}
-
-		set {_spawnX} to x-coordinate of {_spawn}
-		set {_spawnZ} to z-coordinate of {_spawn}
-
-
-		# Ищем поверхность именно в точке спавна
-		set {_search} to location({_spawnX}, 100, {_spawnZ}, {_world})
-		set {_ground} to highest solid block at {_search}
-
-		if {_ground} is not set:
-			send "&cНе удалось найти поверхность на спавне." to player
-			stop
-
-
-		# Координаты безопасной точки
-		set {_x} to x-coordinate of {_ground}
-		set {_y} to y-coordinate of {_ground}
-		set {_z} to z-coordinate of {_ground}
-
-		# Ставим НАД блоком
-		add 1 to {_y}
-
-		# Центр блока
-		add 0.5 to {_x}
-		add 0.5 to {_z}
-
-
-		# Each countdown has its own token, so an old cancelled task cannot teleport.
+		# Уникальный токен телепортации
 		set {_spawn-request} to "%random uuid%"
 		set {spawn.pending::%uuid of player%} to {_spawn-request}
+
 		send "&eТелепортация на спавн через &f5 секунд&e. Урон отменит телепортацию." to player
+
+		# Обратный отсчёт
 		loop 5 times:
 			if player is not online:
+				delete {spawn.pending::%uuid of player%}
 				stop
+
 			if {spawn.pending::%uuid of player%} is not {_spawn-request}:
 				stop
+
 			set {_seconds} to 6 - loop-number
 			send action bar "&eНа спавн через &f%{_seconds}% &eсек." to player
+
 			wait 1 second
+
+		# Проверяем игрока после таймера
 		if player is not online:
+			delete {spawn.pending::%uuid of player%}
 			stop
+
 		if {spawn.pending::%uuid of player%} is not {_spawn-request}:
 			stop
+
 		delete {spawn.pending::%uuid of player%}
+
+		# Повторно проверяем авторизацию
 		if {auth.logged-in::%name of player%} is not true:
 			stop
 
-		# Ванильный TP именно в Overworld
-		execute console command "minecraft:execute in minecraft:overworld run minecraft:tp %player% %{_x}% %{_y}% %{_z}%"
+		# Телепортация строго в Overworld на 28.5 70 528.5
+		execute console command "minecraft:execute in minecraft:overworld run minecraft:tp %player% 28.5 70 528.5"
 
 		questComplete(player, 4)
+
 		send "&aТы телепортирован на спавн." to player
 		play sound "entity.enderman.teleport" with volume 1 and pitch 1 at player
+
 
 # =========================================================
 # /RTP

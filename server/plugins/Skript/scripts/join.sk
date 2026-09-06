@@ -3,35 +3,15 @@ on join:
 	if player is not online:
 		stop
 
-	# =====================================================
-	# СЛУЧАЙНОЕ СООБЩЕНИЕ О ВХОДЕ
-	# =====================================================
+	set {_messages::*} to "&b&lPOLITARIA&r &8» &f%player% &7присоединился к серверу. &8Добро пожаловать!"
+	add "&b&lPOLITARIA&r &8» &f%player% &7вошёл в мир &fPOLITARIA&7." to {_messages::*}
+	add "&b&lPOLITARIA&r &8» &7Игрок &f%player% &7снова с нами." to {_messages::*}
+	add "&b&lPOLITARIA&r &8» &7На сервере появился &f%player%&7." to {_messages::*}
+	add "&b&lPOLITARIA&r &8» &7К нам присоединился &f%player%&7. Приятной игры!" to {_messages::*}
+	add "&b&lPOLITARIA&r &8» &f%player% &7подключился. Желаем приятной игры!" to {_messages::*}
+	add "&b&lPOLITARIA&r &8» &7Новый игрок в сети: &f%player%&7." to {_messages::*}
+	add "&b&lPOLITARIA&r &8» &7Добро пожаловать, &f%player%&7." to {_messages::*}
+	add "&b&lPOLITARIA&r &8» &f%player% &7успешно подключился к POLITARIA." to {_messages::*}
+	add "&b&lPOLITARIA&r &8» &7Игрок &f%player% &7теперь с нами!" to {_messages::*}
 
-	set {_random} to random integer between 1 and 10
-
-if {_random} is 1:
-    broadcast colored "&b&lPOLITARIA&r &8» &f%player% &7зашёл на сервер."
-
-else if {_random} is 2:
-    broadcast colored "&b&lPOLITARIA&r &8» &f%player% &7присоединился к игре."
-
-else if {_random} is 3:
-    broadcast colored "&b&lPOLITARIA&r &8» &f%player% &7снова с нами!"
-
-else if {_random} is 4:
-    broadcast colored "&b&lPOLITARIA&r &8» &7О, &f%player%&7 вернулся."
-
-else if {_random} is 5:
-    broadcast colored "&b&lPOLITARIA&r &8» &7Добро пожаловать, &f%player%&7!"
-
-else if {_random} is 6:
-    broadcast colored "&b&lPOLITARIA&r &8» &f%player% &7теперь в игре."
-
-else if {_random} is 7:
-    broadcast colored "&b&lPOLITARIA&r &8» &f%player% &7решил заглянуть к нам."
-
-else if {_random} is 8:
-    broadcast colored "&b&lPOLITARIA&r &8» &7Рады видеть тебя, &f%player%&7!"
-
-else if {_random} is 9:
-    broadcast colored "&b&lPOLITARIA&r &8» &f%player% &7в сети."
+	broadcast colored random element out of {_messages::*}
