@@ -1,0 +1,208 @@
+/* Home page readability layer. Kept separate from the shared site styles. */
+.home-hero {
+  min-height: 620px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  background:
+    linear-gradient(90deg, rgba(16,16,16,.97) 0%, rgba(16,16,16,.88) 46%, rgba(16,16,16,.55) 100%),
+    url('../images/town.webp') center/cover no-repeat;
+}
+
+.home-hero-inner {
+  width: 100%;
+  padding-block: 76px;
+}
+
+.home-hero h1 {
+  margin-top: 10px;
+  font-size: clamp(3.2rem, 7vw, 5.7rem);
+}
+
+.home-hero .hero-lead {
+  max-width: 700px;
+  margin-top: 18px;
+  font-size: 1.08rem;
+  line-height: 1.65;
+}
+
+.quick-info {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  max-width: 820px;
+  margin-top: 30px;
+}
+
+.quick-item {
+  min-width: 0;
+  padding: 15px 16px;
+  border: 1px solid #454545;
+  border-radius: 10px;
+  background: rgba(24,24,24,.92);
+}
+
+.quick-label {
+  display: block;
+  margin-bottom: 4px;
+  color: #9d9d9d;
+  font-size: .76rem;
+  font-weight: 750;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.quick-value {
+  display: block;
+  overflow: hidden;
+  color: #f7f7f7;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quick-value.copy-button {
+  width: 100%;
+  padding: 0;
+  text-align: left;
+}
+
+.home-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.discord-button {
+  gap: 9px;
+  color: #fff !important;
+  background: #5865f2 !important;
+}
+
+.discord-button:hover { background: #6873f4 !important; }
+.discord-icon { width: 20px; height: 20px; flex: 0 0 auto; }
+
+.home-main {
+  padding-block: 54px 74px;
+}
+
+.home-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(280px, .75fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.home-panel {
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #202020;
+}
+
+.home-panel h2 {
+  margin-bottom: 10px;
+  font-size: clamp(1.7rem, 3vw, 2.25rem);
+}
+
+.home-panel > p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.home-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 24px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--line);
+}
+
+.home-fact {
+  min-height: 126px;
+  padding: 18px;
+  background: #1b1b1b;
+}
+
+.home-fact strong {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 1.05rem;
+}
+
+.home-fact p {
+  margin: 0;
+  color: #b9b9b9;
+  font-size: .94rem;
+  line-height: 1.55;
+}
+
+.home-links {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.home-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: #e8e8e8;
+  background: #1a1a1a;
+}
+
+.home-link:hover {
+  border-color: #505050;
+  background: #232323;
+}
+
+.home-link span:last-child {
+  color: var(--accent-2);
+  font-weight: 800;
+}
+
+.start-box {
+  position: sticky;
+  top: 90px;
+}
+
+.start-row {
+  display: grid;
+  gap: 4px;
+  padding-block: 14px;
+  border-bottom: 1px solid var(--line);
+}
+.start-row:last-of-type { border-bottom: 0; }
+.start-row span { color: #989898; font-size: .8rem; }
+.start-row strong { font-size: 1rem; }
+
+.start-box .button {
+  width: 100%;
+  margin-top: 16px;
+}
+.start-box .discord-button { margin-top: 8px; }
+
+@media (max-width: 860px) {
+  .home-hero { min-height: auto; }
+  .home-hero-inner { padding-block: 58px; }
+  .quick-info { grid-template-columns: 1fr; max-width: 520px; }
+  .home-overview { grid-template-columns: 1fr; }
+  .start-box { position: static; }
+}
+
+@media (max-width: 600px) {
+  .home-main { padding-block: 38px 54px; }
+  .home-panel { padding: 20px; }
+  .home-facts { grid-template-columns: 1fr; }
+  .home-fact { min-height: 0; }
+  .home-actions { display: grid; }
+  .home-actions .button { width: 100%; }
+}
