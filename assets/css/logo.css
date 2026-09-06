@@ -4,7 +4,10 @@
   width: 34px;
   height: 34px;
   border-radius: 8px;
-  background: url('../images/politaria-logo-v3.png?v=3') center/cover no-repeat !important;
+  background-image: url('../images/icon.jpg?v=4') !important;
+  background-position: center center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
   box-shadow: none !important;
   color: transparent !important;
   font-size: 0 !important;
