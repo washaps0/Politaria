@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08111f">
+  <title>Обновления — Politaria</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <script defer src="assets/js/main.js"></script>
+  <style>
+    .updates-list{display:grid;gap:22px}
+    .update-card{padding:34px;border:1px solid var(--line);border-radius:24px;background:linear-gradient(180deg,rgba(16,36,58,.72),rgba(10,23,39,.66));box-shadow:var(--shadow)}
+    .update-card.featured{border-color:rgba(55,184,255,.32);background:radial-gradient(circle at 90% 0%,rgba(55,184,255,.10),transparent 34%),linear-gradient(180deg,rgba(16,36,58,.78),rgba(10,23,39,.7))}
+    .update-top{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:18px}
+    .update-date{color:var(--muted);font-size:.9rem;font-weight:700}
+    .update-card h2{font-size:clamp(1.8rem,3vw,2.7rem);margin-bottom:14px}
+    .update-card>p{margin:0 0 20px;color:var(--muted);font-size:1.04rem}
+    .update-points{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 22px;margin:0;padding:0;list-style:none}
+    .update-points li{position:relative;padding-left:18px;color:#c5d1df}
+    .update-points li::before{content:"";position:absolute;left:0;top:.72em;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+    .update-tag{display:inline-flex;padding:6px 10px;border:1px solid rgba(55,184,255,.22);border-radius:9px;background:rgba(55,184,255,.07);color:var(--accent-2);font-size:.72rem;font-weight:850;letter-spacing:.08em}
+    @media(max-width:720px){.update-card{padding:22px}.update-top{align-items:flex-start;flex-direction:column}.update-points{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="index.html"><span class="brand-mark">P</span><span>POLITARIA</span></a>
+    <button class="menu-toggle" type="button" aria-label="Открыть меню" aria-expanded="false">☰</button>
+    <nav class="nav">
+      <a href="index.html">Главная</a>
+      <a href="about.html">О сервере</a>
+      <a href="mechanics.html">Механики</a>
+      <a class="active" href="updates.html">Обновления</a>
+      <a href="rules.html">Правила</a>
+      <a class="nav-cta" href="join.html">Играть</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="page-hero container">
+      <span class="eyebrow">ОБНОВЛЕНИЯ</span>
+      <h1>Что нового</h1>
+      <p>Последние крупные изменения сервера.</p>
+    </section>
+
+    <section class="section container updates-list">
+      <article class="update-card featured">
+        <div class="update-top"><span class="update-tag">6 СЕНТЯБРЯ</span><span class="update-date">Государства и города</span></div>
+        <h2>Большое обновление территорий</h2>
+        <p>Система стран стала заметно ближе к Towny: больше контроля над городом, чанками и правами игроков.</p>
+        <ul class="update-points">
+          <li>Приватить можно только соседние чанки.</li>
+          <li>Одному игроку можно назначить несколько ролей.</li>
+          <li>Для города можно настраивать спавн нейтральных и враждебных мобов.</li>
+          <li>Добавлена продажа целых чанков как квартир.</li>
+          <li>Владелец купленного чанка получает собственные настройки прав.</li>
+          <li>Можно менять название чанка и задавать права ролям и отдельным игрокам.</li>
+        </ul>
+      </article>
+
+      <article class="update-card">
+        <div class="update-top"><span class="update-tag">6 СЕНТЯБРЯ</span><span class="update-date">Экономика</span></div>
+        <h2>Трейды и киты</h2>
+        <p>Добавлены новые способы тратить и передавать игровые деньги.</p>
+        <ul class="update-points">
+          <li>Появилась система безопасных трейдов между игроками.</li>
+          <li>В трейд можно добавлять не только предметы, но и деньги.</li>
+          <li>Количество предметов в трейде можно выбирать, а не отдавать весь слот.</li>
+          <li>Добавлены покупаемые киты разных уровней.</li>
+          <li>Состав китов расширен: броня, инструменты, еда и полезные расходники.</li>
+        </ul>
+      </article>
+
+      <article class="update-card">
+        <div class="update-top"><span class="update-tag">4–6 СЕНТЯБРЯ</span><span class="update-date">Навыки</span></div>
+        <h2>Переработана прокачка</h2>
+        <p>Опыт теперь сильнее зависит от того, что именно делает игрок.</p>
+        <ul class="update-points">
+          <li>Опыт за руды начисляется только после настоящей добычи блока.</li>
+          <li>Крафт разных материалов даёт разное количество опыта.</li>
+          <li>Дешёвые деревянные инструменты больше не подходят для быстрого фарма опыта.</li>
+          <li>Добавлен навык фермера.</li>
+          <li>Для фермера добавлены автоподбор, автопосадка и улучшенные шансы.</li>
+          <li>Добыча руд связана с принадлежностью игрока к государству.</li>
+        </ul>
+      </article>
+
+      <article class="update-card">
+        <div class="update-top"><span class="update-tag">3–6 СЕНТЯБРЯ</span><span class="update-date">Квесты и начало игры</span></div>
+        <h2>Стартовые задания</h2>
+        <p>Исправлены квесты, которые знакомят новых игроков с навыками и основными механиками.</p>
+        <ul class="update-points">
+          <li>Добавлен отдельный квест на знакомство с системой навыков.</li>
+          <li>Исправлено ложное завершение квеста до выполнения условий.</li>
+          <li>XP теперь засчитывается только за нужные действия.</li>
+          <li>Для крафтовых заданий учитываются инструменты и броня, а не любой предмет.</li>
+        </ul>
+      </article>
+
+      <article class="update-card">
+        <div class="update-top"><span class="update-tag">КОНЕЦ АВГУСТА — СЕНТЯБРЬ</span><span class="update-date">Техническое</span></div>
+        <h2>Телепортация, карта и исправления</h2>
+        <p>Несколько систем сервера были доработаны отдельно от основных механик.</p>
+        <ul class="update-points">
+          <li>Исправляется телепортация между измерениями.</li>
+          <li>Добавлена команда /spawn с корректной безопасной точкой появления.</li>
+          <li>Обновлены границы и территории на BlueMap.</li>
+          <li>Исправляется поведение мобов на территориях стран.</li>
+          <li>Исправлена логика фантомов в настройках враждебных мобов.</li>
+        </ul>
+      </article>
+    </section>
+  </main>
+
+  <footer class="footer container">
+    <a class="brand footer-brand" href="index.html"><span class="brand-mark">P</span><span>POLITARIA</span></a>
+    <p>Politaria — Minecraft-сервер.</p>
+    <span>© <span data-year></span> Politaria</span>
+  </footer>
+</body>
+</html>
