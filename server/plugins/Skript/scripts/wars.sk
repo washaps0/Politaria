@@ -4,27 +4,13 @@ options:
     war-capture-seconds: 300
     war-spawn-protection: 30 seconds
     war-truce-offer-duration: 5 minutes
-    war-menu-title: <dark gray>Объявление войны
     raid-duration: 1 hour
 
 # =========================================================
-# WAR STORAGE
+# POLITARIA WARS + RAIDS
+# Country menu already executes /war from its military slot.
+# /war now opens one combined military menu: wars + raids.
 # =========================================================
-# {war.active::<war>} = true
-# {war.attacker::<war>}, {war.defender::<war>}
-# {war.ends::<war>}, {war.next-front::<war>}
-# {war.country::<country>} = war id
-# {war.front::<war>::<v2 chunk key>} = true
-# {war.progress::<war>::<v2 chunk key>} = capture seconds
-# {war.captures::<war>::attacker/defender} = captured chunks
-# {war.truce.offerer::<war>}, {war.truce.expires::<war>}
-#
-# RAID STORAGE
-# {raid.active::<raid>} = true
-# {raid.attacker::<raid>}, {raid.defender::<raid>}
-# {raid.ends::<raid>}
-# {raid.country::<country>} = raid id
-# {raid.kills::<raid>::attacker/defender}
 
 function warBetween(first: text, second: text) :: text:
     if {_first} is "":
@@ -36,13 +22,13 @@ function warBetween(first: text, second: text) :: text:
         return ""
     if {war.active::%{_war}%} is not true:
         return ""
-    set {_attacker} to {war.attacker::%{_war}%}
-    set {_defender} to {war.defender::%{_war}%}
-    if {_first} is {_attacker}:
-        if {_second} is {_defender}:
+    set {_a} to {war.attacker::%{_war}%}
+    set {_d} to {war.defender::%{_war}%}
+    if {_first} is {_a}:
+        if {_second} is {_d}:
             return "%{_war}%"
-    if {_first} is {_defender}:
-        if {_second} is {_attacker}:
+    if {_first} is {_d}:
+        if {_second} is {_a}:
             return "%{_war}%"
     return ""
 
@@ -56,20 +42,18 @@ function raidBetween(first: text, second: text) :: text:
         return ""
     if {raid.active::%{_raid}%} is not true:
         return ""
-    set {_attacker} to {raid.attacker::%{_raid}%}
-    set {_defender} to {raid.defender::%{_raid}%}
-    if {_first} is {_attacker}:
-        if {_second} is {_defender}:
+    set {_a} to {raid.attacker::%{_raid}%}
+    set {_d} to {raid.defender::%{_raid}%}
+    if {_first} is {_a}:
+        if {_second} is {_d}:
             return "%{_raid}%"
-    if {_first} is {_defender}:
-        if {_second} is {_attacker}:
+    if {_first} is {_d}:
+        if {_second} is {_a}:
             return "%{_raid}%"
     return ""
 
 function warBossbarColor(country: text) :: text:
     set {_color} to countryColor({_country})
-    if {_color} is "<#FF7EB6>":
-        return "pink"
     if {_color} contains "red":
         return "red"
     if {_color} contains "blue":
@@ -100,33 +84,33 @@ function warCreateBossbar(war: text):
 function warUpdateBossbar(war: text):
     if {war.active::%{_war}%} is not true:
         stop
-    set {_attacker} to {war.attacker::%{_war}%}
-    set {_defender} to {war.defender::%{_war}%}
-    set {_attacker-captures} to {war.captures::%{_war}%::attacker}
-    set {_defender-captures} to {war.captures::%{_war}%::defender}
-    if {_attacker-captures} is not set:
-        set {_attacker-captures} to 0
-    if {_defender-captures} is not set:
-        set {_defender-captures} to 0
-    set {_attacker-name} to countryName({_attacker})
-    set {_defender-name} to countryName({_defender})
-    replace all """" with "'" in {_attacker-name}
-    replace all """" with "'" in {_defender-name}
-    set {_title} to "%{_attacker-name}% %{_attacker-captures}% чанков ⚔ %{_defender-captures}% чанков %{_defender-name}%"
-    set {_total} to {_attacker-captures} + {_defender-captures}
+    set {_a-country} to {war.attacker::%{_war}%}
+    set {_d-country} to {war.defender::%{_war}%}
+    set {_a} to {war.captures::%{_war}%::attacker}
+    set {_d} to {war.captures::%{_war}%::defender}
+    if {_a} is not set:
+        set {_a} to 0
+    if {_d} is not set:
+        set {_d} to 0
+    set {_an} to countryName({_a-country})
+    set {_dn} to countryName({_d-country})
+    replace all """" with "'" in {_an}
+    replace all """" with "'" in {_dn}
+    set {_title} to "%{_an}% %{_a}% чанков ⚔ %{_d}% чанков %{_dn}%"
+    set {_total} to {_a} + {_d}
     if {_total} is less than 1:
         set {_value} to 50
         set {_bar-color} to "white"
-    else if {_attacker-captures} is greater than or equal to {_defender-captures}:
-        set {_value} to rounded ({_attacker-captures} * 100 / {_total})
-        set {_bar-color} to warBossbarColor({_attacker})
     else:
-        set {_value} to rounded ({_defender-captures} * 100 / {_total})
-        set {_bar-color} to warBossbarColor({_defender})
+        if {_a} is greater than or equal to {_d}:
+            set {_value} to rounded ({_a} * 100 / {_total})
+            set {_bar-color} to warBossbarColor({_a-country})
+        else:
+            set {_value} to rounded ({_d} * 100 / {_total})
+            set {_bar-color} to warBossbarColor({_d-country})
     execute console command "bossbar set politaria:war_%{_war}% name {""text"":""%{_title}%""}"
     execute console command "bossbar set politaria:war_%{_war}% value %{_value}%"
     execute console command "bossbar set politaria:war_%{_war}% color %{_bar-color}%"
-    execute console command "bossbar set politaria:war_%{_war}% players @a"
 
 function warSelectFront(war: text):
     delete {war.front::%{_war}%::*}
@@ -146,43 +130,49 @@ function warSelectFront(war: text):
                     set {_west} to {_cx} - 1
                     set {_south} to {_cz} + 1
                     set {_north} to {_cz} - 1
-                    set {_is-border} to false
+                    set {_border-chunk} to false
                     if {country.claim::v2|%{_world}%|%{_east}%|%{_cz}%} is not {_defender}:
-                        set {_is-border} to true
+                        set {_border-chunk} to true
                     if {country.claim::v2|%{_world}%|%{_west}%|%{_cz}%} is not {_defender}:
-                        set {_is-border} to true
+                        set {_border-chunk} to true
                     if {country.claim::v2|%{_world}%|%{_cx}%|%{_south}%} is not {_defender}:
-                        set {_is-border} to true
+                        set {_border-chunk} to true
                     if {country.claim::v2|%{_world}%|%{_cx}%|%{_north}%} is not {_defender}:
-                        set {_is-border} to true
-                    if {_is-border} is true:
+                        set {_border-chunk} to true
+                    if {_border-chunk} is true:
                         add {_key} to {_border::*}
+
     set {_selected} to 0
     loop 4 times:
-        if size of {_border::*} is less than 1:
-            stop loop
-        set {_pick} to random element out of {_border::*}
-        set {war.front::%{_war}%::%{_pick}%} to true
-        set {war.progress::%{_war}%::%{_pick}%} to 0
-        remove {_pick} from {_border::*}
-        add 1 to {_selected}
+        if size of {_border::*} is greater than 0:
+            set {_pick} to random element out of {_border::*}
+            set {war.front::%{_war}%::%{_pick}%} to true
+            set {war.progress::%{_war}%::%{_pick}%} to 0
+            remove {_pick} from {_border::*}
+            add 1 to {_selected}
+
     set {war.next-front::%{_war}%} to {@war-front-interval} from now
     set {_attacker} to {war.attacker::%{_war}%}
     loop all players:
-        set {_country} to countryId(loop-player)
-        if {_country} is {_attacker} or {_country} is {_defender}:
-            send formatted "<gold><bold>ФРОНТ ОБНОВЛЁН</bold> <gray>Пограничных чанков: <white>%{_selected}%<gray>. Для захвата нужен перевес игроков в течение суммарно 5 минут." to loop-player
+        set {_c} to countryId(loop-player)
+        set {_notify} to false
+        if {_c} is {_attacker}:
+            set {_notify} to true
+        if {_c} is {_defender}:
+            set {_notify} to true
+        if {_notify} is true:
+            send formatted "<gold><bold>ФРОНТ ОБНОВЛЁН</bold> <gray>Активных пограничных чанков: <white>%{_selected}%<gray>. Захват требует 5 минут численного перевеса." to loop-player
             loop {war.front::%{_war}%::*}:
-                set {_parts::*} to loop-index split at "|"
-                send formatted "<dark gray>• <white>%{_parts::2}% <gray>— чанк <white>%{_parts::3}%, %{_parts::4}%" to loop-player
+                set {_p::*} to loop-index split at "|"
+                send formatted "<dark gray>• <white>%{_p::2}% <gray>— чанк <white>%{_p::3}%, %{_p::4}%" to loop-player
 
 function warTransferChunk(war: text, key: text, newOwner: text):
-    set {_old-owner} to {country.claim::%{_key}%}
-    if {_old-owner} is {_newOwner}:
+    set {_old} to {country.claim::%{_key}%}
+    if {_old} is {_newOwner}:
         set {war.progress::%{_war}%::%{_key}%} to 0
         stop
-    if {_old-owner} is set:
-        delete {country.claims::%{_old-owner}%::%{_key}%}
+    if {_old} is set:
+        delete {country.claims::%{_old}%::%{_key}%}
     delete {country.chunk-sale::%{_key}%}
     delete {country.chunk-owner::%{_key}%}
     delete {country.chunk-owner-name::%{_key}%}
@@ -191,13 +181,13 @@ function warTransferChunk(war: text, key: text, newOwner: text):
     set {country.claim::%{_key}%} to {_newOwner}
     set {country.claims::%{_newOwner}%::%{_key}%} to true
     set {war.progress::%{_war}%::%{_key}%} to 0
-    set {_attacker} to {war.attacker::%{_war}%}
-    set {_defender} to {war.defender::%{_war}%}
-    if {_newOwner} is {_attacker}:
+    set {_a} to {war.attacker::%{_war}%}
+    set {_d} to {war.defender::%{_war}%}
+    if {_newOwner} is {_a}:
         add 1 to {war.captures::%{_war}%::attacker}
-    else if {_newOwner} is {_defender}:
+    if {_newOwner} is {_d}:
         add 1 to {war.captures::%{_war}%::defender}
-    broadcast formatted "<red><bold>ЧАНК ЗАХВАЧЕН!</bold> <gray>%countryColor({_newOwner})%%countryName({_newOwner})% <gray>получает <white>%{_key}%<gray>."
+    broadcast formatted "<red><bold>ЧАНК ЗАХВАЧЕН!</bold> %countryColor({_newOwner})%%countryName({_newOwner})% <gray>получает <white>%{_key}%<gray>."
     warUpdateBossbar({_war})
 
 function warProcessCapture(war: text):
@@ -205,65 +195,92 @@ function warProcessCapture(war: text):
         stop
     set {_attacker} to {war.attacker::%{_war}%}
     set {_defender} to {war.defender::%{_war}%}
+
     loop {war.front::%{_war}%::*}:
         set {_key} to loop-index
         set {_owner} to {country.claim::%{_key}%}
-        if {_owner} is not {_attacker}:
-            if {_owner} is not {_defender}:
-                set {war.progress::%{_war}%::%{_key}%} to 0
-                next loop
-        set {_attackers} to 0
-        set {_defenders} to 0
-        loop all players:
-            if countryLocationKey(location of loop-player) is {_key}:
-                set {_country} to countryId(loop-player)
-                if {_country} is {_attacker}:
-                    add 1 to {_attackers}
-                else if {_country} is {_defender}:
-                    add 1 to {_defenders}
-        if {war.progress::%{_war}%::%{_key}%} is not set:
-            set {war.progress::%{_war}%::%{_key}%} to 0
-        set {_progress} to {war.progress::%{_war}%::%{_key}%}
-        if {_attackers} is greater than {_defenders}:
-            if {_owner} is {_defender}:
-                add 1 to {_progress}
-                if {_progress} is greater than {@war-capture-seconds}:
-                    set {_progress} to {@war-capture-seconds}
-            else:
-                if {_progress} is less than 0:
-                    add 1 to {_progress}
-        else if {_defenders} is greater than {_attackers}:
-            if {_owner} is {_attacker}:
-                subtract 1 from {_progress}
-                if {_progress} is less than 0 - {@war-capture-seconds}:
-                    set {_progress} to 0 - {@war-capture-seconds}
-            else:
-                if {_progress} is greater than 0:
-                    subtract 1 from {_progress}
-        set {war.progress::%{_war}%::%{_key}%} to {_progress}
-        if {_owner} is {_defender}:
-            if {_progress} is greater than or equal to {@war-capture-seconds}:
-                warTransferChunk({_war}, {_key}, {_attacker})
-                next loop
+        set {_valid} to false
         if {_owner} is {_attacker}:
-            if {_progress} is less than or equal to 0 - {@war-capture-seconds}:
-                warTransferChunk({_war}, {_key}, {_defender})
-                next loop
-        if {_attackers} is greater than 0 or {_defenders} is greater than 0:
-            set {_shown} to {_progress}
-            if {_shown} is less than 0:
-                set {_shown} to 0 - {_shown}
-            set {_percent} to rounded ({_shown} * 100 / {@war-capture-seconds})
+            set {_valid} to true
+        if {_owner} is {_defender}:
+            set {_valid} to true
+
+        if {_valid} is true:
+            set {_attackers} to 0
+            set {_defenders} to 0
+
             loop all players:
                 if countryLocationKey(location of loop-player) is {_key}:
-                    set {_viewer-country} to countryId(loop-player)
-                    if {_viewer-country} is {_attacker} or {_viewer-country} is {_defender}:
-                        if {_attackers} is {_defenders}:
-                            send action bar formatted "<yellow><bold>ЗАХВАТ %{_percent}%%</bold> <gray>• равные силы, прогресс стоит" to loop-player
-                        else if {_attackers} is greater than {_defenders}:
-                            send action bar formatted "<red><bold>ЗАХВАТ %{_percent}%%</bold> <gray>• перевес %countryName({_attacker})% <white>%{_attackers}%:%{_defenders}%" to loop-player
-                        else:
-                            send action bar formatted "<aqua><bold>ЗАХВАТ %{_percent}%%</bold> <gray>• перевес %countryName({_defender})% <white>%{_defenders}%:%{_attackers}%" to loop-player
+                    set {_c} to countryId(loop-player)
+                    if {_c} is {_attacker}:
+                        add 1 to {_attackers}
+                    if {_c} is {_defender}:
+                        add 1 to {_defenders}
+
+            if {war.progress::%{_war}%::%{_key}%} is not set:
+                set {war.progress::%{_war}%::%{_key}%} to 0
+            set {_progress} to {war.progress::%{_war}%::%{_key}%}
+
+            if {_attackers} is greater than {_defenders}:
+                if {_owner} is {_defender}:
+                    add 1 to {_progress}
+                    if {_progress} is greater than {@war-capture-seconds}:
+                        set {_progress} to {@war-capture-seconds}
+                if {_owner} is {_attacker}:
+                    if {_progress} is less than 0:
+                        add 1 to {_progress}
+
+            if {_defenders} is greater than {_attackers}:
+                if {_owner} is {_attacker}:
+                    subtract 1 from {_progress}
+                    set {_minimum} to 0 - {@war-capture-seconds}
+                    if {_progress} is less than {_minimum}:
+                        set {_progress} to {_minimum}
+                if {_owner} is {_defender}:
+                    if {_progress} is greater than 0:
+                        subtract 1 from {_progress}
+
+            set {war.progress::%{_war}%::%{_key}%} to {_progress}
+            set {_captured} to false
+
+            if {_owner} is {_defender}:
+                if {_progress} is greater than or equal to {@war-capture-seconds}:
+                    warTransferChunk({_war}, {_key}, {_attacker})
+                    set {_captured} to true
+
+            if {_captured} is false:
+                if {_owner} is {_attacker}:
+                    set {_minimum} to 0 - {@war-capture-seconds}
+                    if {_progress} is less than or equal to {_minimum}:
+                        warTransferChunk({_war}, {_key}, {_defender})
+                        set {_captured} to true
+
+            if {_captured} is false:
+                set {_present} to {_attackers} + {_defenders}
+                if {_present} is greater than 0:
+                    set {_shown} to {_progress}
+                    if {_shown} is less than 0:
+                        set {_shown} to 0 - {_shown}
+                    set {_percent} to rounded ({_shown} * 100 / {@war-capture-seconds})
+
+                    loop all players:
+                        if countryLocationKey(location of loop-player) is {_key}:
+                            set {_viewer-country} to countryId(loop-player)
+                            set {_viewer} to false
+                            if {_viewer-country} is {_attacker}:
+                                set {_viewer} to true
+                            if {_viewer-country} is {_defender}:
+                                set {_viewer} to true
+                            if {_viewer} is true:
+                                if {_attackers} is {_defenders}:
+                                    send action bar formatted "<yellow><bold>ЗАХВАТ %{_percent}%%</bold> <gray>• равные силы, прогресс стоит" to loop-player
+                                else:
+                                    if {_attackers} is greater than {_defenders}:
+                                        send action bar formatted "<red><bold>ЗАХВАТ %{_percent}%%</bold> <gray>• перевес %countryName({_attacker})% <white>%{_attackers}%:%{_defenders}%" to loop-player
+                                    else:
+                                        send action bar formatted "<aqua><bold>ЗАХВАТ %{_percent}%%</bold> <gray>• перевес %countryName({_defender})% <white>%{_defenders}%:%{_attackers}%" to loop-player
+        else:
+            set {war.progress::%{_war}%::%{_key}%} to 0
 
 function warStart(attacker: text, defender: text):
     if {war.next-id} is not set:
@@ -281,14 +298,14 @@ function warStart(attacker: text, defender: text):
     warCreateBossbar({_war})
     warSelectFront({_war})
     warUpdateBossbar({_war})
-    broadcast formatted "<red><bold>ОБЪЯВЛЕНА ВОЙНА!</bold> %countryColor({_attacker})%%countryName({_attacker})% <gray>напала на %countryColor({_defender})%%countryName({_defender})%<gray>. Победа определяется захватом чанков, а не убийствами."
+    broadcast formatted "<red><bold>ОБЪЯВЛЕНА ВОЙНА!</bold> %countryColor({_attacker})%%countryName({_attacker})% <gray>напала на %countryColor({_defender})%%countryName({_defender})%<gray>. Территории захватываются удержанием фронтовых чанков."
 
 function warClear(war: text):
-    set {_attacker} to {war.attacker::%{_war}%}
-    set {_defender} to {war.defender::%{_war}%}
+    set {_a} to {war.attacker::%{_war}%}
+    set {_d} to {war.defender::%{_war}%}
     execute console command "bossbar remove politaria:war_%{_war}%"
-    delete {war.country::%{_attacker}%}
-    delete {war.country::%{_defender}%}
+    delete {war.country::%{_a}%}
+    delete {war.country::%{_d}%}
     delete {war.front::%{_war}%::*}
     delete {war.progress::%{_war}%::*}
     delete {war.captures::%{_war}%::*}
@@ -301,20 +318,21 @@ function warClear(war: text):
     delete {war.active::%{_war}%}
 
 function warFinish(war: text):
-    set {_attacker} to {war.attacker::%{_war}%}
-    set {_defender} to {war.defender::%{_war}%}
-    set {_attacker-captures} to {war.captures::%{_war}%::attacker}
-    set {_defender-captures} to {war.captures::%{_war}%::defender}
-    if {_attacker-captures} is not set:
-        set {_attacker-captures} to 0
-    if {_defender-captures} is not set:
-        set {_defender-captures} to 0
-    if {_attacker-captures} is greater than {_defender-captures}:
-        broadcast formatted "<gold><bold>ВОЙНА ОКОНЧЕНА!</bold> Победитель: %countryColor({_attacker})%%countryName({_attacker})%<gray>. Захвачено чанков: <white>%{_attacker-captures}%:%{_defender-captures}%<gray>."
-    else if {_defender-captures} is greater than {_attacker-captures}:
-        broadcast formatted "<gold><bold>ВОЙНА ОКОНЧЕНА!</bold> Победитель: %countryColor({_defender})%%countryName({_defender})%<gray>. Захвачено чанков: <white>%{_defender-captures}%:%{_attacker-captures}%<gray>."
+    set {_a-country} to {war.attacker::%{_war}%}
+    set {_d-country} to {war.defender::%{_war}%}
+    set {_a} to {war.captures::%{_war}%::attacker}
+    set {_d} to {war.captures::%{_war}%::defender}
+    if {_a} is not set:
+        set {_a} to 0
+    if {_d} is not set:
+        set {_d} to 0
+    if {_a} is greater than {_d}:
+        broadcast formatted "<gold><bold>ВОЙНА ОКОНЧЕНА!</bold> Победитель: %countryColor({_a-country})%%countryName({_a-country})%<gray>. Захвачено чанков: <white>%{_a}%:%{_d}%<gray>."
     else:
-        broadcast formatted "<gold><bold>ВОЙНА ОКОНЧЕНА НИЧЬЕЙ.</bold> <gray>Захвачено чанков: <white>%{_attacker-captures}%:%{_defender-captures}%<gray>."
+        if {_d} is greater than {_a}:
+            broadcast formatted "<gold><bold>ВОЙНА ОКОНЧЕНА!</bold> Победитель: %countryColor({_d-country})%%countryName({_d-country})%<gray>. Захвачено чанков: <white>%{_d}%:%{_a}%<gray>."
+        else:
+            broadcast formatted "<gold><bold>ВОЙНА ОКОНЧЕНА НИЧЬЕЙ.</bold> <gray>Захвачено чанков: <white>%{_a}%:%{_d}%<gray>."
     warClear({_war})
 
 function warOfferTruce(p: player):
@@ -331,143 +349,44 @@ function warOfferTruce(p: player):
         stop
     if {war.truce.offerer::%{_war}%} is {_country}:
         if {war.truce.expires::%{_war}%} is in the future:
-            send "<yellow>Ваша страна уже предложила перемирие." to {_p}
+            send "<yellow>Перемирие уже предложено." to {_p}
             stop
     set {war.truce.offerer::%{_war}%} to {_country}
     set {war.truce.expires::%{_war}%} to {@war-truce-offer-duration} from now
-    set {_attacker} to {war.attacker::%{_war}%}
-    set {_defender} to {war.defender::%{_war}%}
-    if {_country} is {_attacker}:
-        set {_recipient} to {_defender}
+    set {_a} to {war.attacker::%{_war}%}
+    set {_d} to {war.defender::%{_war}%}
+    if {_country} is {_a}:
+        set {_target} to {_d}
     else:
-        set {_recipient} to {_attacker}
-    send formatted "<green>Вы предложили перемирие стране %countryColor({_recipient})%%countryName({_recipient})%<green>." to {_p}
+        set {_target} to {_a}
     loop all players:
-        if countryId(loop-player) is {_recipient}:
-            send formatted "<gold><bold>ПЕРЕМИРИЕ</bold> <gray>%countryName({_country})% предлагает закончить войну. <white>/war accept" to loop-player
+        if countryId(loop-player) is {_target}:
+            send formatted "<gold><bold>ПЕРЕМИРИЕ</bold> %countryName({_country})% <gray>предлагает закончить войну. <white>/war accept" to loop-player
+    send "<green>Предложение перемирия отправлено." to {_p}
 
 function warAcceptTruce(p: player):
     set {_country} to countryId({_p})
-    if {_country} is "":
-        send "<red>Вы не состоите в стране." to {_p}
-        stop
-    if countryHasPermission({_p}, "DECLARE_WAR") is not true:
-        send "<red>У вашей роли нет права принимать перемирие." to {_p}
-        stop
     set {_war} to {war.country::%{_country}%}
     if {war.active::%{_war}%} is not true:
-        send "<red>Ваша страна сейчас не участвует в войне." to {_p}
+        send "<red>Ваша страна не участвует в войне." to {_p}
+        stop
+    if countryHasPermission({_p}, "DECLARE_WAR") is not true:
+        send "<red>Нет права принимать перемирие." to {_p}
         stop
     if {war.truce.offerer::%{_war}%} is not set:
-        send "<red>Нет активного предложения перемирия." to {_p}
+        send "<red>Нет предложения перемирия." to {_p}
         stop
     if {war.truce.expires::%{_war}%} is not in the future:
         delete {war.truce.offerer::%{_war}%}
         delete {war.truce.expires::%{_war}%}
-        send "<red>Срок предложения истёк." to {_p}
+        send "<red>Предложение истекло." to {_p}
         stop
     if {war.truce.offerer::%{_war}%} is {_country}:
-        send "<red>Нельзя принять собственное предложение." to {_p}
+        send "<red>Нельзя принять своё предложение." to {_p}
         stop
-    set {_offerer} to {war.truce.offerer::%{_war}%}
-    broadcast formatted "<light green><bold>ПЕРЕМИРИЕ ПРИНЯТО!</bold> <gray>%countryName({_offerer})% и %countryName({_country})% закончили войну."
+    set {_other} to {war.truce.offerer::%{_war}%}
+    broadcast formatted "<light green><bold>ПЕРЕМИРИЕ!</bold> %countryName({_country})% <gray>и %countryName({_other})% закончили войну."
     warClear({_war})
-
-function warOpenStatus(p: player):
-    set {_country} to countryId({_p})
-    if {_country} is "":
-        send "<red>Вы не состоите в стране." to {_p}
-        stop
-    set {_war} to {war.country::%{_country}%}
-    if {war.active::%{_war}%} is not true:
-        warOpenList({_p})
-        stop
-    set {_attacker} to {war.attacker::%{_war}%}
-    set {_defender} to {war.defender::%{_war}%}
-    set {_a} to {war.captures::%{_war}%::attacker}
-    set {_d} to {war.captures::%{_war}%::defender}
-    if {_a} is not set:
-        set {_a} to 0
-    if {_d} is not set:
-        set {_d} to 0
-    set {_remaining} to difference between {war.ends::%{_war}%} and now
-    set {_menu} to chest inventory with 3 rows named "<dark red>Текущая война"
-    loop integers between 0 and 26:
-        set slot loop-value of {_menu} to gray stained glass pane named " "
-    set {_attacker-icon} to {country.icon::%{_attacker}%} parsed as item type
-    if {_attacker-icon} is not set:
-        set {_attacker-icon} to white banner
-    set {_defender-icon} to {country.icon::%{_defender}%} parsed as item type
-    if {_defender-icon} is not set:
-        set {_defender-icon} to white banner
-    set slot 3 of {_menu} to {_attacker-icon} named "%countryColor({_attacker})%<bold>%countryName({_attacker})%" with lore "<gray>Захвачено чанков: <white>%{_a}%"
-    set slot 5 of {_menu} to {_defender-icon} named "%countryColor({_defender})%<bold>%countryName({_defender})%" with lore "<gray>Захвачено чанков: <white>%{_d}%"
-    set slot 4 of {_menu} to clock named "<gold><bold>СТАТУС ВОЙНЫ" with lore "<gray>До завершения: <white>%{_remaining}%" and "<gray>Захваты: <white>%{_a}% <dark gray>— <white>%{_d}%" and "<gray>Чанк берётся за <white>5 минут перевеса"
-    if {war.truce.offerer::%{_war}%} is set:
-        if {war.truce.expires::%{_war}%} is in the future:
-            if {war.truce.offerer::%{_war}%} is {_country}:
-                set slot 11 of {_menu} to gray concrete named "<gray><bold>ПЕРЕМИРИЕ ПРЕДЛОЖЕНО"
-            else:
-                set slot 11 of {_menu} to lime concrete named "<green><bold>ПРИНЯТЬ ПЕРЕМИРИЕ"
-        else:
-            set slot 11 of {_menu} to yellow concrete named "<gold><bold>ПРЕДЛОЖИТЬ ПЕРЕМИРИЕ"
-    else:
-        set slot 11 of {_menu} to yellow concrete named "<gold><bold>ПРЕДЛОЖИТЬ ПЕРЕМИРИЕ"
-    set slot 15 of {_menu} to barrier named "<red>Закрыть"
-    open {_menu} to {_p}
-    set {war.menu::%uuid of {_p}%} to "status"
-
-function warOpenList(p: player):
-    set {_own} to countryId({_p})
-    if {_own} is "":
-        send "<red>Вы не состоите в стране." to {_p}
-        stop
-    if countryHasPermission({_p}, "DECLARE_WAR") is not true:
-        send "<red>У вашей роли нет права объявлять войну." to {_p}
-        stop
-    if {war.country::%{_own}%} is set:
-        warOpenStatus({_p})
-        stop
-    set {_menu} to chest inventory with 6 rows named "{@war-menu-title}"
-    loop integers between 0 and 53:
-        set slot loop-value of {_menu} to gray stained glass pane named " "
-    delete {war.menu-country::%uuid of {_p}%::*}
-    set {_slot} to 0
-    loop {country.name::*}:
-        set {_country} to loop-index
-        if {_country} is not {_own}:
-            if {_slot} is less than 45:
-                set {_type} to {country.icon::%{_country}%} parsed as item type
-                if {_type} is not set:
-                    set {_type} to white banner
-                if {war.country::%{_country}%} is set:
-                    set slot {_slot} of {_menu} to barrier named "%countryColor({_country})%<bold>%loop-value%" with lore "<red>Страна уже участвует в войне"
-                else:
-                    set slot {_slot} of {_menu} to {_type} named "%countryColor({_country})%<bold>%loop-value%" with lore "<gray>Участников: <white>%countryMemberCount({_country})%" and "<gray>Чанков: <white>%countryClaimCount({_country})%" and "" and "<red>Нажмите, чтобы объявить войну"
-                    set {war.menu-country::%uuid of {_p}%::%{_slot}%} to {_country}
-                add 1 to {_slot}
-    set slot 49 of {_menu} to barrier named "<red>Закрыть"
-    open {_menu} to {_p}
-    set {war.menu::%uuid of {_p}%} to "list"
-
-function warOpenConfirmation(p: player, defender: text):
-    set {_menu} to chest inventory with 3 rows named "<dark red>Подтверждение войны"
-    loop integers between 0 and 26:
-        set slot loop-value of {_menu} to gray stained glass pane named " "
-    set slot 4 of {_menu} to iron sword named "<red><bold>ВОЙНА С %countryName({_defender})%" with lore "<gray>Продолжительность: <white>2 реальных дня" and "<gray>Новый фронт: <white>каждые 30 минут" and "<gray>Захват чанка: <white>5 минут перевеса" and "<gray>Победа: <white>больше захваченных чанков"
-    set slot 11 of {_menu} to lime concrete named "<green><bold>ОТМЕНА"
-    set slot 15 of {_menu} to red concrete named "<red><bold>ОБЪЯВИТЬ ВОЙНУ" with lore "<red>Война начнётся немедленно"
-    set {war.selected-country::%uuid of {_p}%} to {_defender}
-    open {_menu} to {_p}
-    set {war.menu::%uuid of {_p}%} to "confirm"
-
-function raidResolveCountry(query: text) :: text:
-    if {country.name::%{_query}%} is set:
-        return {_query}
-    loop {country.name::*}:
-        if loop-value is {_query}:
-            return loop-index
-    return ""
 
 function raidStart(attacker: text, defender: text):
     if {raid.next-id} is not set:
@@ -482,11 +401,11 @@ function raidStart(attacker: text, defender: text):
     set {raid.kills::%{_raid}%::attacker} to 0
     set {raid.kills::%{_raid}%::defender} to 0
     set {raid.ends::%{_raid}%} to {@raid-duration} from now
-    broadcast formatted "<dark red><bold>РЕЙД!</bold> %countryColor({_attacker})%%countryName({_attacker})% <gray>начала рейд против %countryColor({_defender})%%countryName({_defender})%<gray>. Рейд продлится ровно 1 час. Территории не переходят."
+    broadcast formatted "<dark red><bold>РЕЙД!</bold> %countryColor({_attacker})%%countryName({_attacker})% <gray>начала рейд против %countryColor({_defender})%%countryName({_defender})%<gray>. Длительность: ровно 1 час."
 
 function raidFinish(raid: text):
-    set {_attacker} to {raid.attacker::%{_raid}%}
-    set {_defender} to {raid.defender::%{_raid}%}
+    set {_a-country} to {raid.attacker::%{_raid}%}
+    set {_d-country} to {raid.defender::%{_raid}%}
     set {_a} to {raid.kills::%{_raid}%::attacker}
     set {_d} to {raid.kills::%{_raid}%::defender}
     if {_a} is not set:
@@ -494,47 +413,154 @@ function raidFinish(raid: text):
     if {_d} is not set:
         set {_d} to 0
     if {_a} is greater than {_d}:
-        if {country.treasury::%{_defender}%} is not set:
-            set {country.treasury::%{_defender}%} to 0
-        if {country.treasury::%{_attacker}%} is not set:
-            set {country.treasury::%{_attacker}%} to 0
-        set {_loot} to {country.treasury::%{_defender}%} / 2
-        remove {_loot} from {country.treasury::%{_defender}%}
-        add {_loot} to {country.treasury::%{_attacker}%}
-        broadcast formatted "<gold><bold>РЕЙД ОКОНЧЕН!</bold> %countryColor({_attacker})%%countryName({_attacker})% <gray>побеждает <white>%{_a}%:%{_d}% <gray>и забирает <gold>%{_loot}% монет <gray>(50%% казны противника)."
-    else if {_d} is greater than {_a}:
-        broadcast formatted "<gold><bold>РЕЙД ОКОНЧЕН!</bold> %countryColor({_defender})%%countryName({_defender})% <gray>отбила рейд со счётом <white>%{_d}%:%{_a}%<gray>. Казна не меняется."
+        if {country.treasury::%{_d-country}%} is not set:
+            set {country.treasury::%{_d-country}%} to 0
+        if {country.treasury::%{_a-country}%} is not set:
+            set {country.treasury::%{_a-country}%} to 0
+        set {_loot} to {country.treasury::%{_d-country}%} / 2
+        remove {_loot} from {country.treasury::%{_d-country}%}
+        add {_loot} to {country.treasury::%{_a-country}%}
+        broadcast formatted "<gold><bold>РЕЙД ОКОНЧЕН!</bold> %countryName({_a-country})% <gray>побеждает <white>%{_a}%:%{_d}% <gray>и забирает <gold>%{_loot}% монет <gray>из казны противника."
     else:
-        broadcast formatted "<gold><bold>РЕЙД ОКОНЧЕН НИЧЬЕЙ.</bold> <gray>Счёт <white>%{_a}%:%{_d}%<gray>. Казна не меняется."
-    delete {raid.country::%{_attacker}%}
-    delete {raid.country::%{_defender}%}
+        if {_d} is greater than {_a}:
+            broadcast formatted "<gold><bold>РЕЙД ОТБИТ!</bold> %countryName({_d-country})% <gray>побеждает <white>%{_d}%:%{_a}%<gray>. Казна не меняется."
+        else:
+            broadcast formatted "<gold><bold>РЕЙД ОКОНЧЕН НИЧЬЕЙ.</bold> <gray>Счёт <white>%{_a}%:%{_d}%<gray>. Казна не меняется."
+    delete {raid.country::%{_a-country}%}
+    delete {raid.country::%{_d-country}%}
     delete {raid.kills::%{_raid}%::*}
     delete {raid.attacker::%{_raid}%}
     delete {raid.defender::%{_raid}%}
     delete {raid.ends::%{_raid}%}
     delete {raid.active::%{_raid}%}
 
-function raidProcess():
-    loop {raid.active::*}:
-        set {_raid} to loop-index
-        if {raid.ends::%{_raid}%} is not set:
-            raidFinish({_raid})
-        else if {raid.ends::%{_raid}%} is in the past:
-            raidFinish({_raid})
-
 function warProcess():
     loop {war.active::*}:
         set {_war} to loop-index
         if {war.ends::%{_war}%} is not set:
             warFinish({_war})
-        else if {war.ends::%{_war}%} is in the past:
-            warFinish({_war})
         else:
-            if {war.next-front::%{_war}%} is not set:
-                warSelectFront({_war})
-            else if {war.next-front::%{_war}%} is in the past:
-                warSelectFront({_war})
-            warUpdateBossbar({_war})
+            if {war.ends::%{_war}%} is in the past:
+                warFinish({_war})
+            else:
+                if {war.next-front::%{_war}%} is not set:
+                    warSelectFront({_war})
+                else:
+                    if {war.next-front::%{_war}%} is in the past:
+                        warSelectFront({_war})
+                warUpdateBossbar({_war})
+
+function raidProcess():
+    loop {raid.active::*}:
+        set {_raid} to loop-index
+        if {raid.ends::%{_raid}%} is not set:
+            raidFinish({_raid})
+        else:
+            if {raid.ends::%{_raid}%} is in the past:
+                raidFinish({_raid})
+
+# =========================================================
+# GUI — opened from /country -> military slot -> /war
+# =========================================================
+
+function militaryOpen(p: player):
+    set {_country} to countryId({_p})
+    if {_country} is "":
+        send "<red>Вы не состоите в стране." to {_p}
+        stop
+    set {_menu} to chest inventory with 3 rows named "<dark gray>Войны и рейды"
+    loop integers between 0 and 26:
+        set slot loop-value of {_menu} to gray stained glass pane named " "
+
+    set {_war} to {war.country::%{_country}%}
+    if {war.active::%{_war}%} is true:
+        set slot 11 of {_menu} to iron sword named "<red><bold>ТЕКУЩАЯ ВОЙНА" with lore "<gray>Посмотреть фронты, захваты" and "<gray>и предложить перемирие"
+    else:
+        set slot 11 of {_menu} to iron sword named "<red><bold>ОБЪЯВИТЬ ВОЙНУ" with lore "<gray>Захватывайте территории противника" and "<gray>удержанием фронтовых чанков 5 минут"
+
+    set {_raid} to {raid.country::%{_country}%}
+    if {raid.active::%{_raid}%} is true:
+        set {_ka} to {raid.kills::%{_raid}%::attacker}
+        set {_kd} to {raid.kills::%{_raid}%::defender}
+        set {_remaining} to difference between {raid.ends::%{_raid}%} and now
+        set slot 15 of {_menu} to golden sword named "<gold><bold>ТЕКУЩИЙ РЕЙД" with lore "<gray>Счёт: <white>%{_ka}%:%{_kd}%" and "<gray>Осталось: <white>%{_remaining}%"
+    else:
+        set slot 15 of {_menu} to golden sword named "<gold><bold>НАЧАТЬ РЕЙД" with lore "<gray>Рейд длится ровно 1 час" and "<gray>Победа атакующих: <gold>50%% казны защитника" and "<gray>Территории не переходят"
+
+    set slot 22 of {_menu} to arrow named "<yellow>Назад в меню страны"
+    open {_menu} to {_p}
+    set {war.menu::%uuid of {_p}%} to "hub"
+
+function warOpenStatus(p: player):
+    set {_country} to countryId({_p})
+    set {_war} to {war.country::%{_country}%}
+    if {war.active::%{_war}%} is not true:
+        warOpenList({_p})
+        stop
+    set {_a-country} to {war.attacker::%{_war}%}
+    set {_d-country} to {war.defender::%{_war}%}
+    set {_a} to {war.captures::%{_war}%::attacker}
+    set {_d} to {war.captures::%{_war}%::defender}
+    set {_remaining} to difference between {war.ends::%{_war}%} and now
+    set {_menu} to chest inventory with 3 rows named "<dark red>Текущая война"
+    loop integers between 0 and 26:
+        set slot loop-value of {_menu} to gray stained glass pane named " "
+    set slot 4 of {_menu} to clock named "<gold><bold>СТАТУС ВОЙНЫ" with lore "<gray>До завершения: <white>%{_remaining}%" and "<gray>Захвачено: <white>%{_a}% <dark gray>— <white>%{_d}%" and "<gray>Захват чанка: <white>5 минут перевеса"
+    set slot 11 of {_menu} to yellow concrete named "<gold><bold>ПЕРЕМИРИЕ" with lore "<gray>Предложить или принять перемирие"
+    set slot 15 of {_menu} to arrow named "<yellow>Назад"
+    open {_menu} to {_p}
+    set {war.menu::%uuid of {_p}%} to "war-status"
+
+function warOpenList(p: player):
+    set {_own} to countryId({_p})
+    if countryHasPermission({_p}, "DECLARE_WAR") is not true:
+        send "<red>У вашей роли нет права объявлять войну." to {_p}
+        stop
+    set {_menu} to chest inventory with 6 rows named "<dark red>Объявление войны"
+    loop integers between 0 and 53:
+        set slot loop-value of {_menu} to gray stained glass pane named " "
+    delete {war.menu-country::%uuid of {_p}%::*}
+    set {_slot} to 0
+    loop {country.name::*}:
+        set {_country} to loop-index
+        if {_country} is not {_own}:
+            if {_slot} is less than 45:
+                set {_icon} to {country.icon::%{_country}%} parsed as item type
+                if {_icon} is not set:
+                    set {_icon} to white banner
+                set slot {_slot} of {_menu} to {_icon} named "%countryColor({_country})%<bold>%loop-value%" with lore "<gray>Чанков: <white>%countryClaimCount({_country})%" and "<red>Нажмите, чтобы объявить войну"
+                set {war.menu-country::%uuid of {_p}%::%{_slot}%} to {_country}
+                add 1 to {_slot}
+    set slot 49 of {_menu} to arrow named "<yellow>Назад"
+    open {_menu} to {_p}
+    set {war.menu::%uuid of {_p}%} to "war-list"
+
+function raidOpenList(p: player):
+    set {_own} to countryId({_p})
+    if countryHasPermission({_p}, "DECLARE_WAR") is not true:
+        send "<red>У вашей роли нет права начинать рейды." to {_p}
+        stop
+    set {_menu} to chest inventory with 6 rows named "<gold>Начать рейд"
+    loop integers between 0 and 53:
+        set slot loop-value of {_menu} to gray stained glass pane named " "
+    delete {raid.menu-country::%uuid of {_p}%::*}
+    set {_slot} to 0
+    loop {country.name::*}:
+        set {_country} to loop-index
+        if {_country} is not {_own}:
+            if {_slot} is less than 45:
+                set {_icon} to {country.icon::%{_country}%} parsed as item type
+                if {_icon} is not set:
+                    set {_icon} to white banner
+                if {raid.country::%{_country}%} is set:
+                    set slot {_slot} of {_menu} to barrier named "%countryColor({_country})%<bold>%loop-value%" with lore "<red>Уже участвует в рейде"
+                else:
+                    set slot {_slot} of {_menu} to {_icon} named "%countryColor({_country})%<bold>%loop-value%" with lore "<gray>Казна: <gold>%economyTreasury({_country})% монет" and "<gray>Длительность: <white>1 час" and "<gold>Нажмите, чтобы начать рейд"
+                    set {raid.menu-country::%uuid of {_p}%::%{_slot}%} to {_country}
+                add 1 to {_slot}
+    set slot 49 of {_menu} to arrow named "<yellow>Назад"
+    open {_menu} to {_p}
+    set {war.menu::%uuid of {_p}%} to "raid-list"
 
 command /war [<text>]:
     aliases: /wars
@@ -549,104 +575,103 @@ command /war [<text>]:
         if arg-1 is "accept":
             warAcceptTruce(player)
             stop
-        if arg-1 is set:
-            send "<yellow>Использование: <white>/war<gray>, <white>/war truce<gray> или <white>/war accept" to player
-            stop
-        warOpenStatus(player)
+        militaryOpen(player)
 
-command /raid <text>:
+command /raid:
     executable by: players
     trigger:
         if {auth.logged-in::%name of player%} is not true:
             send "<red>Сначала войдите в аккаунт." to player
             stop
-        set {_attacker} to countryId(player)
-        if {_attacker} is "":
-            send "<red>Вы не состоите в стране." to player
-            stop
-        if countryHasPermission(player, "DECLARE_WAR") is not true:
-            send "<red>У вашей роли нет права начинать рейды." to player
-            stop
-        if {raid.country::%{_attacker}%} is set:
-            send "<red>Ваша страна уже участвует в активном рейде." to player
-            stop
-        set {_defender} to raidResolveCountry(arg-1)
-        if {_defender} is "":
-            send "<red>Страна не найдена. Укажите точное название страны." to player
-            stop
-        if {_defender} is {_attacker}:
-            send "<red>Нельзя начать рейд против своей страны." to player
-            stop
-        if {raid.country::%{_defender}%} is set:
-            send "<red>Эта страна уже участвует в активном рейде." to player
-            stop
-        raidStart({_attacker}, {_defender})
+        raidOpenList(player)
 
 on inventory click:
     if {war.menu::%uuid of player%} is not set:
         stop
     cancel event
-    if {ui.click-until::%uuid of player%} is in the future:
-        stop
-    set {ui.click-until::%uuid of player%} to 8 ticks from now
     if event-slot is not set:
         stop
     set {_slot} to raw index of event-slot
     set {_menu} to {war.menu::%uuid of player%}
-    if {_menu} is "status":
-        if {_slot} is 15:
+
+    if {_menu} is "hub":
+        if {_slot} is 22:
             close player's inventory
+            wait 1 tick
+            countryOpenMain(player)
             stop
         if {_slot} is 11:
             set {_country} to countryId(player)
             set {_war} to {war.country::%{_country}%}
-            close player's inventory
+            if {war.active::%{_war}%} is true:
+                warOpenStatus(player)
+            else:
+                warOpenList(player)
+            stop
+        if {_slot} is 15:
+            set {_country} to countryId(player)
+            set {_raid} to {raid.country::%{_country}%}
+            if {raid.active::%{_raid}%} is true:
+                send "<yellow>Ваша страна уже участвует в рейде." to player
+            else:
+                raidOpenList(player)
+            stop
+
+    if {_menu} is "war-status":
+        if {_slot} is 15:
+            militaryOpen(player)
+            stop
+        if {_slot} is 11:
+            set {_country} to countryId(player)
+            set {_war} to {war.country::%{_country}%}
             if {war.truce.offerer::%{_war}%} is set:
                 if {war.truce.expires::%{_war}%} is in the future:
                     if {war.truce.offerer::%{_war}%} is {_country}:
                         send "<yellow>Ваша страна уже предложила перемирие." to player
                     else:
+                        close player's inventory
                         warAcceptTruce(player)
-                    stop
-            warOfferTruce(player)
-        stop
-    if {_menu} is "list":
+                else:
+                    close player's inventory
+                    warOfferTruce(player)
+            else:
+                close player's inventory
+                warOfferTruce(player)
+            stop
+
+    if {_menu} is "war-list":
         if {_slot} is 49:
-            close player's inventory
+            militaryOpen(player)
             stop
-        set {_defender} to {war.menu-country::%uuid of player%::%{_slot}%}
-        if {_defender} is set:
-            warOpenConfirmation(player, {_defender})
-        stop
-    if {_menu} is "confirm":
-        if {_slot} is 11:
-            warOpenList(player)
-            stop
-        if {_slot} is 15:
-            set {_attacker} to countryId(player)
-            set {_defender} to {war.selected-country::%uuid of player%}
-            if {_attacker} is "":
-                close player's inventory
-                stop
-            if countryHasPermission(player, "DECLARE_WAR") is not true:
-                close player's inventory
-                send "<red>У вашей роли больше нет права объявлять войну." to player
-                stop
-            if {country.name::%{_defender}%} is not set:
-                close player's inventory
-                send "<red>Эта страна больше не существует." to player
-                stop
-            if {war.country::%{_attacker}%} is set:
-                close player's inventory
+        set {_target} to {war.menu-country::%uuid of player%::%{_slot}%}
+        if {_target} is set:
+            set {_own} to countryId(player)
+            if {war.country::%{_own}%} is set:
                 send "<red>Ваша страна уже участвует в войне." to player
                 stop
-            if {war.country::%{_defender}%} is set:
-                close player's inventory
-                send "<red>Выбранная страна уже участвует в войне." to player
+            if {war.country::%{_target}%} is set:
+                send "<red>Эта страна уже участвует в войне." to player
                 stop
             close player's inventory
-            warStart({_attacker}, {_defender})
-        stop
+            warStart({_own}, {_target})
+            stop
+
+    if {_menu} is "raid-list":
+        if {_slot} is 49:
+            militaryOpen(player)
+            stop
+        set {_target} to {raid.menu-country::%uuid of player%::%{_slot}%}
+        if {_target} is set:
+            set {_own} to countryId(player)
+            if {raid.country::%{_own}%} is set:
+                send "<red>Ваша страна уже участвует в рейде." to player
+                stop
+            if {raid.country::%{_target}%} is set:
+                send "<red>Эта страна уже участвует в рейде." to player
+                stop
+            close player's inventory
+            raidStart({_own}, {_target})
+            stop
 
 on inventory drag:
     if {war.menu::%uuid of player%} is set:
@@ -658,7 +683,7 @@ on inventory close:
 
 on respawn:
     set {war.spawn-protection::%uuid of player%} to {@war-spawn-protection} from now
-    send "<light green>Защита после возрождения действует 30 секунд. Вы не можете получать и наносить урон." to player
+    send "<light green>Защита после возрождения действует 30 секунд."
 
 on damage of player:
     if {war.spawn-protection::%uuid of victim%} is in the future:
@@ -668,59 +693,61 @@ on damage of player:
         stop
     if {war.spawn-protection::%uuid of attacker%} is in the future:
         cancel event
-        send action bar "<red>Вы не можете атаковать во время защиты после возрождения." to attacker
+        send action bar "<red>Во время защиты после возрождения атаковать нельзя." to attacker
         stop
-    set {_attacker-country} to countryId(attacker)
-    set {_victim-country} to countryId(victim)
-    if {_attacker-country} is not "":
-        if {_attacker-country} is {_victim-country}:
+
+    set {_ac} to countryId(attacker)
+    set {_vc} to countryId(victim)
+    if {_ac} is not "":
+        if {_ac} is {_vc}:
             cancel event
             send action bar "<red>Нельзя атаковать жителя своей страны." to attacker
             stop
-    set {_raid} to raidBetween({_attacker-country}, {_victim-country})
+
+    set {_raid} to raidBetween({_ac}, {_vc})
     if {_raid} is not "":
         stop
-    set {_war} to warBetween({_attacker-country}, {_victim-country})
+
+    set {_war} to warBetween({_ac}, {_vc})
     if {_war} is not "":
         set {_territory} to countryAtLocation(location of victim)
-        if {_territory} is not {_attacker-country}:
-            if {_territory} is not {_victim-country}:
-                cancel event
-                send action bar "<red>Воевать можно только на территории одной из конфликтующих стран." to attacker
+        set {_allowed} to false
+        if {_territory} is {_ac}:
+            set {_allowed} to true
+        if {_territory} is {_vc}:
+            set {_allowed} to true
+        if {_allowed} is false:
+            cancel event
+            send action bar "<red>Воевать можно только на территории конфликтующих стран." to attacker
 
 on death of player:
     if attacker is not a player:
         stop
-    set {_attacker-country} to countryId(attacker)
-    set {_victim-country} to countryId(victim)
-    set {_raid} to raidBetween({_attacker-country}, {_victim-country})
+    set {_ac} to countryId(attacker)
+    set {_vc} to countryId(victim)
+    set {_raid} to raidBetween({_ac}, {_vc})
     if {_raid} is not "":
-        if {_attacker-country} is {raid.attacker::%{_raid}%}:
+        if {_ac} is {raid.attacker::%{_raid}%}:
             add 1 to {raid.kills::%{_raid}%::attacker}
         else:
             add 1 to {raid.kills::%{_raid}%::defender}
         set {_a} to {raid.kills::%{_raid}%::attacker}
         set {_d} to {raid.kills::%{_raid}%::defender}
-        broadcast formatted "<dark red>⚔ <white>%name of attacker% <gray>убил <white>%name of victim% <gray>во время рейда. Счёт: <white>%{_a}%:%{_d}%<gray>."
-        stop
-    set {_war} to warBetween({_attacker-country}, {_victim-country})
-    if {_war} is not "":
-        send action bar "<gray>Убийства во время войны не дают очков. Захватывайте фронтовые чанки." to attacker
+        broadcast formatted "<dark red>⚔ <white>%name of attacker% <gray>убил <white>%name of victim% <gray>в рейде. Счёт: <white>%{_a}%:%{_d}%<gray>."
 
 on player move:
     set {_country} to countryId(player)
     if {_country} is "":
         stop
     set {_war} to {war.country::%{_country}%}
-    if {war.active::%{_war}%} is not true:
-        stop
-    set {_key} to countryLocationKey(location of player)
-    if {war.front::%{_war}%::%{_key}%} is true:
-        if {war.last-front::%uuid of player%} is not {_key}:
-            set {war.last-front::%uuid of player%} to {_key}
-            send action bar "<red><bold>АКТИВНЫЙ ФРОНТ</bold> <gray>• удерживайте численный перевес 5 минут для захвата чанка" to player
-    else:
-        delete {war.last-front::%uuid of player%}
+    if {war.active::%{_war}%} is true:
+        set {_key} to countryLocationKey(location of player)
+        if {war.front::%{_war}%::%{_key}%} is true:
+            if {war.last-front::%uuid of player%} is not {_key}:
+                set {war.last-front::%uuid of player%} to {_key}
+                send action bar "<red><bold>АКТИВНЫЙ ФРОНТ</bold> <gray>• удерживайте численный перевес 5 минут" to player
+        else:
+            delete {war.last-front::%uuid of player%}
 
 every 1 second:
     loop all players:
@@ -737,8 +764,7 @@ every 1 second:
 on load:
     wait 1 tick
     loop {war.active::*}:
-        set {_war} to loop-index
-        warCreateBossbar({_war})
+        warCreateBossbar(loop-index)
     warProcess()
     raidProcess()
 
@@ -752,6 +778,6 @@ every 1 minute:
 on quit:
     delete {war.menu::%uuid of player%}
     delete {war.menu-country::%uuid of player%::*}
-    delete {war.selected-country::%uuid of player%}
+    delete {raid.menu-country::%uuid of player%::*}
     delete {war.last-front::%uuid of player%}
     delete {war.spawn-protection::%uuid of player%}
