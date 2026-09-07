@@ -273,12 +273,12 @@ function warProcessCapture(war: text):
                                 set {_viewer} to true
                             if {_viewer} is true:
                                 if {_attackers} is {_defenders}:
-                                    send action bar formatted "<yellow><bold>ЗАХВАТ %{_percent}%%</bold> <gray>• равные силы, прогресс стоит" to loop-player
+                                    send action bar formatted "<yellow><bold>ЗАХВАТ %{_percent}% проц.</bold> <gray>• равные силы, прогресс стоит" to loop-player
                                 else:
                                     if {_attackers} is greater than {_defenders}:
-                                        send action bar formatted "<red><bold>ЗАХВАТ %{_percent}%%</bold> <gray>• перевес %countryName({_attacker})% <white>%{_attackers}%:%{_defenders}%" to loop-player
+                                        send action bar formatted "<red><bold>ЗАХВАТ %{_percent}% проц.</bold> <gray>• перевес %countryName({_attacker})% <white>%{_attackers}%:%{_defenders}%" to loop-player
                                     else:
-                                        send action bar formatted "<aqua><bold>ЗАХВАТ %{_percent}%%</bold> <gray>• перевес %countryName({_defender})% <white>%{_defenders}%:%{_attackers}%" to loop-player
+                                        send action bar formatted "<aqua><bold>ЗАХВАТ %{_percent}% проц.</bold> <gray>• перевес %countryName({_defender})% <white>%{_defenders}%:%{_attackers}%" to loop-player
         else:
             set {war.progress::%{_war}%::%{_key}%} to 0
 
