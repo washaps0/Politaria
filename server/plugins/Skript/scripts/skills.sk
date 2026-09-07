@@ -469,17 +469,29 @@ function farmingCropXP(kind: item type) :: number:
 
 function farmingIsMature(kind: item type, cropAge: number) :: boolean:
     if {_kind} is wheat:
-        return {_cropAge} >= 7
+        if {_cropAge} >= 7:
+            return true
+        return false
     if {_kind} is carrots:
-        return {_cropAge} >= 7
+        if {_cropAge} >= 7:
+            return true
+        return false
     if {_kind} is potatoes:
-        return {_cropAge} >= 7
+        if {_cropAge} >= 7:
+            return true
+        return false
     if {_kind} is beetroots:
-        return {_cropAge} >= 3
+        if {_cropAge} >= 3:
+            return true
+        return false
     if {_kind} is nether wart:
-        return {_cropAge} >= 3
+        if {_cropAge} >= 3:
+            return true
+        return false
     if {_kind} is cocoa:
-        return {_cropAge} >= 2
+        if {_cropAge} >= 2:
+            return true
+        return false
     return false
 
 function farmingBonus(kind: item type) :: text:
@@ -959,11 +971,6 @@ command /skills:
 
 # =========================================================
 # ADMIN
-# /skillset mining 4
-# /skillset crafting 4
-# /skillset farming 4
-# /skillset hunter 4
-# /skillset lumberjack 4
 # =========================================================
 
 command /skillset <text> <number>:
