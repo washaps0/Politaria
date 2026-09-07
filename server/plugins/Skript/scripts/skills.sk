@@ -634,7 +634,7 @@ function hunterMobXP(kind: entity type) :: number:
         return 2
     if {_kind} is cave spider:
         return 2
-    if {_kind} is creeper:
+    if "%{_kind}%" is "creeper":
         return 2
     if {_kind} is enderman:
         return 2
@@ -683,7 +683,7 @@ function hunterBonus(kind: entity type) :: text:
         return "string"
     if {_kind} is cave spider:
         return "string"
-    if {_kind} is creeper:
+    if "%{_kind}%" is "creeper":
         return "gunpowder"
     if {_kind} is enderman:
         return "ender pearl"
