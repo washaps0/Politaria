@@ -1,0 +1,127 @@
+# =========================================================
+# POLITARIA — WAR / RAID ADMINISTRATION
+# Administrative cancellation of active wars and raids.
+# Cancellation does NOT choose a winner and does NOT pay raid loot.
+# Already captured war chunks are not rolled back.
+# =========================================================
+
+function warAdminResolveCountry(query: text) :: text:
+    if {country.name::%{_query}%} is set:
+        return {_query}
+    loop {country.name::*}:
+        if loop-value is {_query}:
+            return loop-index
+    return ""
+
+function warAdminCancelWar(country: text, adminName: text) :: boolean:
+    set {_war} to {war.country::%{_country}%}
+    if {_war} is not set:
+        return false
+    if {war.active::%{_war}%} is not true:
+        return false
+
+    set {_attacker} to {war.attacker::%{_war}%}
+    set {_defender} to {war.defender::%{_war}%}
+
+    execute console command "bossbar remove politaria:war_%{_war}%"
+
+    delete {war.country::%{_attacker}%}
+    delete {war.country::%{_defender}%}
+    delete {war.front::%{_war}%::*}
+    delete {war.progress::%{_war}%::*}
+    delete {war.captures::%{_war}%::*}
+    delete {war.truce.offerer::%{_war}%}
+    delete {war.truce.expires::%{_war}%}
+    delete {war.attacker::%{_war}%}
+    delete {war.defender::%{_war}%}
+    delete {war.ends::%{_war}%}
+    delete {war.next-front::%{_war}%}
+    delete {war.active::%{_war}%}
+
+    loop all players:
+        set {_player-country} to countryId(loop-player)
+        if {_player-country} is {_attacker}:
+            delete {war.last-front::%uuid of loop-player%}
+            send "<yellow><bold>ВОЙНА ОТМЕНЕНА</bold> <gray>Администрация принудительно завершила войну. Победитель не определяется." to loop-player
+        if {_player-country} is {_defender}:
+            delete {war.last-front::%uuid of loop-player%}
+            send "<yellow><bold>ВОЙНА ОТМЕНЕНА</bold> <gray>Администрация принудительно завершила войну. Победитель не определяется." to loop-player
+
+    broadcast formatted "<yellow><bold>ВОЙНА ОТМЕНЕНА АДМИНИСТРАЦИЕЙ</bold> <gray>%countryName({_attacker})% <dark gray>— <gray>%countryName({_defender})%<gray>. Администратор: <white>%{_adminName}%<gray>. Уже захваченные чанки остаются у текущих владельцев."
+    return true
+
+function warAdminCancelRaid(country: text, adminName: text) :: boolean:
+    set {_raid} to {raid.country::%{_country}%}
+    if {_raid} is not set:
+        return false
+    if {raid.active::%{_raid}%} is not true:
+        return false
+
+    set {_attacker} to {raid.attacker::%{_raid}%}
+    set {_defender} to {raid.defender::%{_raid}%}
+
+    delete {raid.country::%{_attacker}%}
+    delete {raid.country::%{_defender}%}
+    delete {raid.kills::%{_raid}%::*}
+    delete {raid.attacker::%{_raid}%}
+    delete {raid.defender::%{_raid}%}
+    delete {raid.ends::%{_raid}%}
+    delete {raid.active::%{_raid}%}
+
+    loop all players:
+        set {_player-country} to countryId(loop-player)
+        if {_player-country} is {_attacker}:
+            send "<yellow><bold>РЕЙД ОТМЕНЕН</bold> <gray>Администрация принудительно завершила рейд. Убийства аннулированы, казна не меняется." to loop-player
+        if {_player-country} is {_defender}:
+            send "<yellow><bold>РЕЙД ОТМЕНЕН</bold> <gray>Администрация принудительно завершила рейд. Убийства аннулированы, казна не меняется." to loop-player
+
+    broadcast formatted "<yellow><bold>РЕЙД ОТМЕНЕН АДМИНИСТРАЦИЕЙ</bold> <gray>%countryName({_attacker})% <dark gray>— <gray>%countryName({_defender})%<gray>. Администратор: <white>%{_adminName}%<gray>. Награда за рейд не выплачивается."
+    return true
+
+command /cancelwar <text>:
+    executable by: players
+    trigger:
+        set {_allowed} to false
+        if player is op:
+            set {_allowed} to true
+        if player has permission "politaria.war.admin":
+            set {_allowed} to true
+        if {_allowed} is false:
+            send "<red>У вас нет права отменять войны." to player
+            stop
+
+        set {_country} to warAdminResolveCountry(arg-1)
+        if {_country} is "":
+            send "<red>Страна не найдена. Укажите точное название или ID страны." to player
+            stop
+
+        set {_done} to warAdminCancelWar({_country}, name of player)
+        if {_done} is false:
+            send formatted "<red>Страна %countryName({_country})% <red>сейчас не участвует в активной войне." to player
+            stop
+
+        send "<green>Война успешно отменена без определения победителя." to player
+
+command /cancelraid <text>:
+    executable by: players
+    trigger:
+        set {_allowed} to false
+        if player is op:
+            set {_allowed} to true
+        if player has permission "politaria.war.admin":
+            set {_allowed} to true
+        if {_allowed} is false:
+            send "<red>У вас нет права отменять рейды." to player
+            stop
+
+        set {_country} to warAdminResolveCountry(arg-1)
+        if {_country} is "":
+            send "<red>Страна не найдена. Укажите точное название или ID страны." to player
+            stop
+
+        set {_done} to warAdminCancelRaid({_country}, name of player)
+        if {_done} is false:
+            send formatted "<red>Страна %countryName({_country})% <red>сейчас не участвует в активном рейде." to player
+            stop
+
+        send "<green>Рейд успешно отменен. Казна и территории не изменены." to player
