@@ -1,0 +1,614 @@
+# =========================================================
+# POLITARIA SKILLS - HUNTER + LUMBERJACK
+# Purpur 1.21.1
+# Skript 2.15.4
+#
+# Дополнение к skills.sk:
+# - Охотник
+# - Лесоруб
+#
+# /skills автоматически дополняется этими двумя навыками.
+# Админ: /skillsethl <hunter/lumberjack> <1-10>
+# =========================================================
+
+options:
+    skills-extra-prefix: &b&lPOLITARIA&r &8»
+
+
+# =========================================================
+# ОБЩАЯ СИСТЕМА УРОВНЕЙ
+# =========================================================
+
+function hlSkillLevelFromXP(xp: number) :: number:
+    if {_xp} >= 1125:
+        return 10
+    if {_xp} >= 900:
+        return 9
+    if {_xp} >= 700:
+        return 8
+    if {_xp} >= 525:
+        return 7
+    if {_xp} >= 375:
+        return 6
+    if {_xp} >= 250:
+        return 5
+    if {_xp} >= 150:
+        return 4
+    if {_xp} >= 75:
+        return 3
+    if {_xp} >= 25:
+        return 2
+    return 1
+
+
+function hlSkillXPForLevel(level: number) :: number:
+    if {_level} is 1:
+        return 0
+    if {_level} is 2:
+        return 25
+    if {_level} is 3:
+        return 75
+    if {_level} is 4:
+        return 150
+    if {_level} is 5:
+        return 250
+    if {_level} is 6:
+        return 375
+    if {_level} is 7:
+        return 525
+    if {_level} is 8:
+        return 700
+    if {_level} is 9:
+        return 900
+    return 1125
+
+
+function hlSkillNextXP(level: number) :: number:
+    if {_level} >= 10:
+        return 1125
+    return hlSkillXPForLevel({_level} + 1)
+
+
+# =========================================================
+# ОХОТНИК - DATA
+# =========================================================
+
+function hunterXP(p: player) :: number:
+    if {skills.hunter.xp::%uuid of {_p}%} is not set:
+        set {skills.hunter.xp::%uuid of {_p}%} to 0
+    return {skills.hunter.xp::%uuid of {_p}%}
+
+
+function hunterLevel(p: player) :: number:
+    return hlSkillLevelFromXP(hunterXP({_p}))
+
+
+# Уровень 1 = 2%, уровень 10 = 20%
+function hunterChance(p: player) :: number:
+    return hunterLevel({_p}) * 2
+
+
+# =========================================================
+# ОХОТНИК - XP ЗА МОБОВ
+# =========================================================
+
+function hunterMobXP(kind: entity type) :: number:
+
+    # Животные - 1 XP
+    if {_kind} is cow:
+        return 1
+    if {_kind} is pig:
+        return 1
+    if {_kind} is sheep:
+        return 1
+    if {_kind} is chicken:
+        return 1
+    if {_kind} is rabbit:
+        return 1
+
+
+    # Обычные монстры - 2 XP
+    if {_kind} is zombie:
+        return 2
+    if {_kind} is husk:
+        return 2
+    if {_kind} is drowned:
+        return 2
+    if {_kind} is skeleton:
+        return 2
+    if {_kind} is stray:
+        return 2
+    if {_kind} is spider:
+        return 2
+    if {_kind} is cave spider:
+        return 2
+    if {_kind} is creeper:
+        return 2
+    if {_kind} is enderman:
+        return 2
+    if {_kind} is slime:
+        return 2
+    if {_kind} is magma cube:
+        return 2
+
+
+    # Более опасные - 3 XP
+    if {_kind} is blaze:
+        return 3
+    if {_kind} is witch:
+        return 3
+    if {_kind} is guardian:
+        return 3
+    if {_kind} is wither skeleton:
+        return 3
+    if {_kind} is piglin brute:
+        return 3
+
+
+    # Сильные обычные мобы
+    if {_kind} is ravager:
+        return 6
+    if {_kind} is elder guardian:
+        return 6
+
+    return 0
+
+
+# =========================================================
+# ОХОТНИК - БОНУСНЫЙ ПРЕДМЕТ
+# Возвращаем TEXT, а не item type из-за Skript 2.15.4.
+# =========================================================
+
+function hunterBonus(kind: entity type) :: text:
+
+    if {_kind} is cow:
+        return "leather"
+    if {_kind} is pig:
+        return "raw porkchop"
+    if {_kind} is sheep:
+        return "raw mutton"
+    if {_kind} is chicken:
+        return "raw chicken"
+    if {_kind} is rabbit:
+        return "rabbit hide"
+
+    if {_kind} is zombie:
+        return "rotten flesh"
+    if {_kind} is husk:
+        return "rotten flesh"
+    if {_kind} is drowned:
+        return "rotten flesh"
+
+    if {_kind} is skeleton:
+        return "bone"
+    if {_kind} is stray:
+        return "bone"
+
+    if {_kind} is spider:
+        return "string"
+    if {_kind} is cave spider:
+        return "string"
+
+    if {_kind} is creeper:
+        return "gunpowder"
+    if {_kind} is enderman:
+        return "ender pearl"
+
+    if {_kind} is slime:
+        return "slime ball"
+    if {_kind} is magma cube:
+        return "magma cream"
+
+    if {_kind} is blaze:
+        return "blaze rod"
+    if {_kind} is witch:
+        return "redstone"
+    if {_kind} is guardian:
+        return "prismarine shard"
+    if {_kind} is elder guardian:
+        return "prismarine shard"
+    if {_kind} is wither skeleton:
+        return "coal"
+    if {_kind} is piglin brute:
+        return "gold nugget"
+    if {_kind} is ravager:
+        return "leather"
+
+    return ""
+
+
+# =========================================================
+# ОХОТНИК - ADD XP
+# =========================================================
+
+function hunterAddXP(p: player, amount: number):
+    set {_old-level} to hunterLevel({_p})
+
+    if {_old-level} >= 10:
+        stop
+
+    add {_amount} to {skills.hunter.xp::%uuid of {_p}%}
+
+    set {_new-level} to hunterLevel({_p})
+    set {_xp} to hunterXP({_p})
+
+    if {_new-level} > {_old-level}:
+        send "{@skills-extra-prefix} &fНавык &cОхотник &fповышен до &c%{_new-level}% уровня&f!" to {_p}
+        send action bar formatted "<red><bold>⚔ ОХОТНИК</bold> <dark gray>» <green><bold>УРОВЕНЬ %{_new-level}%!" to {_p}
+
+        if {_old-level} < 4:
+            if {_new-level} >= 4:
+                send "{@skills-extra-prefix} &fОткрыт навык охотника: &cАвтоподбор добычи&f." to {_p}
+
+        if {_new-level} >= 10:
+            send "{@skills-extra-prefix} &6Охотник достиг максимального уровня!" to {_p}
+        stop
+
+    set {_needed} to hlSkillNextXP({_new-level})
+    send action bar formatted "<red>⚔ Охотник <dark gray>• <white>%{_xp}%<gray>/%{_needed}% XP <dark gray>• <green>+%{_amount}% XP" to {_p}
+
+
+# =========================================================
+# ОХОТНИК - УБИЙСТВО МОБА
+# =========================================================
+
+on death:
+
+    # Учитываем как ближний бой, так и стрелы/другие снаряды.
+    set {_killer} to attacker
+
+    if {_killer} is not set:
+        stop
+
+    if {_killer} is a projectile:
+        set {_killer} to shooter of {_killer}
+
+    if {_killer} is not a player:
+        stop
+
+    set {_p} to {_killer}
+    set {_kind} to type of victim
+    set {_earned-xp} to hunterMobXP({_kind})
+
+    if {_earned-xp} <= 0:
+        stop
+
+    set {_level} to hunterLevel({_p})
+    set {_loc} to location of victim
+
+
+    # -----------------------------------------------------
+    # Автоподбор - уровень 4+
+    # -----------------------------------------------------
+
+    if {_level} >= 4:
+        set {_drops::*} to drops
+        clear drops
+
+        loop {_drops::*}:
+            if {_p} can hold loop-value:
+                give loop-value to {_p}
+            else:
+                drop loop-value at {_loc}
+
+
+    # -----------------------------------------------------
+    # XP
+    # -----------------------------------------------------
+
+    hunterAddXP({_p}, {_earned-xp})
+
+
+    # -----------------------------------------------------
+    # Дополнительная добыча - 2% за уровень
+    # -----------------------------------------------------
+
+    set {_chance} to hunterChance({_p})
+
+    chance of {_chance}%:
+        set {_bonus-name} to hunterBonus({_kind})
+
+        if {_bonus-name} is "":
+            stop
+
+        set {_bonus} to {_bonus-name} parsed as item type
+
+        if {_bonus} is not set:
+            stop
+
+        if {_level} >= 4:
+            if {_p} can hold 1 of {_bonus}:
+                give 1 of {_bonus} to {_p}
+            else:
+                drop 1 of {_bonus} at {_loc}
+        else:
+            drop 1 of {_bonus} at {_loc}
+
+        send action bar formatted "<red>⚔ <green><bold>УДАЧНАЯ ОХОТА!</bold> <white>Получена дополнительная добыча." to {_p}
+
+
+# =========================================================
+# ЛЕСОРУБ - DATA
+# =========================================================
+
+function lumberjackXP(p: player) :: number:
+    if {skills.lumberjack.xp::%uuid of {_p}%} is not set:
+        set {skills.lumberjack.xp::%uuid of {_p}%} to 0
+    return {skills.lumberjack.xp::%uuid of {_p}%}
+
+
+function lumberjackLevel(p: player) :: number:
+    return hlSkillLevelFromXP(lumberjackXP({_p}))
+
+
+# Уровень 1 = 2%, уровень 10 = 20%
+function lumberjackChance(p: player) :: number:
+    return lumberjackLevel({_p}) * 2
+
+
+# =========================================================
+# ЛЕСОРУБ - XP ЗА БРЁВНА
+# =========================================================
+
+function lumberjackLogXP(kind: item type) :: number:
+
+    # Обычные деревья - 1 XP
+    if {_kind} is oak log:
+        return 1
+    if {_kind} is stripped oak log:
+        return 1
+
+    if {_kind} is spruce log:
+        return 1
+    if {_kind} is stripped spruce log:
+        return 1
+
+    if {_kind} is birch log:
+        return 1
+    if {_kind} is stripped birch log:
+        return 1
+
+    if {_kind} is jungle log:
+        return 1
+    if {_kind} is stripped jungle log:
+        return 1
+
+    if {_kind} is acacia log:
+        return 1
+    if {_kind} is stripped acacia log:
+        return 1
+
+    if {_kind} is dark oak log:
+        return 1
+    if {_kind} is stripped dark oak log:
+        return 1
+
+    if {_kind} is mangrove log:
+        return 1
+    if {_kind} is stripped mangrove log:
+        return 1
+
+    if {_kind} is cherry log:
+        return 1
+    if {_kind} is stripped cherry log:
+        return 1
+
+
+    # Незерские стебли - 2 XP
+    if {_kind} is crimson stem:
+        return 2
+    if {_kind} is stripped crimson stem:
+        return 2
+
+    if {_kind} is warped stem:
+        return 2
+    if {_kind} is stripped warped stem:
+        return 2
+
+    return 0
+
+
+# =========================================================
+# ЛЕСОРУБ - ADD XP
+# =========================================================
+
+function lumberjackAddXP(p: player, amount: number):
+    set {_old-level} to lumberjackLevel({_p})
+
+    if {_old-level} >= 10:
+        stop
+
+    add {_amount} to {skills.lumberjack.xp::%uuid of {_p}%}
+
+    set {_new-level} to lumberjackLevel({_p})
+    set {_xp} to lumberjackXP({_p})
+
+    if {_new-level} > {_old-level}:
+        send "{@skills-extra-prefix} &fНавык &6Лесоруб &fповышен до &6%{_new-level}% уровня&f!" to {_p}
+        send action bar formatted "<gold><bold>🪓 ЛЕСОРУБ</bold> <dark gray>» <green><bold>УРОВЕНЬ %{_new-level}%!" to {_p}
+
+        if {_old-level} < 4:
+            if {_new-level} >= 4:
+                send "{@skills-extra-prefix} &fОткрыт навык лесоруба: &6Автоподбор&f." to {_p}
+
+        if {_new-level} >= 10:
+            send "{@skills-extra-prefix} &6Лесоруб достиг максимального уровня!" to {_p}
+        stop
+
+    set {_needed} to hlSkillNextXP({_new-level})
+    send action bar formatted "<gold>🪓 Лесоруб <dark gray>• <white>%{_xp}%<gray>/%{_needed}% XP <dark gray>• <green>+%{_amount}% XP" to {_p}
+
+
+# =========================================================
+# ЗАЩИТА ОТ ФАРМА XP НА ПОСТАВЛЕННЫХ БРЁВНАХ
+# =========================================================
+
+on place:
+    set {_kind} to type of event-block
+
+    if lumberjackLogXP({_kind}) <= 0:
+        stop
+
+    set {skills.lumberjack.placed::%location of event-block%} to true
+
+
+# =========================================================
+# ЛЕСОРУБ - ЛОМАНИЕ БРЕВНА
+# =========================================================
+
+on break with priority monitor:
+
+    if event is cancelled:
+        stop
+
+    set {_kind} to type of event-block
+    set {_earned-xp} to lumberjackLogXP({_kind})
+
+    if {_earned-xp} <= 0:
+        stop
+
+
+    # Поставленные игроком брёвна не дают XP и бонус.
+    if {skills.lumberjack.placed::%location of event-block%} is set:
+        delete {skills.lumberjack.placed::%location of event-block%}
+        stop
+
+
+    set {_drops::*} to drops of event-block using player's tool as player
+    set {_level} to lumberjackLevel(player)
+    set {_loc} to location of event-block
+
+
+    # -----------------------------------------------------
+    # Автоподбор - уровень 4+
+    # -----------------------------------------------------
+
+    if {_level} >= 4:
+        clear drops
+
+        loop {_drops::*}:
+            if player can hold loop-value:
+                give loop-value to player
+            else:
+                drop loop-value at {_loc}
+
+
+    # -----------------------------------------------------
+    # XP
+    # -----------------------------------------------------
+
+    lumberjackAddXP(player, {_earned-xp})
+
+
+    # -----------------------------------------------------
+    # Дополнительное дерево - 2% за уровень
+    # -----------------------------------------------------
+
+    set {_chance} to lumberjackChance(player)
+
+    chance of {_chance}%:
+        if player can hold 1 of {_kind}:
+            give 1 of {_kind} to player
+        else:
+            drop 1 of {_kind} at {_loc}
+
+        send action bar formatted "<gold>🪓 <green><bold>УДАЧНАЯ РУБКА!</bold> <white>Получено дополнительное бревно." to player
+
+
+# =========================================================
+# ДОБАВЛЯЕМ НОВЫЕ НАВЫКИ В /SKILLS
+# Основной /skills остаётся в skills.sk.
+# =========================================================
+
+on command "/skills":
+    wait 1 tick
+
+    set {_hunter-xp} to hunterXP(player)
+    set {_hunter-level} to hunterLevel(player)
+    set {_lumber-xp} to lumberjackXP(player)
+    set {_lumber-level} to lumberjackLevel(player)
+
+    send "&8&m--------------------------------" to player
+
+    if {_hunter-level} >= 10:
+        send "&fОхотник: &c10&7/10 &8(&aMAX&8)" to player
+    else:
+        set {_next} to hlSkillNextXP({_hunter-level})
+        send "&fОхотник: &c%{_hunter-level}%&7/10 &8(&f%{_hunter-xp}%&7/%{_next}% XP&8)" to player
+
+    set {_chance} to hunterChance(player)
+    send "  &7Шанс дополнительной добычи: &c%{_chance}%%%" to player
+
+    if {_hunter-level} >= 4:
+        send "  &a✔ &7Автоподбор добычи" to player
+    else:
+        send "  &8✖ &7Автоподбор добычи &8— уровень 4" to player
+
+    send "" to player
+
+    if {_lumber-level} >= 10:
+        send "&fЛесоруб: &610&7/10 &8(&aMAX&8)" to player
+    else:
+        set {_next} to hlSkillNextXP({_lumber-level})
+        send "&fЛесоруб: &6%{_lumber-level}%&7/10 &8(&f%{_lumber-xp}%&7/%{_next}% XP&8)" to player
+
+    set {_chance} to lumberjackChance(player)
+    send "  &7Шанс дополнительного дерева: &6%{_chance}%%%" to player
+
+    if {_lumber-level} >= 4:
+        send "  &a✔ &7Автоподбор" to player
+    else:
+        send "  &8✖ &7Автоподбор &8— уровень 4" to player
+
+    send "" to player
+
+
+# =========================================================
+# ADMIN
+# /skillsethl hunter 4
+# /skillsethl lumberjack 4
+# =========================================================
+
+command /skillsethl <text> <number>:
+    permission: politaria.admin
+    executable by: players
+
+    trigger:
+        if arg-2 < 1:
+            send "{@skills-extra-prefix} &cМинимальный уровень: 1" to player
+            stop
+
+        if arg-2 > 10:
+            send "{@skills-extra-prefix} &cМаксимальный уровень: 10" to player
+            stop
+
+        set {_skill} to lowercase arg-1
+        set {_xp} to hlSkillXPForLevel(arg-2)
+
+        if {_skill} is "hunter":
+            set {skills.hunter.xp::%uuid of player%} to {_xp}
+            send "{@skills-extra-prefix} &fОхотник установлен на уровень &c%arg-2%&f." to player
+            stop
+
+        if {_skill} is "lumberjack":
+            set {skills.lumberjack.xp::%uuid of player%} to {_xp}
+            send "{@skills-extra-prefix} &fЛесоруб установлен на уровень &6%arg-2%&f." to player
+            stop
+
+        send "{@skills-extra-prefix} &7Использование: &f/skillsethl <hunter/lumberjack> <1-10>" to player
+
+
+# =========================================================
+# DEBUG - ДОПОЛНЯЕТ /SKILLDEBUG
+# =========================================================
+
+on command "/skilldebug":
+    wait 1 tick
+
+    if player has permission "politaria.admin":
+        send "&7Hunter XP: &f%hunterXP(player)%" to player
+        send "&7Hunter level: &f%hunterLevel(player)%" to player
+        send "" to player
+        send "&7Lumberjack XP: &f%lumberjackXP(player)%" to player
+        send "&7Lumberjack level: &f%lumberjackLevel(player)%" to player
+        send "" to player
