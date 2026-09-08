@@ -1031,6 +1031,30 @@ function countryStoragePutItemInCategory(id: text, category: text, itemToStore: 
 	set {country.storage-category-type::%{_id}%::%{_category}%::%{_type-text}%} to true
 	return true
 
+function countryStoragePutOneInCategory(id: text, category: text, itemToStore: item) :: boolean:
+	set {_one} to {_itemToStore}
+	set amount of {_one} to 1
+	set {_max} to countryStorageMaxSlots({_id}) - 1
+	loop integers between 0 and {_max}:
+		set {_stored} to {country.storage::%{_id}%::%loop-value%}
+		if {_stored} is set:
+			set {_stored-category} to countryStorageCategoryOfSlot({_id}, loop-value)
+			if {_stored-category} is {_category}:
+				set {_stored-one} to {_stored}
+				set amount of {_stored-one} to 1
+				if {_stored-one} is {_one}:
+					set {_stored-type} to type of {_stored}
+					set {_limit} to maximum stack size of {_stored-type}
+					set {_current} to amount of {_stored}
+					if {_current} is less than {_limit}:
+						add 1 to {_current}
+						set amount of {_stored} to {_current}
+						set {country.storage::%{_id}%::%loop-value%} to {_stored}
+						set {_type-text} to "%type of {_one}%"
+						set {country.storage-category-type::%{_id}%::%{_category}%::%{_type-text}%} to true
+						return true
+	return countryStoragePutItemInCategory({_id}, {_category}, {_one})
+
 function countryStorageQuickDeposit(p: player, category: text, mode: text) :: number:
 	set {_id} to countryId({_p})
 	if {_id} is "":
@@ -1165,7 +1189,7 @@ function countryOpenStorageCategory(p: player, category: text, page: number):
 	else:
 		set slot 47 of {_menu} to gray dye named "<dark gray>Системная категория"
 		set slot 48 of {_menu} to gray dye named "<dark gray>Нельзя удалить «Общее»"
-	set slot 49 of {_menu} to barrel named "<gold><bold>%{_name}%" with lore "<gray>Предметов-стаков: <white>%{_count}%" and "<gray>Общий лимит склада не меняется." and "" and "<gray>Клик по предмету снизу — положить стак." and "<gray>Клик по предмету сверху — забрать стак."
+	set slot 49 of {_menu} to barrel named "<gold><bold>%{_name}%" with lore "<gray>Предметов-стаков: <white>%{_count}%" and "<gray>Общий лимит склада не меняется." and "" and "<gray>ЛКМ снизу — положить весь стак." and "<gray>ПКМ снизу — положить 1 предмет." and "<gray>ЛКМ сверху — забрать весь стак." and "<gray>ПКМ сверху — забрать 1 предмет."
 	set slot 51 of {_menu} to hopper named "<aqua><bold>СЛОЖИТЬ ПОХОЖЕЕ" with lore "<gray>Перенести из инвентаря только" and "<gray>те типы, которые эта категория" and "<gray>уже запомнила."
 	set slot 52 of {_menu} to chest named "<light green><bold>СЛОЖИТЬ ВСЁ" with lore "<gray>Перенести весь основной инвентарь" and "<gray>в эту категорию."
 	if {_page} is less than {_pages}:
@@ -1298,9 +1322,22 @@ on inventory click:
 			set {_stored} to {country.storage::%{_id}%::%{_global}%}
 			if {_stored} is not set:
 				stop
-			give {_stored} to player
-			delete {country.storage::%{_id}%::%{_global}%}
-			delete {country.storage-category::%{_id}%::%{_global}%}
+			if click type is right mouse button or click type is right mouse button with shift:
+				set {_one} to {_stored}
+				set amount of {_one} to 1
+				give {_one} to player
+				set {_amount} to amount of {_stored}
+				if {_amount} is less than or equal to 1:
+					delete {country.storage::%{_id}%::%{_global}%}
+					delete {country.storage-category::%{_id}%::%{_global}%}
+				else:
+					subtract 1 from {_amount}
+					set amount of {_stored} to {_amount}
+					set {country.storage::%{_id}%::%{_global}%} to {_stored}
+			else:
+				give {_stored} to player
+				delete {country.storage::%{_id}%::%{_global}%}
+				delete {country.storage-category::%{_id}%::%{_global}%}
 			countryOpenStorageCategory(player, {_cat}, {_page})
 			stop
 		if {_raw} is greater than or equal to 54:
@@ -1312,10 +1349,23 @@ on inventory click:
 				stop
 			if {_item} is air:
 				stop
-			if countryStoragePutItemInCategory({_id}, {_cat}, {_item}) is not true:
-				send action bar "<red>Хранилище заполнено." to player
-				stop
-			set event-slot to air
+			if click type is right mouse button or click type is right mouse button with shift:
+				if countryStoragePutOneInCategory({_id}, {_cat}, {_item}) is not true:
+					send action bar "<red>Хранилище заполнено." to player
+					stop
+				set {_remaining} to {_item}
+				set {_amount} to amount of {_remaining}
+				if {_amount} is less than or equal to 1:
+					set event-slot to air
+				else:
+					subtract 1 from {_amount}
+					set amount of {_remaining} to {_amount}
+					set event-slot to {_remaining}
+			else:
+				if countryStoragePutItemInCategory({_id}, {_cat}, {_item}) is not true:
+					send action bar "<red>Хранилище заполнено." to player
+					stop
+				set event-slot to air
 			countryOpenStorageCategory(player, {_cat}, {_page})
 			stop
 		if {_raw} is 45:
