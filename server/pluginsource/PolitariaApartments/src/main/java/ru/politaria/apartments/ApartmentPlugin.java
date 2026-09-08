@@ -5,10 +5,12 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.command.*;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.event.*;
 import org.bukkit.event.block.*;
 import org.bukkit.event.entity.EntityExplodeEvent;
@@ -27,24 +29,27 @@ public final class ApartmentPlugin extends JavaPlugin implements Listener, Comma
     private SkriptBridge sk;
     private ApartmentStore store;
     private NamespacedKey wandKey;
+    private NamespacedKey apartmentLabelKey;
     private ZoneId zone;
     private int maxName,maxSide,maxVolume;
     private double maxPrice;
     private final Map<UUID,Selection> selections=new HashMap<>();
     private final Map<UUID,Prompt> prompts=new ConcurrentHashMap<>();
+    private final Map<String,UUID> apartmentLabels=new HashMap<>();
     private BukkitTask midnightTask;
 
     @Override public void onEnable(){
         saveDefaultConfig(); zone=ZoneId.of(getConfig().getString("timezone","Europe/Moscow"));
         maxName=getConfig().getInt("max-name-length",32);maxSide=getConfig().getInt("max-region-side",64);
         maxVolume=getConfig().getInt("max-region-volume",100000);maxPrice=getConfig().getDouble("max-price",100000000);
-        sk=new SkriptBridge();store=new ApartmentStore(getDataFolder());store.load();wandKey=new NamespacedKey(this,"selection-wand");
+        sk=new SkriptBridge();store=new ApartmentStore(getDataFolder());store.load();wandKey=new NamespacedKey(this,"selection-wand");apartmentLabelKey=new NamespacedKey(this,"apartment-label");
         Objects.requireNonNull(getCommand("apartments")).setExecutor(this);Objects.requireNonNull(getCommand("apartment")).setExecutor(this);
         getServer().getPluginManager().registerEvents(this,this);
         Bukkit.getScheduler().runTaskTimer(this,this::purgeInvalid,1200,1200);
+        Bukkit.getScheduler().runTask(this,this::refreshAllApartmentLabels);
         getLogger().info("Loaded "+store.all.size()+" apartments; settlement timezone "+zone+".");
     }
-    @Override public void onDisable(){if(midnightTask!=null)midnightTask.cancel();store.save();selections.clear();prompts.clear();}
+    @Override public void onDisable(){if(midnightTask!=null)midnightTask.cancel();removeAllApartmentLabels();store.save();selections.clear();prompts.clear();}
 
     @EventHandler public void serverLoaded(ServerLoadEvent event){
         // Skript loads its variables and scripts during delayed server initialization.
@@ -90,6 +95,7 @@ public final class ApartmentPlugin extends JavaPlugin implements Listener, Comma
                 sk.balance(owner.getUniqueId(),balance-total);sk.treasury(a.country,sk.treasury(a.country)+total);a.rentPaidThrough=today;
                 if(owner.isOnline())Objects.requireNonNull(owner.getPlayer()).sendMessage("§6Аренда квартиры «"+a.name+"»: §f-"+money(total)+" монет §7за "+due+" дн.");
             }
+            refreshApartmentLabel(a);
         }
     }
     private void purgeInvalid(){
@@ -100,7 +106,7 @@ public final class ApartmentPlugin extends JavaPlugin implements Listener, Comma
             if(a.owner!=null&&!sk.member(a.country,a.owner)){a.owner=null;a.coowners.clear();a.publicBuild=false;a.publicInteract=false;a.rentPaidThrough=null;changed=true;}
             changed|=a.coowners.removeIf(u->!sk.member(a.country,u));
         }
-        if(changed)store.save();
+        if(changed){store.save();refreshAllApartmentLabels();}
     }
 
     @Override public boolean onCommand(CommandSender sender,Command command,String label,String[] args){
@@ -144,6 +150,55 @@ public final class ApartmentPlugin extends JavaPlugin implements Listener, Comma
     private Inventory menu(String type,String id,int page,int rows,String title){return Bukkit.createInventory(new Menu(type,id,page),rows*9,Component.text(title));}
     private void fill(Inventory inv){ItemStack pane=item(Material.GRAY_STAINED_GLASS_PANE," ");for(int i=0;i<inv.getSize();i++)inv.setItem(i,pane);}
     private String offer(Apartment a){return switch(a.offer){case CLOSED->"Закрыта";case SALE->"Продажа: "+money(a.price);case RENT->"Аренда: "+money(a.price)+"/день";};}
+    private Location apartmentCenter(Apartment a){
+        World world=Bukkit.getWorld(a.world);if(world==null)return null;
+        double x=(a.minX+a.maxX+1)/2.0,y=(a.minY+a.maxY+1)/2.0,z=(a.minZ+a.maxZ+1)/2.0;
+        return new Location(world,x,y,z);
+    }
+    private Component apartmentLabelText(Apartment a){
+        Component title=Component.text(a.name,NamedTextColor.GOLD).decorate(TextDecoration.BOLD);
+        Component status;
+        if(a.owner!=null){
+            String owner=Optional.ofNullable(Bukkit.getOfflinePlayer(a.owner).getName()).orElse("Владелец");
+            if(a.offer==Apartment.Offer.RENT)status=Component.text("Арендует: "+owner+" • "+money(a.price)+" монет/день",NamedTextColor.AQUA);
+            else status=Component.text("Владелец: "+owner,NamedTextColor.GRAY);
+        }else if(a.offer==Apartment.Offer.SALE){
+            status=Component.text("Продажа • "+money(a.price)+" монет",NamedTextColor.GREEN);
+        }else if(a.offer==Apartment.Offer.RENT){
+            status=Component.text("Аренда • "+money(a.price)+" монет/день",NamedTextColor.AQUA);
+        }else{
+            status=Component.text("Не выставлена",NamedTextColor.GRAY);
+        }
+        return title.append(Component.newline()).append(status);
+    }
+    private void removeApartmentLabel(String apartmentId){
+        UUID uuid=apartmentLabels.remove(apartmentId);
+        if(uuid==null)return;
+        Entity entity=Bukkit.getEntity(uuid);if(entity!=null)entity.remove();
+    }
+    private void removeAllApartmentLabels(){
+        for(UUID uuid:new ArrayList<>(apartmentLabels.values())){Entity entity=Bukkit.getEntity(uuid);if(entity!=null)entity.remove();}
+        apartmentLabels.clear();
+    }
+    private void refreshApartmentLabel(Apartment a){
+        removeApartmentLabel(a.id);
+        Location center=apartmentCenter(a);if(center==null)return;
+        TextDisplay display=center.getWorld().spawn(center,TextDisplay.class,d->{
+            d.text(apartmentLabelText(a));
+            d.setBillboard(Display.Billboard.CENTER);
+            d.setAlignment(TextDisplay.TextAlignment.CENTER);
+            d.setShadowed(true);
+            d.setSeeThrough(true);
+            d.setLineWidth(240);
+            d.setPersistent(false);
+            d.getPersistentDataContainer().set(apartmentLabelKey,PersistentDataType.STRING,a.id);
+        });
+        apartmentLabels.put(a.id,display.getUniqueId());
+    }
+    private void refreshAllApartmentLabels(){
+        removeAllApartmentLabels();
+        for(Apartment a:store.all.values())refreshApartmentLabel(a);
+    }
     private void openList(Player p,int page){
         String country=sk.country(p);if(country.isBlank()){p.sendMessage("§cСначала вступите в страну.");return;}
         List<Apartment> list=store.country(country);int pages=Math.max(1,(list.size()+27)/28);page=Math.max(1,Math.min(page,pages));
@@ -198,10 +253,10 @@ public final class ApartmentPlugin extends JavaPlugin implements Listener, Comma
             case "preview"->{if(a==null){openList(p,1);return;}if(slot==22){openList(p,1);return;}if(slot==15&&canManage(p,a)){openManager(p,a);return;}if(slot==13)buy(p,a);}
             case "manager"->{
                 if(a==null||!canManage(p,a)){p.closeInventory();return;}if(slot==10){prompt(p,"name",a,"Введите новое название (1–"+maxName+" символов) или «отмена»:");return;}
-                if(slot==12){a.offer=switch(a.offer){case CLOSED->Apartment.Offer.SALE;case SALE->Apartment.Offer.RENT;case RENT->Apartment.Offer.CLOSED;};store.save();openManager(p,a);return;}
+                if(slot==12){a.offer=switch(a.offer){case CLOSED->Apartment.Offer.SALE;case SALE->Apartment.Offer.RENT;case RENT->Apartment.Offer.CLOSED;};store.save();refreshApartmentLabel(a);openManager(p,a);return;}
                 if(slot==14){prompt(p,"price",a,"Введите стоимость от 0 до "+money(maxPrice)+" или «отмена»:");return;}if(slot==16){openRoles(p,a);return;}
                 if(slot==20){setSpawn(p,a);openManager(p,a);return;}if(slot==22){a.publicInteract=!a.publicInteract;store.save();openManager(p,a);return;}if(slot==24){a.publicBuild=!a.publicBuild;store.save();openManager(p,a);return;}
-                if(slot==30&&e.isShiftClick()&&e.isLeftClick()){store.all.remove(a.id);store.save();p.closeInventory();p.sendMessage("§eКвартира удалена без возврата денег.");return;}if(slot==31){openList(p,1);}
+                if(slot==30&&e.isShiftClick()&&e.isLeftClick()){removeApartmentLabel(a.id);store.all.remove(a.id);store.save();p.closeInventory();p.sendMessage("§eКвартира удалена без возврата денег.");return;}if(slot==31){openList(p,1);}
             }
             case "owner"->{
                 if(a==null||!p.getUniqueId().equals(a.owner)){p.closeInventory();return;}if(slot==11){p.closeInventory();home(p);return;}if(slot==13){setSpawn(p,a);openOwner(p,a);return;}
@@ -225,13 +280,13 @@ public final class ApartmentPlugin extends JavaPlugin implements Listener, Comma
         Apartment a=store.all.get(prompt.apartment());if(a==null||!canManage(p,a)){p.sendMessage("§cКвартира больше недоступна.");return;}if(input.equalsIgnoreCase("отмена")){p.sendMessage("§eИзменение отменено.");openManager(p,a);return;}
         if(prompt.type().equals("name")){String clean=input.replaceAll("[\\p{Cntrl}§]","").trim();if(clean.isEmpty()||clean.length()>maxName){p.sendMessage("§cНазвание должно содержать от 1 до "+maxName+" символов.");openManager(p,a);return;}a.name=clean;}
         else{try{double value=Double.parseDouble(input.replace(',','.'));if(!Double.isFinite(value)||value<0||value>maxPrice)throw new NumberFormatException();a.price=Math.round(value*100.0)/100.0;}catch(NumberFormatException ex){p.sendMessage("§cВведите число от 0 до "+money(maxPrice)+".");openManager(p,a);return;}}
-        store.save();p.sendMessage("§aНастройка сохранена.");openManager(p,a);
+        store.save();refreshApartmentLabel(a);p.sendMessage("§aНастройка сохранена.");openManager(p,a);
     }
     private void buy(Player p,Apartment a){
         if(a.owner!=null||a.offer==Apartment.Offer.CLOSED){p.sendMessage("§cКвартира недоступна.");return;}if(!sk.country(p).equals(a.country)){p.sendMessage("§cКвартира доступна только гражданам этой страны.");return;}
         if(store.owned(p.getUniqueId())!=null){p.sendMessage("§cУ вас уже есть квартира.");return;}if(a.blockedRoles.contains(sk.role(a.country,p.getUniqueId()))){p.sendMessage("§cВашей роли запрещено покупать эту квартиру.");return;}
         double balance=sk.balance(p.getUniqueId());if(balance+0.00001<a.price){p.sendMessage("§cНедостаточно денег. Нужно "+money(a.price)+" монет.");return;}
-        sk.balance(p.getUniqueId(),balance-a.price);sk.treasury(a.country,sk.treasury(a.country)+a.price);a.owner=p.getUniqueId();a.coowners.clear();a.publicBuild=false;a.publicInteract=false;a.rentPaidThrough=a.offer==Apartment.Offer.RENT?LocalDate.now(zone):null;store.save();
+        sk.balance(p.getUniqueId(),balance-a.price);sk.treasury(a.country,sk.treasury(a.country)+a.price);a.owner=p.getUniqueId();a.coowners.clear();a.publicBuild=false;a.publicInteract=false;a.rentPaidThrough=a.offer==Apartment.Offer.RENT?LocalDate.now(zone):null;store.save();refreshApartmentLabel(a);
         p.sendMessage(a.offer==Apartment.Offer.RENT?"§aВы арендовали квартиру «"+a.name+"». Следующая плата — в 00:00 МСК.":"§aВы купили квартиру «"+a.name+"».");openOwner(p,a);
     }
     private void setSpawn(Player p,Apartment a){if(!a.contains(p.getLocation())){p.sendMessage("§cТочка должна находиться внутри квартиры.");return;}a.spawn=p.getLocation().clone();store.save();p.sendMessage("§aТочка квартиры установлена.");}
@@ -252,7 +307,7 @@ public final class ApartmentPlugin extends JavaPlugin implements Listener, Comma
         int minChunkX=Math.floorDiv(a.minX,16),maxChunkX=Math.floorDiv(a.maxX,16),minChunkZ=Math.floorDiv(a.minZ,16),maxChunkZ=Math.floorDiv(a.maxZ,16);
         for(int cx=minChunkX;cx<=maxChunkX;cx++)for(int cz=minChunkZ;cz<=maxChunkZ;cz++)if(!sk.chunkOwner(a.world,cx*16,cz*16).equals(country)){p.sendMessage("§cВся квартира должна находиться в занятых чанках вашей страны.");return;}
         for(Apartment other:store.all.values())if(a.overlaps(other)){p.sendMessage("§cОбласть пересекается с квартирой «"+other.name+"».");return;}
-        store.all.put(a.id,a);store.save();removeWand(p);selections.remove(p.getUniqueId());p.sendMessage("§aКвартира создана. Настройте название, режим и стоимость.");openManager(p,a);
+        store.all.put(a.id,a);store.save();refreshApartmentLabel(a);removeWand(p);selections.remove(p.getUniqueId());p.sendMessage("§aКвартира создана. Настройте название, режим и стоимость.");openManager(p,a);
     }
     private void removeWand(Player p){for(int i=0;i<p.getInventory().getSize();i++)if(isWand(p.getInventory().getItem(i)))p.getInventory().setItem(i,null);}
     private static String coords(Location l){return l.getBlockX()+", "+l.getBlockY()+", "+l.getBlockZ();}
