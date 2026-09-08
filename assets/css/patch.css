@@ -70,14 +70,16 @@
   content: "";
   position: absolute;
   left: 20px;
-  top: 22px;
-  bottom: 22px;
+  top: 31px;
+  bottom: 31px;
   width: 2px;
   background: #3c3c3c;
 }
 
 .update-card {
   position: relative;
+  min-width: 0;
+  width: 100%;
   margin: 0 0 30px 0 !important;
   padding: 28px 30px;
   border: 1px solid #393939;
@@ -90,11 +92,11 @@
 .update-card::before {
   content: "";
   position: absolute;
-  left: -51px;
-  top: 31px;
+  left: -53px;
+  top: 30px;
   width: 12px;
   height: 12px;
-  border: 4px solid #171717;
+  border: 3px solid #171717;
   border-radius: 50%;
   background: var(--accent);
   box-shadow: 0 0 0 2px #444;
@@ -104,7 +106,7 @@
   content: "";
   position: absolute;
   left: -35px;
-  top: 37px;
+  top: 38px;
   width: 35px;
   height: 1px;
   background: #444;
@@ -163,8 +165,10 @@
 
 .update-points li {
   position: relative;
+  min-width: 0;
   padding-left: 16px;
   color: #d0d0d0;
+  overflow-wrap: anywhere;
 }
 
 .update-points li::before {
@@ -179,11 +183,56 @@
 }
 
 @media (max-width: 720px) {
-  .updates-list { padding-left: 42px; }
-  .updates-list::before { left: 11px; }
-  .update-card { padding: 22px 20px; }
-  .update-card::before { left: -39px; }
-  .update-card::after { left: -25px; width: 25px; }
-  .update-top { align-items: flex-start; flex-direction: column; gap: 7px; }
-  .update-points { grid-template-columns: 1fr; }
+  .updates-hero-bg {
+    padding-block: 54px 34px;
+  }
+
+  .updates-list {
+    width: min(calc(100% - 24px), 1040px) !important;
+    max-width: none !important;
+    margin-inline: auto !important;
+    padding: 30px 0 30px 32px !important;
+  }
+
+  .updates-list::before {
+    left: 9px;
+    top: 61px;
+    bottom: 61px;
+  }
+
+  .update-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 0 20px 0 !important;
+    padding: 20px 18px;
+  }
+
+  .update-card::before {
+    left: -32px;
+    top: 24px;
+    width: 12px;
+    height: 12px;
+    border-width: 3px;
+  }
+
+  .update-card::after {
+    left: -14px;
+    top: 32px;
+    width: 14px;
+  }
+
+  .update-top {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .update-card h2 {
+    font-size: clamp(1.45rem, 7vw, 1.9rem);
+  }
+
+  .update-points {
+    grid-template-columns: 1fr;
+    gap: 9px;
+  }
 }
