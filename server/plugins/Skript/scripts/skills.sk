@@ -630,6 +630,8 @@ function hunterMobXP(kind: entity type) :: number:
         return 2
     if {_kind} is stray:
         return 2
+    if "%{_kind}%" is "bogged":
+        return 2
     if {_kind} is spider:
         return 2
     if {_kind} is cave spider:
@@ -678,6 +680,8 @@ function hunterBonus(kind: entity type) :: text:
     if {_kind} is skeleton:
         return "bone"
     if {_kind} is stray:
+        return "bone"
+    if "%{_kind}%" is "bogged":
         return "bone"
     if {_kind} is spider:
         return "string"
