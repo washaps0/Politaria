@@ -1322,7 +1322,12 @@ on inventory click:
 			set {_stored} to {country.storage::%{_id}%::%{_global}%}
 			if {_stored} is not set:
 				stop
-			if click type is right mouse button or click type is right mouse button with shift:
+			set {_right-click} to false
+			if click type is right mouse button:
+				set {_right-click} to true
+			if click type is right mouse button with shift:
+				set {_right-click} to true
+			if {_right-click} is true:
 				set {_one} to {_stored}
 				set amount of {_one} to 1
 				give {_one} to player
@@ -1349,7 +1354,12 @@ on inventory click:
 				stop
 			if {_item} is air:
 				stop
-			if click type is right mouse button or click type is right mouse button with shift:
+			set {_right-click} to false
+			if click type is right mouse button:
+				set {_right-click} to true
+			if click type is right mouse button with shift:
+				set {_right-click} to true
+			if {_right-click} is true:
 				if countryStoragePutOneInCategory({_id}, {_cat}, {_item}) is not true:
 					send action bar "<red>Хранилище заполнено." to player
 					stop
