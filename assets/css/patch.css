@@ -1,6 +1,5 @@
 /* Politaria layout fixes */
 
-/* Screenshots are used only as background art on the homepage. */
 .home-feature-bg,
 .home-world-bg,
 .home-cta-bg,
@@ -50,140 +49,255 @@
   background: rgba(31,31,31,.94);
 }
 
-/* Update timeline */
+/* Updates hero */
 .updates-hero-bg {
-  padding-block: 78px 48px;
+  padding-block: 72px 44px;
   border-bottom: 1px solid var(--line);
 }
+
 .updates-hero-bg::after {
-  background: linear-gradient(90deg, rgba(20,20,20,.96), rgba(20,20,20,.82));
+  background: rgba(18,18,18,.84);
 }
 
-.updates-list {
+.updates-hero-bg h1 { margin-bottom: 10px; }
+.updates-hero-bg p {
+  max-width: 720px;
+  color: #b8b8b8;
+}
+
+/* Clean grouped release timeline */
+.release-list {
   position: relative;
-  display: block;
+  display: grid;
+  gap: 24px;
   max-width: 1040px;
-  padding-left: 64px;
+  padding-left: 74px;
 }
 
-.updates-list::before {
+.release-list::before {
   content: "";
   position: absolute;
-  left: 20px;
-  top: 22px;
-  bottom: 22px;
+  left: 28px;
+  top: 34px;
+  bottom: 34px;
   width: 2px;
-  background: #3c3c3c;
+  border-radius: 999px;
+  background: #3d3d3d;
 }
 
-.update-card {
+.release-card {
   position: relative;
-  margin: 0 0 30px 0 !important;
-  padding: 28px 30px;
-  border: 1px solid #393939;
+  min-width: 0;
+  overflow: visible;
+  border: 1px solid #383838;
   border-radius: 12px;
+  background: #202020;
+  transition: border-color .15s ease, background-color .15s ease;
+}
+
+.release-card:hover {
+  border-color: #4a4a4a;
   background: #222;
 }
 
-.update-card:last-child { margin-bottom: 0 !important; }
-
-.update-card::before {
+.release-card::before {
   content: "";
   position: absolute;
-  left: -51px;
+  left: -54px;
   top: 31px;
   width: 12px;
   height: 12px;
-  border: 4px solid #171717;
+  border: 3px solid #171717;
   border-radius: 50%;
   background: var(--accent);
-  box-shadow: 0 0 0 2px #444;
+  box-shadow: 0 0 0 2px #474747;
+  z-index: 2;
 }
 
-.update-card::after {
+.release-card::after {
   content: "";
   position: absolute;
-  left: -35px;
+  left: -39px;
   top: 37px;
-  width: 35px;
+  width: 39px;
   height: 1px;
-  background: #444;
+  background: #454545;
 }
 
-.update-card.featured {
-  border-color: #4a5961;
-  background: #24292c;
+.release-featured {
+  border-color: #46545d;
+  background: #222629;
 }
 
-.update-top {
+.release-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 12px;
+  gap: 20px;
+  padding: 22px 24px 19px;
+  border-bottom: 1px solid #343434;
+  border-radius: 12px 12px 0 0;
+  background: #232323;
 }
 
-.update-tag {
-  display: inline-flex;
-  align-items: center;
-  min-height: 27px;
-  padding: 0 9px;
-  border-radius: 6px;
-  background: #303030;
-  color: #e5e5e5;
-  font-size: .72rem;
-  font-weight: 800;
-  letter-spacing: .04em;
-}
-
-.update-date {
-  color: #949494;
-  font-size: .88rem;
-}
-
-.update-card h2 {
-  margin: 0 0 10px;
-  font-size: clamp(1.55rem, 2.6vw, 2.2rem);
+.release-header h2 {
+  margin-top: 6px;
+  font-size: clamp(1.55rem, 2.8vw, 2.1rem);
   letter-spacing: -.02em;
 }
 
-.update-card > p {
-  margin: 0 0 18px;
+.release-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   color: #aaa;
+  font-size: .8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .055em;
 }
 
-.update-points {
+.release-date::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.release-badge {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid #49545a;
+  border-radius: 999px;
+  color: #d6dce0;
+  background: #2a2f32;
+  font-size: .74rem;
+  font-weight: 750;
+}
+
+.release-body { display: grid; }
+
+.release-section {
+  padding: 21px 24px 22px;
+}
+
+.release-section + .release-section {
+  border-top: 1px solid #323232;
+}
+
+.release-section h3 {
+  margin: 0 0 11px;
+  font-size: 1.1rem;
+  color: #f0f0f0;
+}
+
+.release-section ul {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0,1fr));
-  gap: 8px 24px;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.update-points li {
+.release-section li {
   position: relative;
-  padding-left: 16px;
-  color: #d0d0d0;
+  padding-left: 18px;
+  color: #c8c8c8;
+  line-height: 1.55;
 }
 
-.update-points li::before {
+.release-section li::before {
   content: "";
   position: absolute;
-  left: 0;
-  top: .67em;
+  left: 1px;
+  top: .7em;
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #737373;
+  background: #767676;
+}
+
+.release-section strong { color: #f1f1f1; }
+
+.release-section-muted {
+  border-radius: 0 0 12px 12px;
+  background: #1d1d1d;
+}
+
+/* Small functional footer label without extra decoration */
+.release-card .release-body::after {
+  content: "POLITARIA UPDATE";
+  display: block;
+  padding: 9px 24px;
+  border-top: 1px solid #303030;
+  border-radius: 0 0 12px 12px;
+  color: #656565;
+  background: #1b1b1b;
+  font-size: .64rem;
+  font-weight: 800;
+  letter-spacing: .1em;
 }
 
 @media (max-width: 720px) {
-  .updates-list { padding-left: 42px; }
-  .updates-list::before { left: 11px; }
-  .update-card { padding: 22px 20px; }
-  .update-card::before { left: -39px; }
-  .update-card::after { left: -25px; width: 25px; }
-  .update-top { align-items: flex-start; flex-direction: column; gap: 7px; }
-  .update-points { grid-template-columns: 1fr; }
+  .updates-hero-bg {
+    padding-block: 52px 32px;
+  }
+
+  .release-list {
+    width: min(calc(100% - 20px), 1040px) !important;
+    margin-inline: auto !important;
+    gap: 18px;
+    padding: 28px 0 28px 36px !important;
+  }
+
+  .release-list::before {
+    left: 11px;
+    top: 48px;
+    bottom: 48px;
+  }
+
+  .release-card {
+    border-radius: 11px;
+  }
+
+  .release-card::before {
+    left: -31px;
+    top: 24px;
+    width: 11px;
+    height: 11px;
+    border-width: 3px;
+  }
+
+  .release-card::after {
+    left: -17px;
+    top: 30px;
+    width: 17px;
+  }
+
+  .release-header {
+    flex-direction: column;
+    gap: 10px;
+    padding: 18px 17px 16px;
+    border-radius: 11px 11px 0 0;
+  }
+
+  .release-header h2 {
+    font-size: clamp(1.35rem, 7vw, 1.78rem);
+  }
+
+  .release-badge {
+    min-height: 26px;
+  }
+
+  .release-section {
+    padding: 17px;
+  }
+
+  .release-card .release-body::after {
+    padding: 8px 17px;
+  }
 }
