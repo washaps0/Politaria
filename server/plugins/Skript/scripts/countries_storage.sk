@@ -224,41 +224,41 @@ function countryBuildingProductionText(kind: text, level: number) :: text:
 function countryBuildingCostText(kind: text, nextLevel: number) :: text:
 	if {_kind} is "mine":
 		if {_nextLevel} is 1:
-			return "2000 монет • 64 железа • 16 золота"
+			return "1200 монет • 48 железа • 8 золота"
 		if {_nextLevel} is 2:
-			return "5000 монет • 128 железа • 32 золота • 8 алмазов"
-		return "10000 монет • 192 железа • 64 золота • 20 алмазов"
+			return "3000 монет • 96 железа • 20 золота • 4 алмаза"
+		return "6000 монет • 128 железа • 40 золота • 10 алмазов"
 	if {_kind} is "farm":
 		if {_nextLevel} is 1:
-			return "1000 монет • 128 пшеницы • 64 дуба"
+			return "700 монет • 96 пшеницы • 48 дуба"
 		if {_nextLevel} is 2:
-			return "2500 монет • 256 пшеницы • 96 дуба • 32 железа"
-		return "5000 монет • 384 пшеницы • 128 дуба • 64 железа • 8 алмазов"
+			return "1600 монет • 160 пшеницы • 64 дуба • 20 железа"
+		return "3200 монет • 256 пшеницы • 96 дуба • 40 железа • 4 алмаза"
 	if {_kind} is "sawmill":
 		if {_nextLevel} is 1:
-			return "1500 монет • 128 дуба • 32 железа"
+			return "1000 монет • 96 дуба • 20 железа"
 		if {_nextLevel} is 2:
-			return "3500 монет • 192 дуба • 64 железа • 16 золота"
-		return "7000 монет • 256 дуба • 96 железа • 8 алмазов"
+			return "2200 монет • 128 дуба • 40 железа • 8 золота"
+		return "4500 монет • 192 дуба • 64 железа • 4 алмаза"
 	if {_kind} is "quarry":
 		if {_nextLevel} is 1:
-			return "1800 монет • 256 камня • 32 железа"
+			return "1200 монет • 160 камня • 20 железа"
 		if {_nextLevel} is 2:
-			return "4000 монет • 384 камня • 64 железа • 16 золота"
-		return "8000 монет • 512 камня • 128 железа • 8 алмазов"
+			return "2500 монет • 256 камня • 40 железа • 8 золота"
+		return "5000 монет • 384 камня • 80 железа • 4 алмаза"
 	if {_kind} is "ranch":
 		if {_nextLevel} is 1:
-			return "2000 монет • 64 сена • 64 дуба"
+			return "1200 монет • 40 сена • 48 дуба"
 		if {_nextLevel} is 2:
-			return "4500 монет • 128 сена • 96 дуба • 32 железа"
-		return "8500 монет • 192 сена • 128 дуба • 64 железа • 16 золота"
+			return "2800 монет • 80 сена • 64 дуба • 20 железа"
+		return "5500 монет • 128 сена • 96 дуба • 40 железа • 8 золота"
 	return ""
 
 function countryLevelUpgradeCostText(nextLevel: number) :: text:
 	if {_nextLevel} is 2:
-		return "6000 монет • 128 железа • 48 золота • 16 алмазов • 256 камня"
+		return "3500 монет • 96 железа • 24 золота • 8 алмазов • 160 камня"
 	if {_nextLevel} is 3:
-		return "18000 монет • 256 железа • 128 золота • 40 алмазов • 32 изумруда"
+		return "9000 монет • 160 железа • 64 золота • 20 алмазов • 16 изумрудов"
 	return "Максимальный уровень"
 
 function countryProductionAdd(id: text, materialName: text, amountToAdd: number):
@@ -521,25 +521,25 @@ function countryTryUpgradeLevel2(p: player):
 		stop
 	set {_next} to {_level} + 1
 	if {_next} is 2:
-		set {_money} to 6000
+		set {_money} to 3500
 		set {_m1} to "iron ingot"
-		set {_a1} to 128
+		set {_a1} to 96
 		set {_m2} to "gold ingot"
-		set {_a2} to 48
+		set {_a2} to 24
 		set {_m3} to "diamond"
-		set {_a3} to 16
+		set {_a3} to 8
 		set {_m4} to "stone"
-		set {_a4} to 256
+		set {_a4} to 160
 	else:
-		set {_money} to 18000
+		set {_money} to 9000
 		set {_m1} to "iron ingot"
-		set {_a1} to 256
+		set {_a1} to 160
 		set {_m2} to "gold ingot"
-		set {_a2} to 128
+		set {_a2} to 64
 		set {_m3} to "diamond"
-		set {_a3} to 40
+		set {_a3} to 20
 		set {_m4} to "emerald"
-		set {_a4} to 32
+		set {_a4} to 16
 	if {country.treasury::%{_id}%} is not set:
 		set {country.treasury::%{_id}%} to 0
 	if {country.treasury::%{_id}%} is less than {_money}:
@@ -599,123 +599,123 @@ function countryTryUpgradeBuilding2(p: player, kind: text):
 	set {_a4} to 0
 	if {_kind} is "mine":
 		if {_next} is 1:
-			set {_money} to 2000
+			set {_money} to 1200
 			set {_m1} to "iron ingot"
-			set {_a1} to 64
+			set {_a1} to 48
 			set {_m2} to "gold ingot"
-			set {_a2} to 16
+			set {_a2} to 8
 		else if {_next} is 2:
-			set {_money} to 5000
+			set {_money} to 3000
+			set {_m1} to "iron ingot"
+			set {_a1} to 96
+			set {_m2} to "gold ingot"
+			set {_a2} to 20
+			set {_m3} to "diamond"
+			set {_a3} to 4
+		else:
+			set {_money} to 6000
 			set {_m1} to "iron ingot"
 			set {_a1} to 128
 			set {_m2} to "gold ingot"
-			set {_a2} to 32
+			set {_a2} to 40
 			set {_m3} to "diamond"
-			set {_a3} to 8
-		else:
-			set {_money} to 10000
-			set {_m1} to "iron ingot"
-			set {_a1} to 192
-			set {_m2} to "gold ingot"
-			set {_a2} to 64
-			set {_m3} to "diamond"
-			set {_a3} to 20
+			set {_a3} to 10
 	else if {_kind} is "farm":
 		if {_next} is 1:
-			set {_money} to 1000
+			set {_money} to 700
 			set {_m1} to "wheat"
-			set {_a1} to 128
+			set {_a1} to 96
+			set {_m2} to "oak log"
+			set {_a2} to 48
+		else if {_next} is 2:
+			set {_money} to 1600
+			set {_m1} to "wheat"
+			set {_a1} to 160
 			set {_m2} to "oak log"
 			set {_a2} to 64
-		else if {_next} is 2:
-			set {_money} to 2500
+			set {_m3} to "iron ingot"
+			set {_a3} to 20
+		else:
+			set {_money} to 3200
 			set {_m1} to "wheat"
 			set {_a1} to 256
 			set {_m2} to "oak log"
 			set {_a2} to 96
 			set {_m3} to "iron ingot"
-			set {_a3} to 32
-		else:
-			set {_money} to 5000
-			set {_m1} to "wheat"
-			set {_a1} to 384
-			set {_m2} to "oak log"
-			set {_a2} to 128
-			set {_m3} to "iron ingot"
-			set {_a3} to 64
+			set {_a3} to 40
 			set {_m4} to "diamond"
-			set {_a4} to 8
+			set {_a4} to 4
 	else if {_kind} is "sawmill":
 		if {_next} is 1:
-			set {_money} to 1500
+			set {_money} to 1000
+			set {_m1} to "oak log"
+			set {_a1} to 96
+			set {_m2} to "iron ingot"
+			set {_a2} to 20
+		else if {_next} is 2:
+			set {_money} to 2200
 			set {_m1} to "oak log"
 			set {_a1} to 128
 			set {_m2} to "iron ingot"
-			set {_a2} to 32
-		else if {_next} is 2:
-			set {_money} to 3500
+			set {_a2} to 40
+			set {_m3} to "gold ingot"
+			set {_a3} to 8
+		else:
+			set {_money} to 4500
 			set {_m1} to "oak log"
 			set {_a1} to 192
 			set {_m2} to "iron ingot"
 			set {_a2} to 64
-			set {_m3} to "gold ingot"
-			set {_a3} to 16
-		else:
-			set {_money} to 7000
-			set {_m1} to "oak log"
-			set {_a1} to 256
-			set {_m2} to "iron ingot"
-			set {_a2} to 96
 			set {_m3} to "diamond"
-			set {_a3} to 8
+			set {_a3} to 4
 	else if {_kind} is "quarry":
 		if {_next} is 1:
-			set {_money} to 1800
+			set {_money} to 1200
+			set {_m1} to "stone"
+			set {_a1} to 160
+			set {_m2} to "iron ingot"
+			set {_a2} to 20
+		else if {_next} is 2:
+			set {_money} to 2500
 			set {_m1} to "stone"
 			set {_a1} to 256
 			set {_m2} to "iron ingot"
-			set {_a2} to 32
-		else if {_next} is 2:
-			set {_money} to 4000
+			set {_a2} to 40
+			set {_m3} to "gold ingot"
+			set {_a3} to 8
+		else:
+			set {_money} to 5000
 			set {_m1} to "stone"
 			set {_a1} to 384
 			set {_m2} to "iron ingot"
-			set {_a2} to 64
-			set {_m3} to "gold ingot"
-			set {_a3} to 16
-		else:
-			set {_money} to 8000
-			set {_m1} to "stone"
-			set {_a1} to 512
-			set {_m2} to "iron ingot"
-			set {_a2} to 128
+			set {_a2} to 80
 			set {_m3} to "diamond"
-			set {_a3} to 8
+			set {_a3} to 4
 	else if {_kind} is "ranch":
 		if {_next} is 1:
-			set {_money} to 2000
+			set {_money} to 1200
 			set {_m1} to "hay bale"
-			set {_a1} to 64
+			set {_a1} to 40
+			set {_m2} to "oak log"
+			set {_a2} to 48
+		else if {_next} is 2:
+			set {_money} to 2800
+			set {_m1} to "hay bale"
+			set {_a1} to 80
 			set {_m2} to "oak log"
 			set {_a2} to 64
-		else if {_next} is 2:
-			set {_money} to 4500
+			set {_m3} to "iron ingot"
+			set {_a3} to 20
+		else:
+			set {_money} to 5500
 			set {_m1} to "hay bale"
 			set {_a1} to 128
 			set {_m2} to "oak log"
 			set {_a2} to 96
 			set {_m3} to "iron ingot"
-			set {_a3} to 32
-		else:
-			set {_money} to 8500
-			set {_m1} to "hay bale"
-			set {_a1} to 192
-			set {_m2} to "oak log"
-			set {_a2} to 128
-			set {_m3} to "iron ingot"
-			set {_a3} to 64
+			set {_a3} to 40
 			set {_m4} to "gold ingot"
-			set {_a4} to 16
+			set {_a4} to 8
 	if {country.treasury::%{_id}%} is not set:
 		set {country.treasury::%{_id}%} to 0
 	if {country.treasury::%{_id}%} is less than {_money}:
