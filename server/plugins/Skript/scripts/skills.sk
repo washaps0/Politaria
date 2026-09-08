@@ -2,18 +2,10 @@
 # POLITARIA SKILLS
 # Purpur 1.21.1
 # Skript 2.15.4
-#
-# Skills:
-# - Mining
-# - Crafting
-# - Farming
-# - Hunter
-# - Lumberjack
 # =========================================================
 
 options:
     skills-prefix: &b&lPOLITARIA&r &8»
-
 
 # =========================================================
 # LEVELS
@@ -65,7 +57,6 @@ function skillNextXP(level: number) :: number:
     if {_level} >= 10:
         return 1125
     return skillXPForLevel({_level} + 1)
-
 
 # =========================================================
 # MINING
@@ -221,7 +212,6 @@ on break with priority monitor:
         else:
             drop 1 of {_bonus} at location of event-block
         send action bar formatted "<aqua>⛏ <green><bold>УДАЧА!</bold> <white>Получен дополнительный ресурс." to player
-
 
 # =========================================================
 # CRAFTING
@@ -436,7 +426,6 @@ on craft:
                 send "{@skills-prefix} &aУдачный крафт! &fПредмет улучшился: &b%{_kind}% &8→ &b%{_upgrade}%&f." to player
                 send action bar formatted "<yellow>⚒ <green><bold>УДАЧНЫЙ КРАФТ!</bold> <white>%{_upgrade}%" to player
 
-
 # =========================================================
 # FARMING
 # =========================================================
@@ -593,7 +582,6 @@ on break with priority monitor:
         set age of block at {_loc} to 0
         stop
 
-
 # =========================================================
 # HUNTER
 # =========================================================
@@ -610,105 +598,168 @@ function hunterChance(p: player) :: number:
     return hunterLevel({_p}) * 2
 
 function hunterMobXP(kind: entity type) :: number:
-    if {_kind} is cow:
+    set {_name} to lowercase "%{_kind}%"
+
+    # Passive hunting targets kept from the old system.
+    if {_name} is "cow":
         return 1
-    if {_kind} is pig:
+    if {_name} is "pig":
         return 1
-    if {_kind} is sheep:
+    if {_name} is "sheep":
         return 1
-    if {_kind} is chicken:
+    if {_name} is "chicken":
         return 1
-    if {_kind} is rabbit:
+    if {_name} is "rabbit":
         return 1
-    if {_kind} is zombie:
+
+    # Common hostile mobs.
+    if {_name} is "zombie":
         return 2
-    if {_kind} is husk:
+    if {_name} is "zombie villager":
         return 2
-    if {_kind} is drowned:
+    if {_name} is "husk":
         return 2
-    if {_kind} is skeleton:
+    if {_name} is "drowned":
         return 2
-    if {_kind} is stray:
+    if {_name} is "skeleton":
         return 2
-    if "%{_kind}%" is "bogged":
+    if {_name} is "stray":
         return 2
-    if {_kind} is spider:
+    if {_name} is "bogged":
         return 2
-    if {_kind} is cave spider:
+    if {_name} is "spider":
         return 2
-    if "%{_kind}%" is "creeper":
+    if {_name} is "cave spider":
         return 2
-    if {_kind} is enderman:
+    if {_name} is "creeper":
         return 2
-    if {_kind} is slime:
+    if {_name} is "silverfish":
         return 2
-    if {_kind} is magma cube:
+    if {_name} is "endermite":
         return 2
-    if {_kind} is blaze:
+    if {_name} is "slime":
+        return 2
+    if {_name} is "magma cube":
+        return 2
+
+    # Medium hostile mobs.
+    if {_name} is "blaze":
         return 3
-    if {_kind} is witch:
+    if {_name} is "breeze":
         return 3
-    if {_kind} is guardian:
+    if {_name} is "ghast":
         return 3
-    if {_kind} is wither skeleton:
+    if {_name} is "guardian":
         return 3
-    if {_kind} is piglin brute:
+    if {_name} is "phantom":
         return 3
-    if {_kind} is ravager:
+    if {_name} is "witch":
+        return 3
+    if {_name} is "wither skeleton":
+        return 3
+    if {_name} is "pillager":
+        return 3
+    if {_name} is "vindicator":
+        return 3
+    if {_name} is "vex":
+        return 3
+    if {_name} is "shulker":
+        return 3
+    if {_name} is "hoglin":
+        return 3
+    if {_name} is "zoglin":
+        return 3
+
+    # Strong hostile mobs.
+    if {_name} is "evoker":
+        return 4
+    if {_name} is "piglin brute":
+        return 4
+    if {_name} is "ravager":
         return 6
-    if {_kind} is elder guardian:
+    if {_name} is "elder guardian":
         return 6
+
+    # Extreme mobs and bosses.
+    if {_name} is "warden":
+        return 15
+    if {_name} is "wither":
+        return 25
+    if {_name} is "ender dragon":
+        return 30
+
     return 0
 
 function hunterBonus(kind: entity type) :: text:
-    if {_kind} is cow:
+    set {_name} to lowercase "%{_kind}%"
+    if {_name} is "cow":
         return "leather"
-    if {_kind} is pig:
+    if {_name} is "pig":
         return "raw porkchop"
-    if {_kind} is sheep:
+    if {_name} is "sheep":
         return "raw mutton"
-    if {_kind} is chicken:
+    if {_name} is "chicken":
         return "raw chicken"
-    if {_kind} is rabbit:
+    if {_name} is "rabbit":
         return "rabbit hide"
-    if {_kind} is zombie:
+    if {_name} is "zombie":
         return "rotten flesh"
-    if {_kind} is husk:
+    if {_name} is "zombie villager":
         return "rotten flesh"
-    if {_kind} is drowned:
+    if {_name} is "husk":
         return "rotten flesh"
-    if {_kind} is skeleton:
+    if {_name} is "drowned":
+        return "rotten flesh"
+    if {_name} is "skeleton":
         return "bone"
-    if {_kind} is stray:
+    if {_name} is "stray":
         return "bone"
-    if "%{_kind}%" is "bogged":
+    if {_name} is "bogged":
         return "bone"
-    if {_kind} is spider:
+    if {_name} is "spider":
         return "string"
-    if {_kind} is cave spider:
+    if {_name} is "cave spider":
         return "string"
-    if "%{_kind}%" is "creeper":
+    if {_name} is "creeper":
         return "gunpowder"
-    if {_kind} is enderman:
-        return "ender pearl"
-    if {_kind} is slime:
+    if {_name} is "slime":
         return "slime ball"
-    if {_kind} is magma cube:
+    if {_name} is "magma cube":
         return "magma cream"
-    if {_kind} is blaze:
+    if {_name} is "blaze":
         return "blaze rod"
-    if {_kind} is witch:
+    if {_name} is "breeze":
+        return "breeze rod"
+    if {_name} is "ghast":
+        return "ghast tear"
+    if {_name} is "guardian":
+        return "prismarine shard"
+    if {_name} is "elder guardian":
+        return "prismarine shard"
+    if {_name} is "phantom":
+        return "phantom membrane"
+    if {_name} is "witch":
         return "redstone"
-    if {_kind} is guardian:
-        return "prismarine shard"
-    if {_kind} is elder guardian:
-        return "prismarine shard"
-    if {_kind} is wither skeleton:
+    if {_name} is "wither skeleton":
         return "coal"
-    if {_kind} is piglin brute:
+    if {_name} is "piglin brute":
         return "gold nugget"
-    if {_kind} is ravager:
+    if {_name} is "pillager":
+        return "arrow"
+    if {_name} is "vindicator":
+        return "emerald"
+    if {_name} is "evoker":
+        return "emerald"
+    if {_name} is "shulker":
+        return "shulker shell"
+    if {_name} is "hoglin":
+        return "raw porkchop"
+    if {_name} is "zoglin":
+        return "rotten flesh"
+    if {_name} is "ravager":
         return "leather"
+    if {_name} is "warden":
+        return "sculk catalyst"
     return ""
 
 function hunterAddXP(p: player, amount: number):
@@ -770,7 +821,6 @@ on death:
         else:
             drop 1 of {_bonus} at {_loc}
         send action bar formatted "<red>⚔ <green><bold>УДАЧНАЯ ОХОТА!</bold> <white>Получена дополнительная добыча." to {_p}
-
 
 # =========================================================
 # LUMBERJACK
@@ -884,7 +934,6 @@ on break with priority monitor:
             drop 1 of {_kind} at {_loc}
         send action bar formatted "<gold>🪓 <green><bold>УДАЧНАЯ РУБКА!</bold> <white>Получено дополнительное бревно." to player
 
-
 # =========================================================
 # /SKILLS
 # =========================================================
@@ -972,7 +1021,6 @@ command /skills:
             send "  &8✖ &7Автоподбор &8— уровень 4"
         send ""
 
-
 # =========================================================
 # ADMIN
 # =========================================================
@@ -1010,7 +1058,6 @@ command /skillset <text> <number>:
             send "{@skills-prefix} &fЛесоруб установлен на уровень &6%arg-2%&f."
             stop
         send "{@skills-prefix} &7Использование: &f/skillset <mining/crafting/farming/hunter/lumberjack> <1-10>"
-
 
 # =========================================================
 # DEBUG
