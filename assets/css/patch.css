@@ -77,7 +77,7 @@
 .release-list::before {
   content: "";
   position: absolute;
-  left: 28px;
+  left: 29px;
   top: 34px;
   bottom: 34px;
   width: 2px;
@@ -117,9 +117,9 @@
 .release-card::after {
   content: "";
   position: absolute;
-  left: -39px;
-  top: 37px;
-  width: 39px;
+  left: -36px;
+  top: 40px;
+  width: 36px;
   height: 1px;
   background: #454545;
 }
@@ -255,7 +255,7 @@
   }
 
   .release-list::before {
-    left: 11px;
+    left: 13px;
     top: 48px;
     bottom: 48px;
   }
@@ -273,9 +273,9 @@
   }
 
   .release-card::after {
-    left: -17px;
-    top: 30px;
-    width: 17px;
+    left: -14px;
+    top: 32px;
+    width: 14px;
   }
 
   .release-header {
