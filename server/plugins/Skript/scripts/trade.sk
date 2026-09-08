@@ -258,26 +258,40 @@ function tradeComplete(p: player):
 	set {trade.ending::%{_a-id}%} to true
 	set {trade.ending::%{_b-id}%} to true
 
+	# IMPORTANT: copy both offers before touching/closing the trade GUI.
+	# The GUI contains visual copies of these same ItemStacks. On some
+	# Skript/Paper combinations transferring while that custom inventory
+	# is still open can make the item disappear when the GUI is closed.
+	delete {_a-items::*}
+	delete {_b-items::*}
+	loop {trade.items::%{_a-id}%::*}:
+		add loop-value to {_a-items::*}
+	loop {trade.items::%{_b-id}%::*}:
+		add loop-value to {_b-items::*}
+
+	# Close the trade inventories BEFORE giving any real items.
+	# trade.ending prevents on inventory close from cancelling the trade.
+	close {_a}'s inventory
+	close {_b}'s inventory
+
 	# Money exchange.
 	remove {_a-money} from {economy.balance::%{_a-id}%}
 	add {_a-money} to {economy.balance::%{_b-id}%}
 	remove {_b-money} from {economy.balance::%{_b-id}%}
 	add {_b-money} to {economy.balance::%{_a-id}%}
 
-	# Item exchange.
-	loop {trade.items::%{_a-id}%::*}:
+	# Item exchange from independent snapshots, not from GUI-backed lists.
+	loop {_a-items::*}:
 		give loop-value to {_b}
-	loop {trade.items::%{_b-id}%::*}:
+	loop {_b-items::*}:
 		give loop-value to {_a}
 
+	# Only delete escrow after both transfer loops have run.
 	delete {trade.items::%{_a-id}%::*}
 	delete {trade.items::%{_b-id}%::*}
 
 	send formatted "<green><bold>ОБМЕН ЗАВЕРШЁН! <gray>Вы успешно обменялись с <white>%name of {_b}%<gray>." to {_a}
 	send formatted "<green><bold>ОБМЕН ЗАВЕРШЁН! <gray>Вы успешно обменялись с <white>%name of {_a}%<gray>." to {_b}
-
-	close {_a}'s inventory
-	close {_b}'s inventory
 
 	tradeClearPlayerData({_a-id})
 	tradeClearPlayerData({_b-id})
