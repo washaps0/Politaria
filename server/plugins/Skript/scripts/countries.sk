@@ -944,7 +944,14 @@ function countryOpenMembers(p: player):
 			set {_member-name} to "Неизвестный игрок"
 		set {_slot} to {_slots::%{_position}%}
 		set {_roles-text} to countryMemberRolesText({_id}, {_member-uuid})
-		set slot {_slot} of {_menu} to paper named "<white><bold>%{_member-name}%" with lore "<gray>Роли: <white>%{_roles-text}%" and "" and "<yellow>Нажмите для управления"
+		set {_member-profile} to offlineplayer({_member-uuid}, false)
+		if {_member-profile} is set:
+			set {_member-head} to head of {_member-profile}
+		else:
+			set {_member-head} to player head
+		set name of {_member-head} to "<white><bold>%{_member-name}%"
+		set lore of {_member-head} to "<gray>Роли: <white>%{_roles-text}%" and "" and "<yellow>Нажмите для управления"
+		set slot {_slot} of {_menu} to {_member-head}
 		set {country.menu-member::%uuid of {_p}%::%{_slot}%} to {_member-uuid}
 		add 1 to {_position}
 	if countryHasPermission({_p}, "INVITE") is true:
@@ -961,7 +968,14 @@ function countryOpenMember(p: player, memberUuid: text):
 	set {_menu} to chest inventory with 3 rows named "<dark gray>Управление участником"
 	loop integers between 0 and 26:
 		set slot loop-value of {_menu} to gray stained glass pane named " "
-	set slot 4 of {_menu} to player head named "<white><bold>%{_name}%" with lore "<gray>Роли: <white>%{_roles-text}%"
+	set {_member-profile} to offlineplayer({_memberUuid}, false)
+	if {_member-profile} is set:
+		set {_member-head} to head of {_member-profile}
+	else:
+		set {_member-head} to player head
+	set name of {_member-head} to "<white><bold>%{_name}%"
+	set lore of {_member-head} to "<gray>Роли: <white>%{_roles-text}%"
+	set slot 4 of {_menu} to {_member-head}
 	set slot 11 of {_menu} to name tag named "<light purple><bold>РОЛИ УЧАСТНИКА" with lore "<gray>Можно выдать несколько ролей одновременно" and "<gray>Нажмите, чтобы изменить"
 	set slot 15 of {_menu} to barrier named "<red><bold>ИСКЛЮЧИТЬ" with lore "<gray>Удалить участника из страны"
 	set slot 22 of {_menu} to arrow named "<yellow>Назад"

@@ -196,7 +196,13 @@ function policeOpenPassport(viewer: player, targetUuid: text, page: number):
 	set {_menu} to chest inventory with 6 rows named "{@police-passport-title}"
 	policeFill({_menu})
 
-	set slot 4 of {_menu} to player head named "<aqua><bold>%{_name}%" with lore "<gray>Паспорт игрока" and "<dark gray>UUID: %{_targetUuid}%"
+	if {_target} is set:
+		set {_target-head} to head of {_target}
+	else:
+		set {_target-head} to player head
+	set name of {_target-head} to "<aqua><bold>%{_name}%"
+	set lore of {_target-head} to "<gray>Паспорт игрока" and "<dark gray>UUID: %{_targetUuid}%"
+	set slot 4 of {_menu} to {_target-head}
 
 	if {_countryId} is "":
 		set slot 11 of {_menu} to gray banner named "<gray><bold>БЕЗ ГРАЖДАНСТВА" with lore "<gray>Игрок не состоит ни в одной стране"
@@ -305,7 +311,14 @@ function policeOpenWantedList(p: player, page: number):
 				set {_citizenship} to "<gray>Без гражданства"
 			else:
 				set {_citizenship} to "%countryColor({_targetCountry})%%countryName({_targetCountry})%"
-			set slot {_slot} of {_menu} to player head named "<red><bold>%{_name}%" with lore policeStars({_stars}) and "<gray>%policeLevelName({_stars})%" and "<gray>Гражданство: %{_citizenship}%" and "" and "<yellow>Нажмите для подробностей"
+			set {_target-profile} to offlineplayer({_targetUuid}, false)
+			if {_target-profile} is set:
+				set {_target-head} to head of {_target-profile}
+			else:
+				set {_target-head} to player head
+			set name of {_target-head} to "<red><bold>%{_name}%"
+			set lore of {_target-head} to policeStars({_stars}) and "<gray>%policeLevelName({_stars})%" and "<gray>Гражданство: %{_citizenship}%" and "" and "<yellow>Нажмите для подробностей"
+			set slot {_slot} of {_menu} to {_target-head}
 			set {police.menu-target::%uuid of {_p}%::%{_slot}%} to {_targetUuid}
 	else:
 		set slot 22 of {_menu} to lime dye named "<light green><bold>СПИСОК ПУСТ" with lore "<gray>Ваша страна никого не разыскивает"
@@ -342,7 +355,14 @@ function policeOpenWantedDetail(p: player, targetUuid: text):
 	set {_menu} to chest inventory with 4 rows named "<dark gray>Розыск • %{_name}%"
 	loop integers between 0 and 35:
 		set slot loop-value of {_menu} to gray stained glass pane named " "
-	set slot 4 of {_menu} to player head named "<red><bold>%{_name}%" with lore policeStars({_stars}) and "<gray>%policeLevelName({_stars})%" and "<gray>Гражданство: %{_citizenship}%"
+	set {_target-profile} to offlineplayer({_targetUuid}, false)
+	if {_target-profile} is set:
+		set {_target-head} to head of {_target-profile}
+	else:
+		set {_target-head} to player head
+	set name of {_target-head} to "<red><bold>%{_name}%"
+	set lore of {_target-head} to policeStars({_stars}) and "<gray>%policeLevelName({_stars})%" and "<gray>Гражданство: %{_citizenship}%"
+	set slot 4 of {_menu} to {_target-head}
 
 	if policeIsGuard({_p}) is true:
 		set slot 11 of {_menu} to red dye named "<red><bold>- 1 ЗВЕЗДА" with lore "<gray>Понизить уровень розыска"
