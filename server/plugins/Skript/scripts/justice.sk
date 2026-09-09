@@ -217,10 +217,10 @@ function justiceOpenCuffControl(p: player, target: player):
 	loop integers between 0 and 26:
 		set slot loop-value of {_menu} to gray stained glass pane named " "
 	set {_mode} to {justice.cuff-mode::%uuid of {_target}%}
-	set slot 4 of {_menu} to chain named "<aqua><bold>%name of {_target}%" with lore "<gray>Режим: <white>%{_mode}%"
-	set slot 10 of {_menu} to lead named "<yellow><bold>ВЕСТИ ЗА СОБОЙ" with lore "<gray>Игрок сможет двигаться только рядом с вами"
-	set slot 12 of {_menu} to feather named "<light green><bold>РАЗРЕШИТЬ ХОДИТЬ" with lore "<gray>Свободное движение, но действия всё ещё заблокированы"
-	set slot 14 of {_menu} to iron boots named "<red><bold>ЗАПРЕТИТЬ ДВИЖЕНИЕ" with lore "<gray>Полностью зафиксировать игрока на месте"
+	set slot 4 of {_menu} to chain named "<aqua><bold>%name of {_target}%" with lore "<gray>Режим: <white>%{_mode}%" and "<red>Самостоятельное движение запрещено"
+	set slot 10 of {_menu} to lead named "<yellow><bold>ВЕСТИ ЗА СОБОЙ" with lore "<gray>Игрок не сможет ходить сам" and "<gray>Сервер будет перемещать его за вами"
+	set slot 12 of {_menu} to barrier named "<red><bold>ХОДЬБА ЗАПРЕЩЕНА" with lore "<gray>Пока надеты наручники," and "<gray>игрок не может двигаться самостоятельно"
+	set slot 14 of {_menu} to iron boots named "<red><bold>ОСТАВИТЬ НА МЕСТЕ" with lore "<gray>Полностью зафиксировать игрока"
 	set slot 16 of {_menu} to shears named "<white><bold>СНЯТЬ НАРУЧНИКИ"
 	set slot 22 of {_menu} to arrow named "<yellow>Закрыть"
 	set {justice.cuff-menu-target::%uuid of {_p}%} to "%uuid of {_target}%"
@@ -392,9 +392,6 @@ on inventory open:
 	justiceDecorateWanted(player)
 	justiceDecorateSocial(player)
 	set {_title} to name of current inventory of player
-
-	# Восстанавливаем police.menu после переходов между GUI.
-	# Иначе wanted.sk рисует предметы, но его обработчик кликов не видит меню.
 	if {_title} contains "Розыск страны":
 		set {police.menu::%uuid of player%} to "wanted-list"
 		stop
@@ -403,7 +400,6 @@ on inventory open:
 			set {police.menu::%uuid of player%} to "wanted-detail"
 			justiceDecorateWanted(player)
 			stop
-
 	if {_title} contains "Наручники •":
 		if {justice.cuff-menu-target::%uuid of player%} is set:
 			set {justice.menu::%uuid of player%} to "cuff-control"
@@ -532,14 +528,11 @@ on inventory click:
 	if event-slot is not set:
 		stop
 	set {_slot} to raw index of event-slot
-
 	if {justice.cuffed-by::%uuid of player%} is set:
 		cancel event
 		stop
-
 	if {justice.readonly::%uuid of player%} is true:
 		cancel event
-
 	if {country.menu::%uuid of player%} is "main":
 		if {_slot} is 36:
 			cancel event
@@ -549,7 +542,6 @@ on inventory click:
 			cancel event
 			policeOpenWantedList(player, 1)
 			stop
-
 	if {country.menu::%uuid of player%} is "law-editor":
 		if {_slot} is 10:
 			cancel event
@@ -589,7 +581,6 @@ on inventory click:
 			delete {country.selected-law::%uuid of player%}
 			countryOpenLaws(player, 1)
 			stop
-
 	if {country.menu::%uuid of player%} is "settings":
 		if {_slot} is 33:
 			cancel event
@@ -599,14 +590,12 @@ on inventory click:
 				stop
 			justiceOpenJailSettings(player, {_id})
 			stop
-
 	if {police.menu::%uuid of player%} is "passport":
 		cancel event
 		if {_slot} is 19:
 			justiceOpenConvictions(player, {police.passport-target::%uuid of player%}, 1)
 			stop
 		stop
-
 	if {police.menu::%uuid of player%} is "wanted-detail":
 		if {_slot} is 13:
 			cancel event
@@ -655,7 +644,6 @@ on inventory click:
 			send formatted "<green>%name of {_target}% помещён в камеру на <white>%{_minutes}% минут<green>." to player
 			send formatted "<red><bold>ВЫ ЗАКЛЮЧЕНЫ</bold> <gray>Срок: <white>%{_minutes}% минут<gray>." to {_target}
 			stop
-
 	if {social.menu-open::%uuid of player%} is true:
 		if {_slot} is 29:
 			cancel event
@@ -688,10 +676,9 @@ on inventory click:
 			close player's inventory
 			play sound "block.chain.place" with volume 1 and pitch 1 at player
 			play sound "block.chain.place" with volume 1 and pitch 1 at {_target}
-			send formatted "<aqua>Вы надели наручники на <white>%name of {_target}%<aqua>. Игрок зафиксирован на месте." to player
-			send "<red><bold>ВЫ ЗАДЕРЖАНЫ</bold> <gray>Вы не можете двигаться и взаимодействовать с миром." to {_target}
+			send formatted "<aqua>Вы надели наручники на <white>%name of {_target}%<aqua>. Игрок полностью обездвижен." to player
+			send "<red><bold>ВЫ ЗАДЕРЖАНЫ</bold> <gray>Самостоятельное движение полностью запрещено." to {_target}
 			stop
-
 	if {justice.menu::%uuid of player%} is not set:
 		stop
 	cancel event
@@ -773,21 +760,17 @@ on inventory click:
 			set {justice.cuff-mode::%{_targetUuid}%} to "FOLLOW"
 			delete {justice.cuff-hold::%{_targetUuid}%}
 			play sound "block.chain.place" with volume 1 and pitch 1 at player
-			send "<yellow>Режим: вести задержанного за собой." to player
+			send "<yellow>Режим: вести задержанного за собой. Сам он ходить не может." to player
 			justiceOpenCuffControl(player, {_target})
 			stop
 		if {_slot} is 12:
-			set {justice.cuff-mode::%{_targetUuid}%} to "FREE"
-			delete {justice.cuff-hold::%{_targetUuid}%}
-			play sound "block.chain.place" with volume 1 and pitch 1 at player
-			send "<green>Задержанному разрешено ходить." to player
-			justiceOpenCuffControl(player, {_target})
+			send "<red>Пока игрок в наручниках, самостоятельная ходьба полностью запрещена." to player
 			stop
 		if {_slot} is 14:
 			set {justice.cuff-mode::%{_targetUuid}%} to "HOLD"
 			set {justice.cuff-hold::%{_targetUuid}%} to location of {_target}
 			play sound "block.chain.place" with volume 1 and pitch 1 at player
-			send "<red>Задержанный зафиксирован на месте." to player
+			send "<red>Задержанный оставлен на месте." to player
 			justiceOpenCuffControl(player, {_target})
 			stop
 		if {_slot} is 16:
@@ -887,25 +870,19 @@ every 5 ticks:
 			delete {justice.cuff-target::%uuid of loop-player%}
 			continue
 		if {justice.cuff-mode::%{_targetUuid}%} is "FOLLOW":
+			set {_followLoc} to location of loop-player
+			set {justice.cuff-hold::%{_targetUuid}%} to {_followLoc}
 			if world of {_target} is not world of loop-player:
-				teleport {_target} to loop-player
-			else if distance between {_target} and loop-player is greater than {@justice-cuff-follow-distance}:
-				teleport {_target} to loop-player
+				teleport {_target} to {_followLoc}
+			else if distance between {_target} and {_followLoc} is greater than 1:
+				teleport {_target} to {_followLoc}
 
 on player move:
 	set {_uuid} to "%uuid of player%"
 	if {justice.cuffed-by::%{_uuid}%} is not set:
 		stop
-	if {justice.cuff-mode::%{_uuid}%} is "HOLD":
-		set {_hold} to {justice.cuff-hold::%{_uuid}%}
-		if {_hold} is not set:
-			set {justice.cuff-hold::%{_uuid}%} to location of player
-			stop
-		if world of player is not world of {_hold}:
-			teleport player to {_hold}
-			stop
-		if distance between player and {_hold} is greater than 0.15:
-			teleport player to {_hold}
+	# Любая попытка самостоятельного движения отменяется полностью.
+	cancel event
 
 on break:
 	if {justice.cuffed-by::%uuid of player%} is set:
