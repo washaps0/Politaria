@@ -223,7 +223,6 @@ function justiceOpenCuffControl(p: player, target: player):
 	set slot 14 of {_menu} to iron boots named "<red><bold>ЗАПРЕТИТЬ ДВИЖЕНИЕ" with lore "<gray>Полностью зафиксировать игрока на месте"
 	set slot 16 of {_menu} to shears named "<white><bold>СНЯТЬ НАРУЧНИКИ"
 	set slot 22 of {_menu} to arrow named "<yellow>Закрыть"
-	# Ставим состояние ДО открытия GUI. Старое окно может вызвать inventory close.
 	set {justice.cuff-menu-target::%uuid of {_p}%} to "%uuid of {_target}%"
 	set {justice.menu::%uuid of {_p}%} to "cuff-control"
 	set {justice.readonly::%uuid of {_p}%} to true
@@ -393,7 +392,18 @@ on inventory open:
 	justiceDecorateWanted(player)
 	justiceDecorateSocial(player)
 	set {_title} to name of current inventory of player
-	# Восстанавливаем состояние собственного меню после закрытия предыдущего GUI.
+
+	# Восстанавливаем police.menu после переходов между GUI.
+	# Иначе wanted.sk рисует предметы, но его обработчик кликов не видит меню.
+	if {_title} contains "Розыск страны":
+		set {police.menu::%uuid of player%} to "wanted-list"
+		stop
+	if {_title} contains "Розыск •":
+		if {police.selected-target::%uuid of player%} is set:
+			set {police.menu::%uuid of player%} to "wanted-detail"
+			justiceDecorateWanted(player)
+			stop
+
 	if {_title} contains "Наручники •":
 		if {justice.cuff-menu-target::%uuid of player%} is set:
 			set {justice.menu::%uuid of player%} to "cuff-control"
@@ -523,7 +533,6 @@ on inventory click:
 		stop
 	set {_slot} to raw index of event-slot
 
-	# Задержанный не может пользоваться инвентарём вообще.
 	if {justice.cuffed-by::%uuid of player%} is set:
 		cancel event
 		stop
@@ -674,7 +683,6 @@ on inventory click:
 				stop
 			set {justice.cuffed-by::%{_targetUuid}%} to "%uuid of player%"
 			set {justice.cuff-target::%uuid of player%} to {_targetUuid}
-			# При задержании игрок сразу обездвижен. Стражник сам выбирает дальнейший режим.
 			set {justice.cuff-mode::%{_targetUuid}%} to "HOLD"
 			set {justice.cuff-hold::%{_targetUuid}%} to location of {_target}
 			close player's inventory
@@ -1016,7 +1024,6 @@ on command:
 		stop
 	set {_uuid} to "%uuid of player%"
 	set {_cmd} to command
-	# В наручниках запрещены вообще все команды.
 	if {justice.cuffed-by::%{_uuid}%} is set:
 		cancel event
 		send "<red>Команды недоступны в наручниках." to player
