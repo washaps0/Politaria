@@ -1,0 +1,162 @@
+# =========================================================
+# POLITARIA — POLICE UI COMPATIBILITY FIX
+# Загружается после countries_storage.sk / justice.sk,
+# но до wanted.sk по имени файла.
+#
+# Исправляет конфликты GUI:
+# - слот 36 главного меню страны остаётся хранилищем;
+# - розыск переносится в отдельный слот 35;
+# - в меню взаимодействия появляется отдельная кнопка задержания;
+# - для наручников НЕ требуется предварительный розыск.
+# =========================================================
+
+function policeUiCanCuff(guard: player, target: player) :: boolean:
+	if policeIsGuard({_guard}) is not true:
+		return false
+	set {_guardCountry} to countryId({_guard})
+	if {_guardCountry} is "":
+		return false
+	set {_targetCountry} to countryId({_target})
+	# Игрока без страны можно задерживать.
+	if {_targetCountry} is "":
+		return true
+	# Гражданина своей страны можно задерживать.
+	if {_targetCountry} is {_guardCountry}:
+		return true
+	# Граждан чужих стран задерживать нельзя.
+	return false
+
+function policeUiDecorateMain(p: player):
+	if {country.menu::%uuid of {_p}%} is not "main":
+		stop
+	set {_id} to countryId({_p})
+	if {_id} is "":
+		stop
+
+	# Розыск теперь в отдельном свободном слоте 35.
+	set {_count} to size of {police.wanted::%{_id}%::*}
+	if policeIsGuard({_p}) is true:
+		set slot 35 of current inventory of {_p} to recovery compass named "<red><bold>РОЗЫСК" with lore "<gray>Разыскиваемых: <white>%{_count}%" and "<gray>Управление, звёзды, судимости" and "<gray>и отслеживание преступников" and "<light green>У вас есть права стражи" and "" and "<yellow>Нажмите, чтобы открыть"
+	else:
+		set slot 35 of current inventory of {_p} to compass named "<red><bold>РОЗЫСК" with lore "<gray>Разыскиваемых: <white>%{_count}%" and "<gray>Просмотр списка вашей страны" and "<dark gray>Изменять может только стража" and "" and "<yellow>Нажмите, чтобы открыть"
+
+	# wanted.sk раньше использовал слот 36. Всегда восстанавливаем там склад.
+	set {_pages} to countryStoragePages({_id})
+	set slot 36 of current inventory of {_p} to chest named "<gold><bold>ХРАНИЛИЩЕ СТРАНЫ" with lore "<gray>Категории и быстрый склад" and "<gray>Занятые слоты общие для всех категорий" and "<gray>Страниц: <white>%{_pages}%/2" and "" and "<yellow>Нажмите, чтобы открыть"
+
+function policeUiDecorateSocial(p: player):
+	if {social.menu-open::%uuid of {_p}%} is not true:
+		stop
+	if policeIsGuard({_p}) is not true:
+		stop
+
+	set {_targetRaw} to {social.menu-target::%uuid of {_p}%}
+	if {_targetRaw} is not set:
+		stop
+	set {_targetUuid} to "%{_targetRaw}%"
+	set {_target} to justicePlayerFromUuid({_targetUuid})
+	if {_target} is not set:
+		stop
+
+	set {_guardCountry} to countryId({_p})
+	set {_targetCountry} to countryId({_target})
+
+	if policeUiCanCuff({_p}, {_target}) is not true:
+		set slot 29 of current inventory of {_p} to barrier named "<red><bold>ЗАДЕРЖАТЬ НЕЛЬЗЯ" with lore "<gray>Гражданина чужой страны нельзя" and "<gray>заковать в наручники." and "" and "<dark gray>Страна: %countryColor({_targetCountry})%%countryName({_targetCountry})%"
+		stop
+
+	if {justice.cuffed-by::%{_targetUuid}%} is set:
+		if {justice.cuffed-by::%{_targetUuid}%} is "%uuid of {_p}%":
+			set {_mode} to {justice.cuff-mode::%{_targetUuid}%}
+			set slot 29 of current inventory of {_p} to chain named "<aqua><bold>НАРУЧНИКИ" with lore "<green>Игрок задержан вами" and "<gray>Режим: <white>%{_mode}%" and "" and "<yellow>Нажмите для управления"
+		else:
+			set slot 29 of current inventory of {_p} to barrier named "<red><bold>УЖЕ ЗАДЕРЖАН" with lore "<gray>Игрок находится в наручниках" and "<gray>у другого стражника."
+		stop
+
+	if {justice.cuff-target::%uuid of {_p}%} is set:
+		set slot 29 of current inventory of {_p} to barrier named "<red><bold>ВЫ УЖЕ ВЕДЁТЕ ЗАДЕРЖАННОГО" with lore "<gray>Одновременно стражник может" and "<gray>держать в наручниках только одного игрока."
+		stop
+
+	if {_targetCountry} is "":
+		set {_citizenship} to "<gray>Без страны"
+	else:
+		set {_citizenship} to "%countryColor({_targetCountry})%%countryName({_targetCountry})%"
+	set slot 29 of current inventory of {_p} to chain named "<aqua><bold>ЗАДЕРЖАТЬ" with lore "<gray>Надеть наручники на игрока" and "<gray>Гражданство: %{_citizenship}%" and "" and "<yellow>Нажмите, чтобы задержать"
+
+# Даём другим скриптам закончить декорацию меню, затем исправляем конфликт.
+on inventory open:
+	wait 3 ticks
+	if player is online:
+		policeUiDecorateMain(player)
+		policeUiDecorateSocial(player)
+
+on inventory click:
+	if event-slot is not set:
+		stop
+	set {_slot} to raw index of event-slot
+
+	# -----------------------------------------------------
+	# Главное меню страны
+	# -----------------------------------------------------
+	if {country.menu::%uuid of player%} is "main":
+		# Склад. Сначала меняем состояние меню, чтобы старый обработчик
+		# wanted.sk на слоте 36 уже не увидел country.menu = main.
+		if {_slot} is 36:
+			cancel event
+			countryOpenStorageHub(player)
+			stop
+
+		# Новый отдельный слот розыска.
+		if {_slot} is 35:
+			cancel event
+			policeOpenWantedList(player, 1)
+			stop
+
+	# -----------------------------------------------------
+	# Меню взаимодействия — задержание / наручники
+	# -----------------------------------------------------
+	if {social.menu-open::%uuid of player%} is true:
+		if {_slot} is not 29:
+			stop
+		cancel event
+
+		if policeIsGuard(player) is not true:
+			send "<red>Нужно право роли: Стража." to player
+			stop
+
+		set {_targetRaw} to {social.menu-target::%uuid of player%}
+		if {_targetRaw} is not set:
+			stop
+		set {_targetUuid} to "%{_targetRaw}%"
+		set {_target} to justicePlayerFromUuid({_targetUuid})
+		if {_target} is not set:
+			send "<red>Игрок больше не находится в сети." to player
+			stop
+
+		if policeUiCanCuff(player, {_target}) is not true:
+			send "<red>Стража не может задерживать граждан чужой страны." to player
+			stop
+
+		# Уже задержан этим стражником — открываем управление.
+		if {justice.cuffed-by::%{_targetUuid}%} is "%uuid of player%":
+			justiceOpenCuffControl(player, {_target})
+			stop
+
+		if {justice.cuffed-by::%{_targetUuid}%} is set:
+			send "<red>Этот игрок уже задержан другим стражником." to player
+			stop
+
+		if {justice.cuff-target::%uuid of player%} is set:
+			send "<red>Вы уже держите одного игрока в наручниках." to player
+			stop
+
+		set {justice.cuffed-by::%{_targetUuid}%} to "%uuid of player%"
+		set {justice.cuff-target::%uuid of player%} to {_targetUuid}
+		set {justice.cuff-mode::%{_targetUuid}%} to "FOLLOW"
+		delete {justice.cuff-hold::%{_targetUuid}%}
+		close player's inventory
+		play sound "block.chain.place" with volume 1 and pitch 1 at player
+		play sound "block.chain.place" with volume 1 and pitch 1 at {_target}
+		send formatted "<aqua>Вы надели наручники на <white>%name of {_target}%<aqua>." to player
+		send formatted "<red><bold>ВЫ ЗАДЕРЖАНЫ</bold> <gray>Стражник <white>%name of player% <gray>надел на вас наручники." to {_target}
+		stop
