@@ -5,7 +5,6 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
-import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -14,8 +13,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
@@ -25,12 +26,31 @@ import org.joml.Vector3f;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
+/**
+ * Legacy standalone tag plugin.
+ *
+ * New PolitariaIdentity versions already contain the full tag system. If
+ * PolitariaIdentity is installed this plugin disables itself to avoid duplicate
+ * commands, duplicate labels and a second tags.yml.
+ *
+ * When used standalone, labels are TextDisplay passengers attached to players.
+ * They are NOT teleported every tick. This is much more stable on Paper/Purpur
+ * and avoids the old floating/lagging label behaviour after host changes.
+ */
 public final class PolitariaTagsPlugin extends JavaPlugin implements Listener {
 
     private static final List<String> ORDER = List.of("Creator", "Dev", "Admin", "Media");
     private static final Set<String> MANUAL_TAGS = Set.of("Creator", "Dev", "Media");
+    private static final float LABEL_OFFSET = 0.95f;
 
     private final Map<UUID, LinkedHashSet<String>> tags = new HashMap<>();
     private final Map<UUID, TextDisplay> displays = new HashMap<>();
@@ -38,10 +58,16 @@ public final class PolitariaTagsPlugin extends JavaPlugin implements Listener {
 
     private File tagsFile;
     private YamlConfiguration tagsConfig;
-    private BukkitTask updateTask;
+    private BukkitTask maintainTask;
 
     @Override
     public void onEnable() {
+        if (Bukkit.getPluginManager().getPlugin("PolitariaIdentity") != null) {
+            getLogger().warning("PolitariaIdentity already contains the tag system. PolitariaTags is legacy and will disable itself to avoid conflicts.");
+            Bukkit.getPluginManager().disablePlugin(this);
+            return;
+        }
+
         saveDefaultConfig();
         loadTags();
         Bukkit.getPluginManager().registerEvents(this, this);
@@ -51,20 +77,24 @@ public final class PolitariaTagsPlugin extends JavaPlugin implements Listener {
             refreshDisplay(player);
         }
 
-        long period = Math.max(1L, getConfig().getLong("update-period", 2L));
-        updateTask = Bukkit.getScheduler().runTaskTimer(this, this::tickDisplays, 1L, period);
-        getLogger().info("PolitariaTags enabled.");
+        maintainTask = Bukkit.getScheduler().runTaskTimer(this, this::maintainDisplays, 20L, 20L);
+        getLogger().info("PolitariaTags legacy standalone mode enabled.");
     }
 
     @Override
     public void onDisable() {
-        if (updateTask != null) updateTask.cancel();
+        if (maintainTask != null) maintainTask.cancel();
+
         for (TextDisplay display : displays.values()) {
             if (display != null && display.isValid()) display.remove();
         }
         displays.clear();
+
         for (PermissionAttachment attachment : mediaAttachments.values()) {
-            try { attachment.remove(); } catch (Exception ignored) {}
+            try {
+                attachment.remove();
+            } catch (Exception ignored) {
+            }
         }
         mediaAttachments.clear();
         saveTags();
@@ -73,21 +103,41 @@ public final class PolitariaTagsPlugin extends JavaPlugin implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        Bukkit.getScheduler().runTask(this, () -> {
+        Bukkit.getScheduler().runTaskLater(this, () -> {
+            if (!player.isOnline()) return;
             applyMediaPermissions(player);
             refreshDisplay(player);
-        });
+        }, 2L);
     }
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
-        UUID id = event.getPlayer().getUniqueId();
-        TextDisplay display = displays.remove(id);
-        if (display != null && display.isValid()) display.remove();
-        PermissionAttachment attachment = mediaAttachments.remove(id);
+        removeDisplay(event.getPlayer());
+
+        PermissionAttachment attachment = mediaAttachments.remove(event.getPlayer().getUniqueId());
         if (attachment != null) {
-            try { attachment.remove(); } catch (Exception ignored) {}
+            try {
+                attachment.remove();
+            } catch (Exception ignored) {
+            }
         }
+    }
+
+    @EventHandler
+    public void onWorldChange(PlayerChangedWorldEvent event) {
+        recreateAfterTeleport(event.getPlayer());
+    }
+
+    @EventHandler
+    public void onRespawn(PlayerRespawnEvent event) {
+        recreateAfterTeleport(event.getPlayer());
+    }
+
+    private void recreateAfterTeleport(Player player) {
+        removeDisplay(player);
+        Bukkit.getScheduler().runTaskLater(this, () -> {
+            if (player.isOnline()) refreshDisplay(player);
+        }, 2L);
     }
 
     @Override
@@ -113,8 +163,8 @@ public final class PolitariaTagsPlugin extends JavaPlugin implements Listener {
 
         if (action.equals("list")) {
             List<String> effective = effectiveTags(target);
-            sender.sendMessage("§7Теги §f" + target.getName() + "§7: " +
-                    (effective.isEmpty() ? "§8нет" : "§f" + String.join("§7, §f", effective)));
+            sender.sendMessage("§7Теги §f" + target.getName() + "§7: "
+                    + (effective.isEmpty() ? "§8нет" : "§f" + String.join("§7, §f", effective)));
             return true;
         }
 
@@ -199,8 +249,7 @@ public final class PolitariaTagsPlugin extends JavaPlugin implements Listener {
         for (int i = 0; i < effective.size(); i++) {
             if (i > 0) result = result.append(Component.space());
             String tag = effective.get(i);
-            result = result.append(Component.text("[" + tag + "]", color(tag))
-                    .decorate(TextDecoration.BOLD));
+            result = result.append(Component.text("[" + tag + "]", color(tag)).decorate(TextDecoration.BOLD));
         }
         return result;
     }
@@ -215,7 +264,7 @@ public final class PolitariaTagsPlugin extends JavaPlugin implements Listener {
         };
     }
 
-    private void tickDisplays() {
+    private void maintainDisplays() {
         for (Player player : Bukkit.getOnlinePlayers()) {
             refreshDisplay(player);
         }
@@ -226,55 +275,60 @@ public final class PolitariaTagsPlugin extends JavaPlugin implements Listener {
         UUID id = player.getUniqueId();
 
         if (effective.isEmpty()) {
-            TextDisplay old = displays.remove(id);
-            if (old != null && old.isValid()) old.remove();
+            removeDisplay(player);
             return;
         }
 
         TextDisplay display = displays.get(id);
-        if (display == null || !display.isValid() || !display.getWorld().equals(player.getWorld())) {
-            if (display != null && display.isValid()) display.remove();
+        if (display == null || !display.isValid() || display.getVehicle() != player || display.getWorld() != player.getWorld()) {
+            removeDisplay(player);
             display = createDisplay(player);
             displays.put(id, display);
         }
 
         display.text(tagComponent(player));
-        double height = getConfig().getDouble("label-height", 2.85D);
-        Location wanted = player.getLocation().add(0.0D, height, 0.0D);
-        if (display.getLocation().distanceSquared(wanted) > 0.0004D) {
-            display.teleport(wanted);
-        }
     }
 
     private TextDisplay createDisplay(Player player) {
-        double height = getConfig().getDouble("label-height", 2.85D);
-        Location location = player.getLocation().add(0.0D, height, 0.0D);
-        return player.getWorld().spawn(location, TextDisplay.class, display -> {
-            display.text(tagComponent(player));
-            display.setBillboard(Display.Billboard.CENTER);
-            display.setSeeThrough(true);
-            display.setShadowed(true);
-            display.setDefaultBackground(false);
-            display.setBackgroundColor(Color.fromARGB(0, 0, 0, 0));
-            display.setAlignment(TextDisplay.TextAlignment.CENTER);
-            display.setPersistent(false);
-            display.setInvulnerable(true);
-            display.setGravity(false);
-            display.setViewRange(1.0f);
-            display.setTransformation(new Transformation(
-                    new Vector3f(0, 0, 0),
+        TextDisplay display = player.getWorld().spawn(player.getLocation(), TextDisplay.class, entity -> {
+            entity.text(tagComponent(player));
+            entity.setBillboard(Display.Billboard.CENTER);
+            entity.setSeeThrough(true);
+            entity.setShadowed(true);
+            entity.setDefaultBackground(false);
+            entity.setBackgroundColor(Color.fromARGB(0, 0, 0, 0));
+            entity.setAlignment(TextDisplay.TextAlignment.CENTER);
+            entity.setPersistent(false);
+            entity.setInvulnerable(true);
+            entity.setGravity(false);
+            entity.setSilent(true);
+            entity.setVisibleByDefault(true);
+            entity.setViewRange(1.0f);
+            entity.setTransformation(new Transformation(
+                    new Vector3f(0.0f, LABEL_OFFSET, 0.0f),
                     new AxisAngle4f(),
                     new Vector3f(0.9f, 0.9f, 0.9f),
                     new AxisAngle4f()
             ));
         });
+
+        player.addPassenger(display);
+        return display;
+    }
+
+    private void removeDisplay(Player player) {
+        TextDisplay display = displays.remove(player.getUniqueId());
+        if (display != null && display.isValid()) display.remove();
     }
 
     private void applyMediaPermissions(Player player) {
         UUID id = player.getUniqueId();
         PermissionAttachment old = mediaAttachments.remove(id);
         if (old != null) {
-            try { old.remove(); } catch (Exception ignored) {}
+            try {
+                old.remove();
+            } catch (Exception ignored) {
+            }
         }
 
         if (!tags.getOrDefault(id, new LinkedHashSet<>()).contains("Media")) {
