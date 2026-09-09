@@ -9,7 +9,7 @@ header-footer:
   footer:
     - ""
     - "&7Пинг: &f%ping%ms &8• &7Время МСК: &f%politaria_time%"
-    - "&7Игровой адрес: &fpolitaria.xubi.org"
+    - "&7Игровой адрес: &fpolitaria.mcsh.io"
     - "<#69B7FF>&m                                                </#9D7BFF>"
   disable-condition: '%world%=disabledworld'
 
@@ -81,7 +81,7 @@ scoreboard:
         - "&7Онлайн: &f%online%&8/&f%politaria_maxplayers%"
         - "&7Пинг: &f%ping%ms"
         - ""
-        - "&bpolitaria.xubi.org"
+        - "&bpolitaria.mcsh.io"
 
 layout:
   enabled: false
