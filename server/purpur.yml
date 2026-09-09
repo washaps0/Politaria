@@ -12,27 +12,29 @@ verbose: false
 settings:
   register-minecraft-debug-commands: false
   messages:
-    cannot-ride-mob: <red>You cannot mount that mob
-    afk-broadcast-away: <yellow><italic>%s is now AFK
-    afk-broadcast-back: <yellow><italic>%s is no longer AFK
+    cannot-ride-mob: <red>Вы не можете оседлать этого моба
+    afk-broadcast-away: <yellow><italic>%s теперь AFK
+    afk-broadcast-back: <yellow><italic>%s больше не AFK
     afk-broadcast-use-display-name: false
     afk-tab-list-prefix: '[AFK] '
     afk-tab-list-suffix: ''
-    credits-command-output: <green>%s has been shown the end credits
-    demo-command-output: <green>%s has been shown the demo screen
-    ping-command-output: <green>%s's ping is %sms
-    ram-command-output: '<green>Ram Usage: <used>/<xmx> (<percent>)'
-    rambar-command-output: <green>Rambar toggled <onoff> for <target>
-    tpsbar-command-output: <green>Tpsbar toggled <onoff> for <target>
-    dont-run-with-scissors: <red><italic>Don't run with scissors!
-    uptime-command-output: <green>Server uptime is <uptime>
+    credits-command-output: <green>Игроку %s были показаны финальные титры
+    demo-command-output: <green>Игроку %s был показан демо-экран
+    ping-command-output: <green>Пинг игрока %s составляет %sмс
+    ram-command-output: '<green>Использование ОЗУ: <used>/<xmx> (<percent>)'
+    rambar-command-output: <green>Отображение панели ОЗУ переключено на <onoff> для
+      <target>
+    tpsbar-command-output: <green>Отображение панели TPS переключено на <onoff> для
+      <target>
+    dont-run-with-scissors: <red><italic>Не бегайте с ножницами!
+    uptime-command-output: '<green>Время работы сервера: <uptime>'
     unverified-username: default
     sleep-skipping-night: default
     sleeping-players-percent: default
     sleep-not-possible: default
     death-message:
-      run-with-scissors: <player> slipped and fell on their shears
-      stonecutter: <player> has sawed themself in half
+      run-with-scissors: <player> поскользнулся и упал на свои ножницы
+      stonecutter: <player> распилил себя пополам
   disable-give-dropping: false
   use-alternate-keepalive: true
   server-mod-name: Purpur
@@ -63,7 +65,7 @@ settings:
   player-deaths-always-show-item: false
   command:
     rambar:
-      title: <gray>Ram<yellow>:</yellow> <used>/<xmx> (<percent>)
+      title: <gray>ОЗУ<yellow>:</yellow> <used>/<xmx> (<percent>)
       overlay: NOTCHED_20
       progress-color:
         good: GREEN
@@ -75,8 +77,8 @@ settings:
         low: <gradient:#ff5555:#aa0000><text></gradient>
       tick-interval: 20
     tpsbar:
-      title: <gray>TPS<yellow>:</yellow> <tps> MSPT<yellow>:</yellow> <mspt> Ping<yellow>:</yellow>
-        <ping>ms
+      title: <gray>TPS<yellow>:</yellow> <tps> MSPT<yellow>:</yellow> <mspt> Пинг<yellow>:</yellow>
+        <ping>мс
       overlay: NOTCHED_20
       fill-mode: MSPT
       progress-color:
@@ -89,7 +91,7 @@ settings:
         low: <gradient:#ff5555:#aa0000><text></gradient>
       tick-interval: 20
     compass:
-      title: 'S  ·  ◈  ·  ◈  ·  ◈  ·  SW  ·  ◈  ·  ◈  ·  ◈  ·  W  ·  ◈  ·  ◈  ·  ◈  ·  NW  ·  ◈  ·  ◈  ·  ◈  ·  N  ·  ◈  ·  ◈  ·  ◈  ·  NE  ·  ◈  ·  ◈  ·  ◈  ·  E  ·  ◈  ·  ◈  ·  ◈  ·  SE  ·  ◈  ·  ◈  ·  ◈  ·  S  ·  ◈  ·  ◈  ·  ◈  ·  SW  ·  ◈  ·  ◈  ·  ◈  ·  W  ·  ◈  ·  ◈  ·  ◈  ·  NW  ·  ◈  ·  ◈  ·  ◈  ·  N  ·  ◈  ·  ◈  ·  ◈  ·  NE  ·  ◈  ·  ◈  ·  ◈  ·  E  ·  ◈  ·  ◈  ·  ◈  ·  SE  ·  ◈  ·  ◈  ·  ◈  ·  '
+      title: 'Ю  ·  ◈  ·  ◈  ·  ◈  ·  ЮЗ  ·  ◈  ·  ◈  ·  ◈  ·  З  ·  ◈  ·  ◈  ·  ◈  ·  СЗ  ·  ◈  ·  ◈  ·  ◈  ·  С  ·  ◈  ·  ◈  ·  ◈  ·  СВ  ·  ◈  ·  ◈  ·  ◈  ·  В  ·  ◈  ·  ◈  ·  ◈  ·  ЮВ  ·  ◈  ·  ◈  ·  ◈  ·  Ю  ·  ◈  ·  ◈  ·  ◈  ·  ЮЗ  ·  ◈  ·  ◈  ·  ◈  ·  З  ·  ◈  ·  ◈  ·  ◈  ·  СЗ  ·  ◈  ·  ◈  ·  ◈  ·  С  ·  ◈  ·  ◈  ·  ◈  ·  СВ  ·  ◈  ·  ◈  ·  ◈  ·  В  ·  ◈  ·  ◈  ·  ◈  ·  ЮВ  ·  ◈  ·  ◈  ·  ◈  ·  '
       overlay: PROGRESS
       progress-color: BLUE
       percent: 1.0
@@ -99,14 +101,14 @@ settings:
     hide-hidden-players-from-entity-selector: false
     uptime:
       format: <days><hours><minutes><seconds>
-      day: '%02d day, '
-      days: '%02d days, '
-      hour: '%02d hour, '
-      hours: '%02d hours, '
-      minute: '%02d minute, and '
-      minutes: '%02d minutes, and '
-      second: '%02d second'
-      seconds: '%02d seconds'
+      day: '%02d день, '
+      days: '%02d дней, '
+      hour: '%02d час, '
+      hours: '%02d часов, '
+      minute: '%02d минута и '
+      minutes: '%02d минут и '
+      second: '%02d секунда'
+      seconds: '%02d секунд'
   blocks:
     barrel:
       rows: 3
@@ -1759,10 +1761,10 @@ world-settings:
         kinetic-damage: true
       silk-touch:
         enabled: false
-        spawner-name: <reset><white>Monster Spawner
+        spawner-name: <reset><white>Спавнер Монстров
         minimal-level: 1
         spawner-lore:
-        - Spawns a <mob>
+        - Спавнит <mob>
         tools:
         - minecraft:iron_pickaxe
         - minecraft:golden_pickaxe

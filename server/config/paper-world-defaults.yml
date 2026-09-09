@@ -15,7 +15,7 @@
 _version: 31
 anticheat:
   anti-xray:
-    enabled: enabled
+    enabled: true
     engine-mode: 2
     hidden-blocks:
     - copper_ore
