@@ -390,8 +390,6 @@ on inventory open:
 	justiceDecorateSettings(player)
 	justiceDecorateWanted(player)
 	justiceDecorateSocial(player)
-	# wanted.sk иногда очищает police.menu при закрытии предыдущего GUI.
-	# Если открыта 6-рядная карточка паспорта и сохранена цель, восстанавливаем состояние.
 	if {police.passport-target::%uuid of player%} is set:
 		set {_title} to name of current inventory of player
 		if {_title} contains "Паспорт игрока":
@@ -517,8 +515,6 @@ on inventory click:
 		stop
 	set {_slot} to raw index of event-slot
 
-	# Паспорт и все justice GUI read-only: запрещаем любые переносы,
-	# shift-click и клики также из нижнего инвентаря игрока.
 	if {justice.readonly::%uuid of player%} is true:
 		cancel event
 
@@ -625,7 +621,10 @@ on inventory click:
 			set {justice.prison-country::%{_targetUuid}%} to {_id}
 			set {justice.prison-cell::%{_targetUuid}%} to {_cell}
 			set {_until} to now
-			add {_minutes} minutes to {_until}
+			set {_minutesLeft} to {_minutes}
+			while {_minutesLeft} is greater than 0:
+				add 1 minute to {_until}
+				subtract 1 from {_minutesLeft}
 			set {justice.prison-until::%{_targetUuid}%} to {_until}
 			delete {justice.pending-jail::%{_id}%::%{_targetUuid}%}
 			teleport {_target} to {_cell}
