@@ -218,14 +218,16 @@ function justiceOpenCuffControl(p: player, target: player):
 		set slot loop-value of {_menu} to gray stained glass pane named " "
 	set {_mode} to {justice.cuff-mode::%uuid of {_target}%}
 	set slot 4 of {_menu} to chain named "<aqua><bold>%name of {_target}%" with lore "<gray>Режим: <white>%{_mode}%"
-	set slot 10 of {_menu} to lead named "<yellow><bold>ВЕСТИ ЗА СОБОЙ"
-	set slot 12 of {_menu} to feather named "<light green><bold>РАЗРЕШИТЬ ХОДИТЬ"
-	set slot 14 of {_menu} to iron boots named "<red><bold>ЗАПРЕТИТЬ ДВИЖЕНИЕ"
+	set slot 10 of {_menu} to lead named "<yellow><bold>ВЕСТИ ЗА СОБОЙ" with lore "<gray>Игрок сможет двигаться только рядом с вами"
+	set slot 12 of {_menu} to feather named "<light green><bold>РАЗРЕШИТЬ ХОДИТЬ" with lore "<gray>Свободное движение, но действия всё ещё заблокированы"
+	set slot 14 of {_menu} to iron boots named "<red><bold>ЗАПРЕТИТЬ ДВИЖЕНИЕ" with lore "<gray>Полностью зафиксировать игрока на месте"
 	set slot 16 of {_menu} to shears named "<white><bold>СНЯТЬ НАРУЧНИКИ"
 	set slot 22 of {_menu} to arrow named "<yellow>Закрыть"
-	open {_menu} to {_p}
+	# Ставим состояние ДО открытия GUI. Старое окно может вызвать inventory close.
 	set {justice.cuff-menu-target::%uuid of {_p}%} to "%uuid of {_target}%"
 	set {justice.menu::%uuid of {_p}%} to "cuff-control"
+	set {justice.readonly::%uuid of {_p}%} to true
+	open {_menu} to {_p}
 
 # =========================================================
 # ТЮРЬМА / BOSSBAR
@@ -390,8 +392,14 @@ on inventory open:
 	justiceDecorateSettings(player)
 	justiceDecorateWanted(player)
 	justiceDecorateSocial(player)
+	set {_title} to name of current inventory of player
+	# Восстанавливаем состояние собственного меню после закрытия предыдущего GUI.
+	if {_title} contains "Наручники •":
+		if {justice.cuff-menu-target::%uuid of player%} is set:
+			set {justice.menu::%uuid of player%} to "cuff-control"
+			set {justice.readonly::%uuid of player%} to true
+			stop
 	if {police.passport-target::%uuid of player%} is set:
-		set {_title} to name of current inventory of player
 		if {_title} contains "Паспорт игрока":
 			set {police.menu::%uuid of player%} to "passport"
 			set {justice.readonly::%uuid of player%} to true
@@ -514,6 +522,11 @@ on inventory click:
 	if event-slot is not set:
 		stop
 	set {_slot} to raw index of event-slot
+
+	# Задержанный не может пользоваться инвентарём вообще.
+	if {justice.cuffed-by::%uuid of player%} is set:
+		cancel event
+		stop
 
 	if {justice.readonly::%uuid of player%} is true:
 		cancel event
@@ -661,12 +674,14 @@ on inventory click:
 				stop
 			set {justice.cuffed-by::%{_targetUuid}%} to "%uuid of player%"
 			set {justice.cuff-target::%uuid of player%} to {_targetUuid}
-			set {justice.cuff-mode::%{_targetUuid}%} to "FOLLOW"
+			# При задержании игрок сразу обездвижен. Стражник сам выбирает дальнейший режим.
+			set {justice.cuff-mode::%{_targetUuid}%} to "HOLD"
+			set {justice.cuff-hold::%{_targetUuid}%} to location of {_target}
 			close player's inventory
 			play sound "block.chain.place" with volume 1 and pitch 1 at player
 			play sound "block.chain.place" with volume 1 and pitch 1 at {_target}
-			send formatted "<aqua>Вы надели наручники на <white>%name of {_target}%<aqua>." to player
-			send "<red>Стражник надел на вас наручники." to {_target}
+			send formatted "<aqua>Вы надели наручники на <white>%name of {_target}%<aqua>. Игрок зафиксирован на месте." to player
+			send "<red><bold>ВЫ ЗАДЕРЖАНЫ</bold> <gray>Вы не можете двигаться и взаимодействовать с миром." to {_target}
 			stop
 
 	if {justice.menu::%uuid of player%} is not set:
@@ -749,21 +764,28 @@ on inventory click:
 		if {_slot} is 10:
 			set {justice.cuff-mode::%{_targetUuid}%} to "FOLLOW"
 			delete {justice.cuff-hold::%{_targetUuid}%}
+			play sound "block.chain.place" with volume 1 and pitch 1 at player
+			send "<yellow>Режим: вести задержанного за собой." to player
 			justiceOpenCuffControl(player, {_target})
 			stop
 		if {_slot} is 12:
 			set {justice.cuff-mode::%{_targetUuid}%} to "FREE"
 			delete {justice.cuff-hold::%{_targetUuid}%}
+			play sound "block.chain.place" with volume 1 and pitch 1 at player
+			send "<green>Задержанному разрешено ходить." to player
 			justiceOpenCuffControl(player, {_target})
 			stop
 		if {_slot} is 14:
 			set {justice.cuff-mode::%{_targetUuid}%} to "HOLD"
 			set {justice.cuff-hold::%{_targetUuid}%} to location of {_target}
+			play sound "block.chain.place" with volume 1 and pitch 1 at player
+			send "<red>Задержанный зафиксирован на месте." to player
 			justiceOpenCuffControl(player, {_target})
 			stop
 		if {_slot} is 16:
 			justiceReleaseCuffs({_targetUuid})
 			close player's inventory
+			send "<green>Вы сняли наручники." to player
 			send "<green>С вас сняли наручники." to {_target}
 			stop
 		if {_slot} is 22:
@@ -771,6 +793,9 @@ on inventory click:
 			stop
 
 on inventory drag:
+	if {justice.cuffed-by::%uuid of player%} is set:
+		cancel event
+		stop
 	if {justice.readonly::%uuid of player%} is true:
 		cancel event
 		stop
@@ -839,7 +864,7 @@ on chat:
 		countryOpenLawEditor(player, {_new})
 
 # =========================================================
-# CUFF PHYSICS
+# CUFF PHYSICS + RESTRICTIONS
 # =========================================================
 
 every 5 ticks:
@@ -861,14 +886,72 @@ every 5 ticks:
 
 on player move:
 	set {_uuid} to "%uuid of player%"
+	if {justice.cuffed-by::%{_uuid}%} is not set:
+		stop
 	if {justice.cuff-mode::%{_uuid}%} is "HOLD":
 		set {_hold} to {justice.cuff-hold::%{_uuid}%}
-		if {_hold} is set:
-			if world of player is not world of {_hold}:
-				teleport player to {_hold}
-				stop
-			if distance between player and {_hold} is greater than 0.5:
-				teleport player to {_hold}
+		if {_hold} is not set:
+			set {justice.cuff-hold::%{_uuid}%} to location of player
+			stop
+		if world of player is not world of {_hold}:
+			teleport player to {_hold}
+			stop
+		if distance between player and {_hold} is greater than 0.15:
+			teleport player to {_hold}
+
+on break:
+	if {justice.cuffed-by::%uuid of player%} is set:
+		cancel event
+		send action bar "<red>Вы в наручниках." to player
+
+on place:
+	if {justice.cuffed-by::%uuid of player%} is set:
+		cancel event
+		send action bar "<red>Вы в наручниках." to player
+
+on right click:
+	if {justice.cuffed-by::%uuid of player%} is set:
+		cancel event
+		send action bar "<red>Вы не можете взаимодействовать с миром в наручниках." to player
+		stop
+	if {justice.prison-until::%uuid of player%} is not in the future:
+		stop
+	if clicked block is set:
+		set {_type} to lowercase "%type of clicked block%"
+		if {_type} contains "door":
+			cancel event
+			send action bar "<red>Вы не можете открывать двери в тюрьме." to player
+			stop
+	if player's tool is ender pearl:
+		cancel event
+		send action bar "<red>Телепортация запрещена." to player
+
+on damage:
+	if attacker is a player:
+		if {justice.cuffed-by::%uuid of attacker%} is set:
+			cancel event
+			send action bar "<red>Вы не можете атаковать в наручниках." to attacker
+
+on drop:
+	if {justice.cuffed-by::%uuid of player%} is set:
+		cancel event
+
+on pickup:
+	if {justice.cuffed-by::%uuid of player%} is set:
+		cancel event
+
+on swap hand items:
+	if {justice.cuffed-by::%uuid of player%} is set:
+		cancel event
+
+on consume:
+	if {justice.cuffed-by::%uuid of player%} is set:
+		cancel event
+		send action bar "<red>Вы не можете использовать предметы в наручниках." to player
+		stop
+	if {justice.prison-until::%uuid of player%} is in the future:
+		if event-item is chorus fruit:
+			cancel event
 
 # =========================================================
 # PRISON TIMER / ESCAPE PROTECTION
@@ -933,33 +1016,16 @@ on command:
 		stop
 	set {_uuid} to "%uuid of player%"
 	set {_cmd} to command
+	# В наручниках запрещены вообще все команды.
+	if {justice.cuffed-by::%{_uuid}%} is set:
+		cancel event
+		send "<red>Команды недоступны в наручниках." to player
+		stop
 	if {justice.prison-until::%{_uuid}%} is in the future:
 		if justiceDangerousCommand({_cmd}) is true:
 			cancel event
 			send "<red>Эта команда недоступна в тюрьме." to player
 			stop
-	if {justice.cuffed-by::%{_uuid}%} is set:
-		if justiceDangerousCommand({_cmd}) is true:
-			cancel event
-			send "<red>Эта команда недоступна в наручниках." to player
-
-on right click:
-	if {justice.prison-until::%uuid of player%} is not in the future:
-		stop
-	if clicked block is set:
-		set {_type} to lowercase "%type of clicked block%"
-		if {_type} contains "door":
-			cancel event
-			send action bar "<red>Вы не можете открывать двери в тюрьме." to player
-			stop
-	if player's tool is ender pearl:
-		cancel event
-		send action bar "<red>Телепортация запрещена." to player
-
-on consume:
-	if {justice.prison-until::%uuid of player%} is in the future:
-		if event-item is chorus fruit:
-			cancel event
 
 # =========================================================
 # JOIN / QUIT / CLEANUP
