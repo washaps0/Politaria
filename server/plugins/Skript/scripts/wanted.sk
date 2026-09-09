@@ -240,7 +240,7 @@ function policeOpenPassport(viewer: player, targetUuid: text, page: number):
 			set {_icon} to {country.icon::%{_country}%} parsed as item type
 			if {_icon} is not set:
 				set {_icon} to red banner
-			set slot {_slot} of {_menu} to {_icon} named "%countryColor({_country})%<bold>%countryName({_country})%" with lore "%policeStars({_stars})%" and "<gray>%policeLevelName({_stars})%"
+			set slot {_slot} of {_menu} to {_icon} named "%countryColor({_country})%<bold>%countryName({_country})%" with lore policeStars({_stars}) and "<gray>%policeLevelName({_stars})%"
 
 	if {_page} is greater than 1:
 		set slot 45 of {_menu} to arrow named "<yellow>Предыдущая страница"
@@ -305,7 +305,7 @@ function policeOpenWantedList(p: player, page: number):
 				set {_citizenship} to "<gray>Без гражданства"
 			else:
 				set {_citizenship} to "%countryColor({_targetCountry})%%countryName({_targetCountry})%"
-			set slot {_slot} of {_menu} to player head named "<red><bold>%{_name}%" with lore "%policeStars({_stars})%" and "<gray>%policeLevelName({_stars})%" and "<gray>Гражданство: %{_citizenship}%" and "" and "<yellow>Нажмите для подробностей"
+			set slot {_slot} of {_menu} to player head named "<red><bold>%{_name}%" with lore policeStars({_stars}) and "<gray>%policeLevelName({_stars})%" and "<gray>Гражданство: %{_citizenship}%" and "" and "<yellow>Нажмите для подробностей"
 			set {police.menu-target::%uuid of {_p}%::%{_slot}%} to {_targetUuid}
 	else:
 		set slot 22 of {_menu} to lime dye named "<light green><bold>СПИСОК ПУСТ" with lore "<gray>Ваша страна никого не разыскивает"
@@ -342,7 +342,7 @@ function policeOpenWantedDetail(p: player, targetUuid: text):
 	set {_menu} to chest inventory with 4 rows named "<dark gray>Розыск • %{_name}%"
 	loop integers between 0 and 35:
 		set slot loop-value of {_menu} to gray stained glass pane named " "
-	set slot 4 of {_menu} to player head named "<red><bold>%{_name}%" with lore "%policeStars({_stars})%" and "<gray>%policeLevelName({_stars})%" and "<gray>Гражданство: %{_citizenship}%"
+	set slot 4 of {_menu} to player head named "<red><bold>%{_name}%" with lore policeStars({_stars}) and "<gray>%policeLevelName({_stars})%" and "<gray>Гражданство: %{_citizenship}%"
 
 	if policeIsGuard({_p}) is true:
 		set slot 11 of {_menu} to red dye named "<red><bold>- 1 ЗВЕЗДА" with lore "<gray>Понизить уровень розыска"
