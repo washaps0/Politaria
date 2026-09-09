@@ -8,32 +8,9 @@ options:
 	justice-max-fine: 1000000
 
 # =========================================================
-# POLITARIA — JUSTICE
-# =========================================================
-# Закон:
-# {justice.law-stars::<country>::<number>} = 0..5
-# {justice.law-fine::<country>::<number>} = money
-# {justice.law-jail::<country>::<number>} = minutes
-#
-# Тюрьма:
-# {justice.jail-cell::<country>::<index>} = location
-# {justice.pending-jail::<country>::<uuid>} = minutes
-# {justice.prison-until::<uuid>} = date
-# {justice.prison-country::<uuid>} = country
-# {justice.prison-cell::<uuid>} = location
-#
-# Наручники:
-# {justice.cuff-target::<guard uuid>} = target uuid
-# {justice.cuffed-by::<target uuid>} = guard uuid
-# {justice.cuff-mode::<target uuid>} = FOLLOW / FREE / HOLD
-#
-# Судимости:
-# {justice.conviction-count::<uuid>}
-# {justice.conviction::<uuid>::<n>::...}
-
-
-# =========================================================
-# ОБЩИЕ ФУНКЦИИ
+# POLITARIA — JUSTICE / POLICE UI
+# Единый файл: наказания законов, судимости, тюрьма,
+# наручники, паспортные данные и исправления GUI.
 # =========================================================
 
 function justiceCanManageCountry(p: player, id: text) :: boolean:
@@ -151,11 +128,6 @@ function justiceNearestCell(id: text, where: location, maxDistance: number) :: l
 					set {_best} to {_cell}
 	return {_best}
 
-
-# =========================================================
-# СУДИМОСТИ И ПРИМЕНЕНИЕ ЗАКОНА
-# =========================================================
-
 function justiceRecordConviction(targetUuid: text, country: text, lawNumber: number):
 	if {justice.conviction-count::%{_targetUuid}%} is not set:
 		set {justice.conviction-count::%{_targetUuid}%} to 0
@@ -182,12 +154,10 @@ function justiceApplyLaw(guard: player, targetUuid: text, lawNumber: number):
 	set {_fine} to justiceLawFine({_id}, {_lawNumber})
 	set {_jail} to justiceLawJail({_id}, {_lawNumber})
 	set {_name} to policeTargetName({_targetUuid})
-
 	if {_stars} is greater than 0:
 		set {_current} to policeWantedStars({_id}, {_targetUuid})
 		if {_current} is less than {_stars}:
 			policeSetWanted({_id}, {_targetUuid}, {_name}, {_stars})
-
 	if {_fine} is greater than 0:
 		if {economy.balance::%{_targetUuid}%} is not set:
 			set {economy.balance::%{_targetUuid}%} to 0
@@ -205,12 +175,10 @@ function justiceApplyLaw(guard: player, targetUuid: text, lawNumber: number):
 			if {justice.fine-debt::%{_targetUuid}%::%{_id}%} is not set:
 				set {justice.fine-debt::%{_targetUuid}%::%{_id}%} to 0
 			add {_debt} to {justice.fine-debt::%{_targetUuid}%::%{_id}%}
-
 	if {_jail} is greater than 0:
 		if {justice.pending-jail::%{_id}%::%{_targetUuid}%} is not set:
 			set {justice.pending-jail::%{_id}%::%{_targetUuid}%} to 0
 		add {_jail} to {justice.pending-jail::%{_id}%::%{_targetUuid}%}
-
 	justiceRecordConviction({_targetUuid}, {_id}, {_lawNumber})
 	policeNotifyCountry({_id}, "%{_name}% осуждён по закону №%{_lawNumber}%.")
 	set {_target} to justicePlayerFromUuid({_targetUuid})
@@ -218,7 +186,6 @@ function justiceApplyLaw(guard: player, targetUuid: text, lawNumber: number):
 		send formatted "<red><bold>СУДИМОСТЬ</bold> <dark gray>• %countryColor({_id})%%countryName({_id})%" to {_target}
 		send formatted "<gray>Закон №%{_lawNumber}%: <white>%{country.law::%{_id}%::%{_lawNumber}%}%" to {_target}
 		send formatted justiceLawPenaltyText({_id}, {_lawNumber}) to {_target}
-
 
 # =========================================================
 # НАРУЧНИКИ
@@ -239,12 +206,11 @@ function justiceCanCuff(guard: player, target: player) :: boolean:
 	if {_guardCountry} is "":
 		return false
 	set {_targetCountry} to countryId({_target})
-	if {_targetCountry} is not "":
-		if {_targetCountry} is not {_guardCountry}:
-			return false
-	if policeWantedStars({_guardCountry}, "%uuid of {_target}%") is less than 1:
-		return false
-	return true
+	if {_targetCountry} is "":
+		return true
+	if {_targetCountry} is {_guardCountry}:
+		return true
+	return false
 
 function justiceOpenCuffControl(p: player, target: player):
 	set {_menu} to chest inventory with 3 rows named "<dark gray>Наручники • %name of {_target}%"
@@ -261,9 +227,8 @@ function justiceOpenCuffControl(p: player, target: player):
 	set {justice.cuff-menu-target::%uuid of {_p}%} to "%uuid of {_target}%"
 	set {justice.menu::%uuid of {_p}%} to "cuff-control"
 
-
 # =========================================================
-# ТЮРЬМА И BOSSBAR
+# ТЮРЬМА / BOSSBAR
 # =========================================================
 
 function justiceBossbarId(p: player) :: text:
@@ -279,7 +244,8 @@ function justiceCreateBossbar(p: player):
 	execute console command "bossbar set %{_id}% players %name of {_p}%"
 
 function justiceRemoveBossbar(p: player):
-	execute console command "bossbar remove %justiceBossbarId({_p})%"
+	set {_id} to justiceBossbarId({_p})
+	execute console command "bossbar remove %{_id}%"
 
 function justiceReleasePrisoner(p: player):
 	set {_country} to {justice.prison-country::%uuid of {_p}%}
@@ -295,10 +261,23 @@ function justiceReleasePrisoner(p: player):
 	teleport {_p} to spawn point of world of {_p}
 	send "<light green><bold>СРОК ОКОНЧЕН</bold> <gray>Вы освобождены." to {_p}
 
+# =========================================================
+# GUI DECORATION + COMPATIBILITY
+# =========================================================
 
-# =========================================================
-# ДЕКОРАЦИЯ GUI
-# =========================================================
+function justiceDecorateMain(p: player):
+	if {country.menu::%uuid of {_p}%} is not "main":
+		stop
+	set {_id} to countryId({_p})
+	if {_id} is "":
+		stop
+	set {_count} to size of {police.wanted::%{_id}%::*}
+	if policeIsGuard({_p}) is true:
+		set slot 35 of current inventory of {_p} to recovery compass named "<red><bold>РОЗЫСК" with lore "<gray>Разыскиваемых: <white>%{_count}%" and "<gray>Управление и отслеживание" and "" and "<yellow>Нажмите, чтобы открыть"
+	else:
+		set slot 35 of current inventory of {_p} to compass named "<red><bold>РОЗЫСК" with lore "<gray>Разыскиваемых: <white>%{_count}%" and "<gray>Просмотр списка страны" and "" and "<yellow>Нажмите, чтобы открыть"
+	set {_pages} to countryStoragePages({_id})
+	set slot 36 of current inventory of {_p} to chest named "<gold><bold>ХРАНИЛИЩЕ СТРАНЫ" with lore "<gray>Категории и быстрый склад" and "<gray>Страниц: <white>%{_pages}%/2" and "" and "<yellow>Нажмите, чтобы открыть"
 
 function justiceDecorateLawEditor(p: player):
 	if {country.menu::%uuid of {_p}%} is not "law-editor":
@@ -307,8 +286,6 @@ function justiceDecorateLawEditor(p: player):
 	set {_number} to {country.selected-law::%uuid of {_p}%}
 	if {_number} is not set:
 		stop
-	if {country.law::%{_id}%::%{_number}%} is not set:
-		stop
 	set slot 4 of current inventory of {_p} to written book named "<yellow><bold>ЗАКОН №%{_number}%" with lore "<white>%{country.law::%{_id}%::%{_number}%}%" and "" and justiceLawPenaltyText({_id}, {_number})
 	if countryHasPermission({_p}, "MANAGE_LAWS") is true:
 		set slot 10 of current inventory of {_p} to redstone torch named "<gold><bold>РОЗЫСК" with lore "<gray>Звёзды: <gold>%justiceLawStars({_id}, {_number})%/5" and "<yellow>Нажмите, чтобы переключить"
@@ -316,8 +293,8 @@ function justiceDecorateLawEditor(p: player):
 		set slot 14 of current inventory of {_p} to iron bars named "<red><bold>ТЮРЬМА" with lore "<gray>%justiceLawJail({_id}, {_number})% минут" and "<yellow>Нажмите, чтобы изменить"
 		set slot 13 of current inventory of {_p} to gray stained glass pane named " "
 		set slot 15 of current inventory of {_p} to gray stained glass pane named " "
-		set slot 16 of current inventory of {_p} to compass named "<gold><bold>ИЗМЕНИТЬ НОМЕР" with lore "<gray>Наказание переместится вместе с законом"
-		set slot 18 of current inventory of {_p} to barrier named "<red><bold>УДАЛИТЬ" with lore "<gray>Удалить закон и наказание"
+		set slot 16 of current inventory of {_p} to compass named "<gold><bold>ИЗМЕНИТЬ НОМЕР"
+		set slot 18 of current inventory of {_p} to barrier named "<red><bold>УДАЛИТЬ"
 
 function justiceDecorateLawList(p: player):
 	if {country.menu::%uuid of {_p}%} is not "laws":
@@ -334,11 +311,9 @@ function justiceDecorateSettings(p: player):
 	set {_id} to countryEditingId({_p})
 	if {_id} is "":
 		stop
-	set slot 33 of current inventory of {_p} to iron bars named "<red><bold>ТЮРЬМА" with lore "<gray>Камер: <white>%justiceCellCount({_id})%" and "<gray>Настройка тюремных камер"
+	set slot 33 of current inventory of {_p} to iron bars named "<red><bold>ТЮРЬМА" with lore "<gray>Камер: <white>%justiceCellCount({_id})%" and "<gray>Настройка камер"
 
 function justiceDecoratePassport(p: player):
-	if {police.menu::%uuid of {_p}%} is not "passport":
-		stop
 	set {_targetUuid} to {police.passport-target::%uuid of {_p}%}
 	if {_targetUuid} is not set:
 		stop
@@ -362,7 +337,7 @@ function justiceDecoratePassport(p: player):
 	set slot 21 of current inventory of {_p} to gold nugget named "<gold><bold>ШТРАФЫ" with lore "<gray>Неоплачено: <gold>%justiceFineDebt({_targetUuid})% монет"
 	if {justice.prison-until::%{_targetUuid}%} is in the future:
 		set {_prisonCountry} to {justice.prison-country::%{_targetUuid}%}
-		set slot 23 of current inventory of {_p} to iron bars named "<red><bold>В ТЮРЬМЕ" with lore "<gray>Страна: %countryColor({_prisonCountry})%%countryName({_prisonCountry})%" and "<gray>До: <white>%{justice.prison-until::%{_targetUuid}%}%"
+		set slot 23 of current inventory of {_p} to iron bars named "<red><bold>В ТЮРЬМЕ" with lore "<gray>Страна: %countryColor({_prisonCountry})%%countryName({_prisonCountry})%"
 	else:
 		set slot 23 of current inventory of {_p} to lime dye named "<light green><bold>НЕ В ТЮРЬМЕ"
 
@@ -391,21 +366,41 @@ function justiceDecorateSocial(p: player):
 	set {_target} to justicePlayerFromUuid({_targetUuid})
 	if {_target} is not set:
 		stop
-	if justiceCanCuff({_p}, {_target}) is true:
-		set slot 33 of current inventory of {_p} to chain named "<aqua><bold>НАРУЧНИКИ" with lore "<gray>Задержать или управлять задержанным"
+	if justiceCanCuff({_p}, {_target}) is not true:
+		set slot 29 of current inventory of {_p} to barrier named "<red><bold>ЗАДЕРЖАТЬ НЕЛЬЗЯ" with lore "<gray>Нельзя задерживать граждан чужой страны"
+		stop
+	if {justice.cuffed-by::%{_targetUuid}%} is "%uuid of {_p}%":
+		set slot 29 of current inventory of {_p} to chain named "<aqua><bold>НАРУЧНИКИ" with lore "<green>Игрок задержан вами" and "<yellow>Нажмите для управления"
+		stop
+	if {justice.cuffed-by::%{_targetUuid}%} is set:
+		set slot 29 of current inventory of {_p} to barrier named "<red><bold>УЖЕ ЗАДЕРЖАН"
+		stop
+	if {justice.cuff-target::%uuid of {_p}%} is set:
+		set slot 29 of current inventory of {_p} to barrier named "<red><bold>ВЫ УЖЕ ВЕДЁТЕ ЗАДЕРЖАННОГО"
+		stop
+	set slot 29 of current inventory of {_p} to chain named "<aqua><bold>ЗАДЕРЖАТЬ" with lore "<gray>Надеть наручники" and "<yellow>Нажмите, чтобы задержать"
 
 on inventory open:
-	wait 2 ticks
+	wait 3 ticks
+	if player is not online:
+		stop
+	justiceDecorateMain(player)
 	justiceDecorateLawEditor(player)
 	justiceDecorateLawList(player)
 	justiceDecorateSettings(player)
-	justiceDecoratePassport(player)
 	justiceDecorateWanted(player)
 	justiceDecorateSocial(player)
-
+	# wanted.sk иногда очищает police.menu при закрытии предыдущего GUI.
+	# Если открыта 6-рядная карточка паспорта и сохранена цель, восстанавливаем состояние.
+	if {police.passport-target::%uuid of player%} is set:
+		set {_title} to name of current inventory of player
+		if {_title} contains "Паспорт игрока":
+			set {police.menu::%uuid of player%} to "passport"
+			set {justice.readonly::%uuid of player%} to true
+			justiceDecoratePassport(player)
 
 # =========================================================
-# СОБСТВЕННЫЕ GUI
+# OWN GUI
 # =========================================================
 
 function justiceOpenJailSettings(p: player, id: text):
@@ -413,8 +408,8 @@ function justiceOpenJailSettings(p: player, id: text):
 	loop integers between 0 and 35:
 		set slot loop-value of {_menu} to gray stained glass pane named " "
 	set slot 4 of {_menu} to iron bars named "<red><bold>КАМЕРЫ" with lore "<gray>%justiceCellCount({_id})%/{@justice-max-cells}"
-	set slot 11 of {_menu} to lime dye named "<light green><bold>ДОБАВИТЬ КАМЕРУ" with lore "<gray>Текущая позиция станет точкой камеры"
-	set slot 15 of {_menu} to red dye named "<red><bold>УДАЛИТЬ БЛИЖАЙШУЮ" with lore "<gray>В радиусе 10 блоков"
+	set slot 11 of {_menu} to lime dye named "<light green><bold>ДОБАВИТЬ КАМЕРУ"
+	set slot 15 of {_menu} to red dye named "<red><bold>УДАЛИТЬ БЛИЖАЙШУЮ"
 	set {_slot} to 18
 	loop {justice.jail-cell::%{_id}%::*}:
 		if {_slot} is greater than 26:
@@ -429,6 +424,7 @@ function justiceOpenJailSettings(p: player, id: text):
 	open {_menu} to {_p}
 	set {justice.edit-country::%uuid of {_p}%} to {_id}
 	set {justice.menu::%uuid of {_p}%} to "jail-settings"
+	set {justice.readonly::%uuid of {_p}%} to true
 
 function justiceOpenConvictions(p: player, targetUuid: text, page: number):
 	set {_count} to justiceConvictionCount({_targetUuid})
@@ -470,6 +466,7 @@ function justiceOpenConvictions(p: player, targetUuid: text, page: number):
 	set {justice.conviction-target::%uuid of {_p}%} to {_targetUuid}
 	set {justice.conviction-page::%uuid of {_p}%} to {_page}
 	set {justice.menu::%uuid of {_p}%} to "convictions"
+	set {justice.readonly::%uuid of {_p}%} to true
 
 function justiceOpenSentenceLaws(p: player, targetUuid: text, page: number):
 	set {_id} to countryId({_p})
@@ -509,16 +506,31 @@ function justiceOpenSentenceLaws(p: player, targetUuid: text, page: number):
 	set {justice.sentence-target::%uuid of {_p}%} to {_targetUuid}
 	set {justice.sentence-page::%uuid of {_p}%} to {_page}
 	set {justice.menu::%uuid of {_p}%} to "sentence-law"
-
+	set {justice.readonly::%uuid of {_p}%} to true
 
 # =========================================================
-# КЛИКИ ПО GUI
+# GUI CLICKS
 # =========================================================
 
 on inventory click:
 	if event-slot is not set:
 		stop
 	set {_slot} to raw index of event-slot
+
+	# Паспорт и все justice GUI read-only: запрещаем любые переносы,
+	# shift-click и клики также из нижнего инвентаря игрока.
+	if {justice.readonly::%uuid of player%} is true:
+		cancel event
+
+	if {country.menu::%uuid of player%} is "main":
+		if {_slot} is 36:
+			cancel event
+			countryOpenStorageHub(player)
+			stop
+		if {_slot} is 35:
+			cancel event
+			policeOpenWantedList(player, 1)
+			stop
 
 	if {country.menu::%uuid of player%} is "law-editor":
 		if {_slot} is 10:
@@ -571,10 +583,11 @@ on inventory click:
 			stop
 
 	if {police.menu::%uuid of player%} is "passport":
+		cancel event
 		if {_slot} is 19:
-			cancel event
 			justiceOpenConvictions(player, {police.passport-target::%uuid of player%}, 1)
 			stop
+		stop
 
 	if {police.menu::%uuid of player%} is "wanted-detail":
 		if {_slot} is 13:
@@ -602,7 +615,7 @@ on inventory click:
 			if {_minutes} is not set:
 				set {_minutes} to 0
 			if {_minutes} is less than 1:
-				send "<red>Нет назначенного срока. Сначала примените закон с тюремным наказанием." to player
+				send "<red>Нет назначенного срока." to player
 				stop
 			set {_cell} to justiceNearestCell({_id}, location of player, {@justice-jail-radius})
 			if {_cell} is not set:
@@ -611,7 +624,9 @@ on inventory click:
 			justiceReleaseCuffs({_targetUuid})
 			set {justice.prison-country::%{_targetUuid}%} to {_id}
 			set {justice.prison-cell::%{_targetUuid}%} to {_cell}
-			set {justice.prison-until::%{_targetUuid}%} to {_minutes} minutes from now
+			set {_until} to now
+			add {_minutes} minutes to {_until}
+			set {justice.prison-until::%{_targetUuid}%} to {_until}
 			delete {justice.pending-jail::%{_id}%::%{_targetUuid}%}
 			teleport {_target} to {_cell}
 			justiceCreateBossbar({_target})
@@ -621,21 +636,26 @@ on inventory click:
 			stop
 
 	if {social.menu-open::%uuid of player%} is true:
-		if {_slot} is 33:
+		if {_slot} is 29:
 			cancel event
+			if policeIsGuard(player) is not true:
+				stop
 			set {_raw} to {social.menu-target::%uuid of player%}
+			if {_raw} is not set:
+				stop
 			set {_targetUuid} to "%{_raw}%"
 			set {_target} to justicePlayerFromUuid({_targetUuid})
 			if {_target} is not set:
+				send "<red>Игрок больше не в сети." to player
 				stop
 			if justiceCanCuff(player, {_target}) is not true:
-				send "<red>Можно задерживать только разыскиваемых сограждан или игроков без страны." to player
+				send "<red>Нельзя задерживать граждан чужой страны." to player
+				stop
+			if {justice.cuffed-by::%{_targetUuid}%} is "%uuid of player%":
+				justiceOpenCuffControl(player, {_target})
 				stop
 			if {justice.cuffed-by::%{_targetUuid}%} is set:
-				if {justice.cuffed-by::%{_targetUuid}%} is "%uuid of player%":
-					justiceOpenCuffControl(player, {_target})
-				else:
-					send "<red>Игрок уже задержан другим стражником." to player
+				send "<red>Игрок уже задержан другим стражником." to player
 				stop
 			if {justice.cuff-target::%uuid of player%} is set:
 				send "<red>Вы уже задержали одного игрока." to player
@@ -644,6 +664,8 @@ on inventory click:
 			set {justice.cuff-target::%uuid of player%} to {_targetUuid}
 			set {justice.cuff-mode::%{_targetUuid}%} to "FOLLOW"
 			close player's inventory
+			play sound "block.chain.place" with volume 1 and pitch 1 at player
+			play sound "block.chain.place" with volume 1 and pitch 1 at {_target}
 			send formatted "<aqua>Вы надели наручники на <white>%name of {_target}%<aqua>." to player
 			send "<red>Стражник надел на вас наручники." to {_target}
 			stop
@@ -652,17 +674,16 @@ on inventory click:
 		stop
 	cancel event
 	set {_menu} to {justice.menu::%uuid of player%}
-
 	if {_menu} is "jail-settings":
 		set {_id} to {justice.edit-country::%uuid of player%}
 		if {_slot} is 31:
 			delete {justice.menu::%uuid of player%}
+			delete {justice.readonly::%uuid of player%}
 			countryOpenSettings(player)
 			stop
-		if justiceCanManageCountry(player, {_id}) is not true:
-			close player's inventory
-			stop
 		if {_slot} is 11:
+			if justiceCanManageCountry(player, {_id}) is not true:
+				stop
 			if justiceCellCount({_id}) is greater than or equal to {@justice-max-cells}:
 				send "<red>Достигнут лимит камер." to player
 				stop
@@ -686,7 +707,6 @@ on inventory click:
 			delete {justice.jail-cell::%{_id}%::%{_bestIndex}%}
 			justiceOpenJailSettings(player, {_id})
 			stop
-
 	if {_menu} is "convictions":
 		set {_target} to {justice.conviction-target::%uuid of player%}
 		set {_page} to {justice.conviction-page::%uuid of player%}
@@ -697,7 +717,6 @@ on inventory click:
 			justiceOpenConvictions(player, {_target}, {_page} + 1)
 			stop
 		stop
-
 	if {_menu} is "sentence-law":
 		set {_target} to {justice.sentence-target::%uuid of player%}
 		set {_page} to {justice.sentence-page::%uuid of player%}
@@ -709,15 +728,16 @@ on inventory click:
 			stop
 		if {_slot} is 48:
 			delete {justice.menu::%uuid of player%}
+			delete {justice.readonly::%uuid of player%}
 			policeOpenWantedDetail(player, {_target})
 			stop
 		set {_law} to {justice.menu-law::%uuid of player%::%{_slot}%}
 		if {_law} is set:
 			justiceApplyLaw(player, {_target}, {_law})
 			delete {justice.menu::%uuid of player%}
+			delete {justice.readonly::%uuid of player%}
 			policeOpenWantedDetail(player, {_target})
 			stop
-
 	if {_menu} is "cuff-control":
 		set {_targetUuid} to {justice.cuff-menu-target::%uuid of player%}
 		set {_target} to justicePlayerFromUuid({_targetUuid})
@@ -751,9 +771,18 @@ on inventory click:
 			close player's inventory
 			stop
 
+on inventory drag:
+	if {justice.readonly::%uuid of player%} is true:
+		cancel event
+		stop
+	if {justice.menu::%uuid of player%} is set:
+		cancel event
+		stop
+	if {police.menu::%uuid of player%} is "passport":
+		cancel event
 
 # =========================================================
-# ВВОД НАКАЗАНИЙ ЧЕРЕЗ ЧАТ
+# LAW INPUT
 # =========================================================
 
 on chat:
@@ -810,9 +839,8 @@ on chat:
 		set {country.selected-law::%uuid of player%} to {_new}
 		countryOpenLawEditor(player, {_new})
 
-
 # =========================================================
-# НАРУЧНИКИ — ФИЗИКА
+# CUFF PHYSICS
 # =========================================================
 
 every 5 ticks:
@@ -843,9 +871,8 @@ on player move:
 			if distance between player and {_hold} is greater than 0.5:
 				teleport player to {_hold}
 
-
 # =========================================================
-# ТЮРЬМА — ТАЙМЕР И АНТИПОБЕГ
+# PRISON TIMER / ESCAPE PROTECTION
 # =========================================================
 
 every 1 second:
@@ -876,13 +903,27 @@ every 1 second:
 
 function justiceDangerousCommand(commandName: text) :: boolean:
 	set {_cmd} to lowercase {_commandName}
-	if {_cmd} is "tpa" or {_cmd} is "tpaccept" or {_cmd} is "tpahere":
+	if {_cmd} is "tpa":
 		return true
-	if {_cmd} is "rtp" or {_cmd} is "wild":
+	if {_cmd} is "tpaccept":
 		return true
-	if {_cmd} is "home" or {_cmd} is "sethome" or {_cmd} is "back":
+	if {_cmd} is "tpahere":
 		return true
-	if {_cmd} is "spawn" or {_cmd} is "warp" or {_cmd} is "capital":
+	if {_cmd} is "rtp":
+		return true
+	if {_cmd} is "wild":
+		return true
+	if {_cmd} is "home":
+		return true
+	if {_cmd} is "sethome":
+		return true
+	if {_cmd} is "back":
+		return true
+	if {_cmd} is "spawn":
+		return true
+	if {_cmd} is "warp":
+		return true
+	if {_cmd} is "capital":
 		return true
 	if {_cmd} is "suicide":
 		return true
@@ -921,9 +962,8 @@ on consume:
 		if event-item is chorus fruit:
 			cancel event
 
-
 # =========================================================
-# JOIN / QUIT / GUI CLEANUP
+# JOIN / QUIT / CLEANUP
 # =========================================================
 
 on join:
@@ -942,6 +982,11 @@ on join:
 		if justicePlayerFromUuid({_guardUuid}) is not set:
 			justiceReleaseCuffs({_uuid})
 
+on inventory close:
+	delete {justice.readonly::%uuid of player%}
+	if {justice.menu::%uuid of player%} is set:
+		delete {justice.menu::%uuid of player%}
+
 on quit:
 	set {_uuid} to "%uuid of player%"
 	justiceRemoveBossbar(player)
@@ -949,6 +994,7 @@ on quit:
 	if {_targetUuid} is set:
 		justiceReleaseCuffs({_targetUuid})
 	delete {justice.menu::%{_uuid}%}
+	delete {justice.readonly::%{_uuid}%}
 	delete {justice.input::%{_uuid}%}
 	delete {justice.edit-country::%{_uuid}%}
 	delete {justice.menu-law::%{_uuid}%::*}
@@ -957,11 +1003,3 @@ on quit:
 	delete {justice.conviction-target::%{_uuid}%}
 	delete {justice.conviction-page::%{_uuid}%}
 	delete {justice.cuff-menu-target::%{_uuid}%}
-
-on inventory drag:
-	if {justice.menu::%uuid of player%} is set:
-		cancel event
-
-on inventory close:
-	if {justice.menu::%uuid of player%} is set:
-		delete {justice.menu::%uuid of player%}
