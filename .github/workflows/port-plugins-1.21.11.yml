@@ -3,8 +3,7 @@ name: Port plugins to Minecraft 1.21.11
 on:
   push:
     branches: [serverport]
-    paths:
-      - '.github/workflows/port-plugins-1.21.11.yml'
+    paths: ['.github/workflows/port-plugins-1.21.11.yml']
   workflow_dispatch:
 
 permissions:
@@ -15,153 +14,82 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[plugin-port]') }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout serverport
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           ref: serverport
           fetch-depth: 0
 
-      - name: Download compatible plugin builds
+      - name: Download verified 1.21.11 builds
         shell: bash
         run: |
           set -euo pipefail
-          PLUGINS="server/plugins"
-          mkdir -p "$PLUGINS"
+          P=server/plugins
+          mkdir -p "$P"
 
-          download() {
-            local url="$1" dest="$2"
-            echo "Downloading $dest"
-            curl -fL --retry 4 --retry-delay 2 -A 'Politaria-Plugin-Port/1.1' "$url" -o "$dest"
+          dl() { echo "Downloading $2"; curl -g -fL --retry 4 --retry-delay 2 -A 'Politaria-Plugin-Port/1.2' "$1" -o "$2"; }
+
+          gh_asset() {
+            repo="$1"; regex="$2"; dest="$3"
+            url=$(curl -g -fsSL -A 'Politaria-Plugin-Port/1.2' "https://api.github.com/repos/$repo/releases/latest" | jq -r --arg re "$regex" '.assets[] | select(.name | test($re; "i")) | .browser_download_url' | head -n1)
+            test -n "$url" && test "$url" != null || { echo "No asset: $repo / $regex"; exit 1; }
+            dl "$url" "$dest"
           }
 
-          github_latest_asset() {
-            local repo="$1" regex="$2" dest="$3"
-            local api="https://api.github.com/repos/${repo}/releases/latest"
-            local url
-            url=$(curl -fsSL -A 'Politaria-Plugin-Port/1.1' "$api" | jq -r --arg re "$regex" '.assets[] | select(.name | test($re; "i")) | .browser_download_url' | head -n1)
-            if [[ -z "$url" || "$url" == "null" ]]; then
-              echo "No matching release asset for $repo / $regex" >&2
-              exit 1
-            fi
-            download "$url" "$dest"
+          modrinth() {
+            project="$1"; dest="$2"
+            json=$(curl -g -fsSL -A 'Politaria-Plugin-Port/1.2' "https://api.modrinth.com/v2/project/$project/version?game_versions=%5B%221.21.11%22%5D")
+            url=$(printf '%s' "$json" | jq -r '[.[] | select(.version_type=="release") | select(any(.loaders[]; .=="bukkit" or .=="paper" or .=="purpur" or .=="spigot"))][0].files | ((map(select(.primary==true)) + .)[0].url) // empty')
+            test -n "$url" || { echo "No 1.21.11 Modrinth release: $project"; exit 1; }
+            dl "$url" "$dest"
           }
 
-          modrinth_release() {
-            local project="$1" dest="$2"
-            local json url
-            json=$(curl -fsSL -A 'Politaria-Plugin-Port/1.1' "https://api.modrinth.com/v2/project/${project}/version?game_versions=%5B%221.21.11%22%5D")
-            url=$(printf '%s' "$json" | jq -r '[.[] | select(.version_type == "release") | select(any(.loaders[]; . == "bukkit" or . == "paper" or . == "purpur" or . == "spigot"))][0].files | ((map(select(.primary == true)) + .)[0].url) // empty')
-            if [[ -z "$url" ]]; then
-              echo "No stable Bukkit/Paper/Purpur/Spigot 1.21.11 build on Modrinth for $project" >&2
-              exit 1
-            fi
-            download "$url" "$dest"
-          }
+          rm -f "$P"/Citizens-*.jar "$P"/Citizens.jar
+          rm -f "$P"/bluemap-*-spigot.jar "$P"/bluemap-*-paper.jar "$P"/BlueMap.jar
+          rm -f "$P"/ProtocolLib*.jar "$P"/TAB.jar "$P"/TAB.v*.jar
+          rm -f "$P"/worldedit-bukkit-*.jar "$P"/WorldEdit.jar
+          rm -f "$P"/voicechat-bukkit-*.jar "$P"/voicechat-bukkit.jar
+          rm -f "$P"/SkinsRestorer*.jar
+          rm -f "$P"/ViaVersion*.jar "$P"/ViaBackwards*.jar
+          rm -f "$P"/Skript-*.jar "$P"/Skript.jar "$P"/skript-reflect*.jar
 
-          # Remove only jars replaced by this port.
-          rm -f "$PLUGINS"/Citizens-*.jar "$PLUGINS"/Citizens.jar
-          rm -f "$PLUGINS"/bluemap-*-spigot.jar "$PLUGINS"/bluemap-*-paper.jar "$PLUGINS"/BlueMap.jar
-          rm -f "$PLUGINS"/TAB.jar "$PLUGINS"/TAB.v*.jar
-          rm -f "$PLUGINS"/voicechat-bukkit-*.jar "$PLUGINS"/voicechat-bukkit.jar
-          rm -f "$PLUGINS"/worldedit-bukkit-*.jar "$PLUGINS"/WorldEdit.jar
-          rm -f "$PLUGINS"/ProtocolLib.jar "$PLUGINS"/ProtocolLib-Spigot.jar
-          rm -f "$PLUGINS"/ViaVersion-*.jar "$PLUGINS"/ViaVersion.jar
-          rm -f "$PLUGINS"/ViaBackwards-*.jar "$PLUGINS"/ViaBackwards.jar
-          rm -f "$PLUGINS"/Skript-*.jar "$PLUGINS"/Skript.jar
-          rm -f "$PLUGINS"/skript-reflect-*.jar "$PLUGINS"/skript-reflect.jar
-          rm -f "$PLUGINS"/SkinsRestorer*.jar
+          gh_asset BlueMap-Minecraft/BlueMap 'bluemap-[0-9.]+-paper[.]jar$' "$P/BlueMap.jar"
+          dl 'https://github.com/dmulloy2/ProtocolLib/releases/download/dev-build/ProtocolLib.jar' "$P/ProtocolLib.jar"
+          gh_asset NEZNAMY/TAB '^TAB[.]v[0-9.]+[.]jar$' "$P/TAB.jar"
 
-          # BlueMap latest stable Paper build.
-          github_latest_asset "BlueMap-Minecraft/BlueMap" 'bluemap-[0-9.]+-paper[.]jar$' "$PLUGINS/BlueMap.jar"
+          cjson=$(curl -g -fsSL -A 'Politaria-Plugin-Port/1.2' 'https://ci.citizensnpcs.co/job/Citizens2/lastSuccessfulBuild/api/json?tree=artifacts[fileName,relativePath]')
+          crel=$(printf '%s' "$cjson" | jq -r '.artifacts[] | select(.fileName | test("^Citizens.*[.]jar$";"i")) | .relativePath' | head -n1)
+          test -n "$crel" || { echo 'Citizens artifact not found'; exit 1; }
+          dl "https://ci.citizensnpcs.co/job/Citizens2/lastSuccessfulBuild/artifact/$crel" "$P/Citizens.jar"
 
-          # ProtocolLib: official dev-build contains explicit 1.21.11 support.
-          download "https://github.com/dmulloy2/ProtocolLib/releases/download/dev-build/ProtocolLib.jar" "$PLUGINS/ProtocolLib.jar"
+          modrinth worldedit "$P/WorldEdit.jar"
+          modrinth simple-voice-chat "$P/voicechat-bukkit.jar"
+          modrinth skinsrestorer "$P/SkinsRestorer.jar"
 
-          # TAB universal artifact for modern servers (the separate Paper artifact stops at 1.21.4).
-          github_latest_asset "NEZNAMY/TAB" '^TAB[.]v[0-9.]+[.]jar$' "$PLUGINS/TAB.jar"
+          gh_asset ViaVersion/ViaVersion '^ViaVersion-[0-9.]+[.]jar$' "$P/ViaVersion.jar"
+          gh_asset ViaVersion/ViaBackwards '^ViaBackwards-[0-9.]+[.]jar$' "$P/ViaBackwards.jar"
+          gh_asset SkriptLang/Skript '^Skript(-[0-9.]+)?[.]jar$' "$P/Skript.jar"
+          gh_asset SkriptLang/skript-reflect '^skript-reflect(-[0-9.]+)?[.]jar$' "$P/skript-reflect.jar"
 
-          # Citizens current successful distribution build.
-          CITIZENS_API="https://ci.citizensnpcs.co/job/Citizens2/lastSuccessfulBuild/api/json?tree=artifacts[fileName,relativePath]"
-          citizens_rel=$(curl -fsSL -A 'Politaria-Plugin-Port/1.1' "$CITIZENS_API" | jq -r '.artifacts[] | select(.fileName | test("^Citizens.*[.]jar$"; "i")) | .relativePath' | head -n1)
-          if [[ -z "$citizens_rel" ]]; then
-            echo "Could not resolve current Citizens distribution jar" >&2
-            exit 1
-          fi
-          download "https://ci.citizensnpcs.co/job/Citizens2/lastSuccessfulBuild/artifact/${citizens_rel}" "$PLUGINS/Citizens.jar"
-
-          # Plugins with stable builds explicitly tagged for Minecraft 1.21.11.
-          modrinth_release "worldedit" "$PLUGINS/WorldEdit.jar"
-          modrinth_release "simple-voice-chat" "$PLUGINS/voicechat-bukkit.jar"
-          modrinth_release "skinsrestorer" "$PLUGINS/SkinsRestorer.jar"
-
-          # Compatibility / scripting stack: latest stable upstream releases.
-          github_latest_asset "ViaVersion/ViaVersion" '^ViaVersion-[0-9.]+[.]jar$' "$PLUGINS/ViaVersion.jar"
-          github_latest_asset "ViaVersion/ViaBackwards" '^ViaBackwards-[0-9.]+[.]jar$' "$PLUGINS/ViaBackwards.jar"
-          github_latest_asset "SkriptLang/Skript" '^Skript(-[0-9.]+)?[.]jar$' "$PLUGINS/Skript.jar"
-          github_latest_asset "SkriptLang/skript-reflect" '^skript-reflect(-[0-9.]+)?[.]jar$' "$PLUGINS/skript-reflect.jar"
-
-          echo "Validating downloaded jars..."
-          for jar in \
-            "$PLUGINS/BlueMap.jar" \
-            "$PLUGINS/ProtocolLib.jar" \
-            "$PLUGINS/TAB.jar" \
-            "$PLUGINS/Citizens.jar" \
-            "$PLUGINS/WorldEdit.jar" \
-            "$PLUGINS/voicechat-bukkit.jar" \
-            "$PLUGINS/SkinsRestorer.jar" \
-            "$PLUGINS/ViaVersion.jar" \
-            "$PLUGINS/ViaBackwards.jar" \
-            "$PLUGINS/Skript.jar" \
-            "$PLUGINS/skript-reflect.jar"; do
-              test -s "$jar"
-              unzip -tqq "$jar"
-          done
+          for f in BlueMap ProtocolLib TAB Citizens WorldEdit SkinsRestorer ViaVersion ViaBackwards Skript skript-reflect; do unzip -tqq "$P/$f.jar"; done
+          unzip -tqq "$P/voicechat-bukkit.jar"
 
           cat > server/PLUGIN_PORT_1.21.11.md <<'EOF'
-          # Plugin port for Minecraft 1.21.11
+          # Minecraft 1.21.11 plugin port
 
-          Updated to current upstream builds suitable for the 1.21.11 port:
-          - BlueMap
-          - Citizens
-          - ProtocolLib (official dev-build; stable 5.4.0 predates 1.21.11 support)
-          - Simple Voice Chat
-          - SkinsRestorer
-          - Skript
-          - skript-reflect
-          - TAB
-          - ViaBackwards
-          - ViaVersion
-          - WorldEdit
+          Updated from verified upstream sources: BlueMap, Citizens, ProtocolLib, TAB, WorldEdit, Simple Voice Chat, SkinsRestorer, ViaVersion, ViaBackwards, Skript and skript-reflect.
 
-          Kept at the existing version for now because this workflow does not have a verified newer 1.21.11 artifact source:
-          - AutoBackup
-          - CoreProtect
-          - DisableJoinMessage
-          - FastLeafDecay
-          - GrimAC
-          - Orebfuscator
-          - ProAntiTab
+          ProtocolLib uses the official maintained dev-build because it explicitly added Minecraft 1.21.11 support while the old stable build predates it.
 
-          Custom Politaria jars are deliberately untouched and require source/API testing or recompilation:
-          - PolitariaApartments
-          - PolitariaIdentity
-          - PolitariaMapBridge
-          - PolitariaSpawnProtection
-          - PolitariaTags
+          Existing builds retained pending separate compatibility verification: AutoBackup, CoreProtect, DisableJoinMessage, FastLeafDecay, GrimAC, Orebfuscator and ProAntiTab.
 
-          Do not merge this branch into production until a full 1.21.11 test boot and gameplay regression test is complete.
+          Custom Politaria plugins were not blindly replaced: PolitariaApartments, PolitariaIdentity, PolitariaMapBridge, PolitariaSpawnProtection and PolitariaTags need API/runtime testing or recompilation for 1.21.11.
           EOF
 
-      - name: Commit updated jars
-        shell: bash
+      - name: Commit plugin port
         run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add server/plugins server/PLUGIN_PORT_1.21.11.md
-          if git diff --cached --quiet; then
-            echo "No plugin changes to commit."
-            exit 0
-          fi
-          git commit -m "[plugin-port] Update verified plugins for Minecraft 1.21.11"
+          git diff --cached --quiet && exit 0
+          git commit -m '[plugin-port] Update verified plugins for Minecraft 1.21.11'
           git push origin HEAD:serverport
