@@ -26,70 +26,185 @@ jobs:
           P=server/plugins
           mkdir -p "$P"
 
-          dl() { echo "Downloading $2"; curl -g -fL --retry 4 --retry-delay 2 -A 'Politaria-Plugin-Port/1.2' "$1" -o "$2"; }
+          dl() {
+            echo "Downloading $2"
+            curl -g -fL --retry 4 --retry-delay 2 -A 'Politaria-Plugin-Port/1.3' "$1" -o "$2"
+          }
 
           gh_asset() {
             repo="$1"; regex="$2"; dest="$3"
-            url=$(curl -g -fsSL -A 'Politaria-Plugin-Port/1.2' "https://api.github.com/repos/$repo/releases/latest" | jq -r --arg re "$regex" '.assets[] | select(.name | test($re; "i")) | .browser_download_url' | head -n1)
+            url=$(curl -g -fsSL -A 'Politaria-Plugin-Port/1.3' "https://api.github.com/repos/$repo/releases/latest" \
+              | jq -r --arg re "$regex" '.assets[] | select(.name | test($re; "i")) | .browser_download_url' \
+              | head -n1)
             test -n "$url" && test "$url" != null || { echo "No asset: $repo / $regex"; exit 1; }
             dl "$url" "$dest"
           }
 
-          modrinth() {
+          modrinth_required() {
             project="$1"; dest="$2"
-            json=$(curl -g -fsSL -A 'Politaria-Plugin-Port/1.2' "https://api.modrinth.com/v2/project/$project/version?game_versions=%5B%221.21.11%22%5D")
+            json=$(curl -g -fsSL -A 'Politaria-Plugin-Port/1.3' "https://api.modrinth.com/v2/project/$project/version?game_versions=%5B%221.21.11%22%5D")
             url=$(printf '%s' "$json" | jq -r '[.[] | select(.version_type=="release") | select(any(.loaders[]; .=="bukkit" or .=="paper" or .=="purpur" or .=="spigot"))][0].files | ((map(select(.primary==true)) + .)[0].url) // empty')
-            test -n "$url" || { echo "No 1.21.11 Modrinth release: $project"; exit 1; }
+            test -n "$url" || { echo "No stable 1.21.11 Modrinth release: $project"; exit 1; }
             dl "$url" "$dest"
           }
 
+          modrinth_optional() {
+            project="$1"; dest="$2"
+            json=$(curl -g -fsSL -A 'Politaria-Plugin-Port/1.3' "https://api.modrinth.com/v2/project/$project/version?game_versions=%5B%221.21.11%22%5D" || true)
+            url=$(printf '%s' "$json" | jq -r '[.[] | select(.version_type=="release") | select(any(.loaders[]; .=="bukkit" or .=="paper" or .=="purpur" or .=="spigot"))][0].files | ((map(select(.primary==true)) + .)[0].url) // empty' 2>/dev/null || true)
+            if [[ -n "$url" ]]; then
+              dl "$url" "$dest"
+            else
+              echo "No optional 1.21.11 build for $project; keeping current jar"
+            fi
+          }
+
+          # Replace jars that are known to be stale or explicitly incompatible with 1.21.11.
           rm -f "$P"/Citizens-*.jar "$P"/Citizens.jar
           rm -f "$P"/bluemap-*-spigot.jar "$P"/bluemap-*-paper.jar "$P"/BlueMap.jar
-          rm -f "$P"/ProtocolLib*.jar "$P"/TAB.jar "$P"/TAB.v*.jar
+          rm -f "$P"/ProtocolLib*.jar
+          rm -f "$P"/TAB.jar "$P"/TAB.v*.jar
           rm -f "$P"/worldedit-bukkit-*.jar "$P"/WorldEdit.jar
           rm -f "$P"/voicechat-bukkit-*.jar "$P"/voicechat-bukkit.jar
           rm -f "$P"/SkinsRestorer*.jar
-          rm -f "$P"/ViaVersion*.jar "$P"/ViaBackwards*.jar
-          rm -f "$P"/Skript-*.jar "$P"/Skript.jar "$P"/skript-reflect*.jar
+          rm -f "$P"/ViaVersion-*.jar "$P"/ViaVersion.jar
+          rm -f "$P"/ViaBackwards-*.jar "$P"/ViaBackwards.jar
+          rm -f "$P"/Skript-*.jar "$P"/Skript.jar
+          rm -f "$P"/skript-reflect-*.jar "$P"/skript-reflect.jar
 
+          # BlueMap: current Paper build.
           gh_asset BlueMap-Minecraft/BlueMap 'bluemap-[0-9.]+-paper[.]jar$' "$P/BlueMap.jar"
+
+          # ProtocolLib stable 5.4.0 predates 1.21.11. The official dev build contains explicit 1.21.11 support.
           dl 'https://github.com/dmulloy2/ProtocolLib/releases/download/dev-build/ProtocolLib.jar' "$P/ProtocolLib.jar"
+
+          # TAB 5.2.0 only supported up to 1.21.5. Use the current universal build.
           gh_asset NEZNAMY/TAB '^TAB[.]v[0-9.]+[.]jar$' "$P/TAB.jar"
 
-          cjson=$(curl -g -fsSL -A 'Politaria-Plugin-Port/1.2' 'https://ci.citizensnpcs.co/job/Citizens2/lastSuccessfulBuild/api/json?tree=artifacts[fileName,relativePath]')
-          crel=$(printf '%s' "$cjson" | jq -r '.artifacts[] | select(.fileName | test("^Citizens.*[.]jar$";"i")) | .relativePath' | head -n1)
-          test -n "$crel" || { echo 'Citizens artifact not found'; exit 1; }
+          # Citizens: use the current successful distribution jar, not the old v1_21_R1 build.
+          cjson=$(curl -g -fsSL -A 'Politaria-Plugin-Port/1.3' 'https://ci.citizensnpcs.co/job/Citizens2/lastSuccessfulBuild/api/json?tree=artifacts[fileName,relativePath]')
+          crel=$(printf '%s' "$cjson" | jq -r '.artifacts[] | select(.relativePath | test("^dist/target/Citizens-[^/]+[.]jar$";"i")) | .relativePath' | head -n1)
+          if [[ -z "$crel" ]]; then
+            crel=$(printf '%s' "$cjson" | jq -r '.artifacts[] | select(.fileName | test("^Citizens-[^/]+[.]jar$";"i")) | .relativePath' | head -n1)
+          fi
+          test -n "$crel" || { echo 'Citizens distribution artifact not found'; exit 1; }
           dl "https://ci.citizensnpcs.co/job/Citizens2/lastSuccessfulBuild/artifact/$crel" "$P/Citizens.jar"
 
-          modrinth worldedit "$P/WorldEdit.jar"
-          modrinth simple-voice-chat "$P/voicechat-bukkit.jar"
-          modrinth skinsrestorer "$P/SkinsRestorer.jar"
+          # Builds explicitly published for Minecraft 1.21.11.
+          modrinth_required worldedit "$P/WorldEdit.jar"
+          modrinth_required simple-voice-chat "$P/voicechat-bukkit.jar"
+          modrinth_required skinsrestorer "$P/SkinsRestorer.jar"
 
+          # Compatibility / scripting stack.
           gh_asset ViaVersion/ViaVersion '^ViaVersion-[0-9.]+[.]jar$' "$P/ViaVersion.jar"
           gh_asset ViaVersion/ViaBackwards '^ViaBackwards-[0-9.]+[.]jar$' "$P/ViaBackwards.jar"
-          gh_asset SkriptLang/Skript '^Skript(-[0-9.]+)?[.]jar$' "$P/Skript.jar"
-          gh_asset SkriptLang/skript-reflect '^skript-reflect(-[0-9.]+)?[.]jar$' "$P/skript-reflect.jar"
+          gh_asset SkriptLang/Skript '^Skript-[0-9.]+[.]jar$' "$P/Skript.jar"
+          gh_asset SkriptLang/skript-reflect '^skript-reflect-[0-9.]+[.]jar$' "$P/skript-reflect.jar"
 
-          for f in BlueMap ProtocolLib TAB Citizens WorldEdit SkinsRestorer ViaVersion ViaBackwards Skript skript-reflect; do unzip -tqq "$P/$f.jar"; done
-          unzip -tqq "$P/voicechat-bukkit.jar"
+          # Grim 2.3.73 already supports 1.21.11, but take a newer stable 1.21.11 build when Modrinth exposes one.
+          if compgen -G "$P/grimac-bukkit-*.jar" > /dev/null; then
+            old_grim=$(compgen -G "$P/grimac-bukkit-*.jar" | head -n1)
+            modrinth_optional grimac "$P/GrimAC-new.jar"
+            if [[ -s "$P/GrimAC-new.jar" ]]; then
+              rm -f "$P"/grimac-bukkit-*.jar "$P"/GrimAC.jar
+              mv "$P/GrimAC-new.jar" "$P/GrimAC.jar"
+            fi
+          fi
 
+          echo "Validating downloaded jars..."
+          jars=(
+            "$P/BlueMap.jar"
+            "$P/ProtocolLib.jar"
+            "$P/TAB.jar"
+            "$P/Citizens.jar"
+            "$P/WorldEdit.jar"
+            "$P/voicechat-bukkit.jar"
+            "$P/SkinsRestorer.jar"
+            "$P/ViaVersion.jar"
+            "$P/ViaBackwards.jar"
+            "$P/Skript.jar"
+            "$P/skript-reflect.jar"
+          )
+          if [[ -f "$P/GrimAC.jar" ]]; then jars+=("$P/GrimAC.jar"); fi
+          for jar in "${jars[@]}"; do
+            test -s "$jar"
+            unzip -tqq "$jar"
+          done
+
+      - name: Patch Skript compatibility issues found in 1.21.11 boot log
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('server/plugins/Skript/scripts/justice.sk')
+          text = p.read_text(encoding='utf-8')
+          replacements = {
+              'chain named "<aqua><bold>%name of {_target}%"': 'iron bars named "<aqua><bold>%name of {_target}%"',
+              'chain named "<aqua><bold>НАРУЧНИКИ"': 'iron bars named "<aqua><bold>НАРУЧНИКИ"',
+              'chain named "<aqua><bold>ЗАДЕРЖАТЬ"': 'iron bars named "<aqua><bold>ЗАДЕРЖАТЬ"',
+          }
+          changed = 0
+          for old, new in replacements.items():
+              if old in text:
+                  text = text.replace(old, new)
+                  changed += 1
+          p.write_text(text, encoding='utf-8')
+          print(f'justice.sk compatibility replacements: {changed}')
+          PY
+
+      - name: Write migration notes
+        shell: bash
+        run: |
           cat > server/PLUGIN_PORT_1.21.11.md <<'EOF'
-          # Minecraft 1.21.11 plugin port
+          # Minecraft 1.21.11 migration
 
-          Updated from verified upstream sources: BlueMap, Citizens, ProtocolLib, TAB, WorldEdit, Simple Voice Chat, SkinsRestorer, ViaVersion, ViaBackwards, Skript and skript-reflect.
+          Updated automatically from upstream sources:
+          - BlueMap
+          - Citizens
+          - ProtocolLib (official dev build with explicit 1.21.11 support)
+          - TAB
+          - WorldEdit
+          - Simple Voice Chat
+          - SkinsRestorer
+          - ViaVersion
+          - ViaBackwards
+          - Skript
+          - skript-reflect
+          - GrimAC when a newer stable Modrinth 1.21.11 build is available
 
-          ProtocolLib uses the official maintained dev-build because it explicitly added Minecraft 1.21.11 support while the old stable build predates it.
+          Script fixes:
+          - `justice.sk`: replaced the no-longer-parsing `chain` GUI item alias with `iron bars` for the cuffs controls.
 
-          Existing builds retained pending separate compatibility verification: AutoBackup, CoreProtect, DisableJoinMessage, FastLeafDecay, GrimAC, Orebfuscator and ProAntiTab.
+          Already current / working in the 1.21.11 boot log and therefore retained:
+          - CoreProtect 24.0
+          - Orebfuscator 5.6.1 (found the v1_21_R7_mojang adapter)
+          - FastLeafDecay 2.0.1
+          - ProAntiTab 2.4.3
+          - AutoBackup 1.1
+          - DisableJoinMessage 1.1
 
-          Custom Politaria plugins were not blindly replaced: PolitariaApartments, PolitariaIdentity, PolitariaMapBridge, PolitariaSpawnProtection and PolitariaTags need API/runtime testing or recompilation for 1.21.11.
+          Custom Politaria jars are intentionally retained because they enabled successfully on Purpur 1.21.11:
+          - PolitariaApartments
+          - PolitariaIdentity
+          - PolitariaMapBridge
+          - PolitariaSpawnProtection
+          - PolitariaTags
+
+          Remaining non-fatal warnings to test in-game:
+          - `PolitariaTags` and another plugin both register `politaria.tags.manage`; functionality works but the duplicate permission should eventually be consolidated in source.
+          - GrimAC warns that ViaBackwards vehicle behavior on old clients is unsupported. This is an upstream compatibility limitation, not a server-start failure.
+          - Offline mode / voice-chat encryption warnings are expected while the server uses offline-mode authentication.
           EOF
 
-      - name: Commit plugin port
+      - name: Commit plugin port and script fixes
+        shell: bash
         run: |
+          set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add server/plugins server/PLUGIN_PORT_1.21.11.md
+          git add server/plugins/Skript/scripts/justice.sk
           git diff --cached --quiet && exit 0
-          git commit -m '[plugin-port] Update verified plugins for Minecraft 1.21.11'
+          git commit -m '[plugin-port] Fix 1.21.11 plugin and Skript compatibility'
           git push origin HEAD:serverport
