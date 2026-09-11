@@ -1,0 +1,28 @@
+apartments:
+  4a9375ef-5ad4-4e99-b875-c774b6e19973:
+    country: 4b6067ef-1e34-4f8f-8f41-99c023473282
+    name: '1'
+    world: world
+    min:
+    - 21
+    - 60
+    - 148
+    max:
+    - 25
+    - 63
+    - 150
+    offer: SALE
+    price: 30.0
+    owner: 30117ceb-db68-3c7e-8ee3-5b696de4040d
+    coowners: []
+    blocked-roles: []
+    public-build: false
+    public-interact: false
+    spawn:
+      ==: org.bukkit.Location
+      world: world
+      x: 22.265993777236904
+      y: 61.0
+      z: 149.5816613271442
+      pitch: 9.959246
+      yaw: -91.6504

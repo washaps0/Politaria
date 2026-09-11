@@ -1,0 +1,579 @@
+# =========================================================
+# POLITARIA TRADE SYSTEM
+# Purpur 1.21.1 / Skript 2.11+
+# Uses economy.sk:
+#   {economy.balance::<uuid>}
+#   economyEnsure(player)
+#   economyBalance(player)
+# =========================================================
+
+options:
+	trade-request-time: 30 seconds
+	trade-max-money: 100000000
+	trade-max-slots: 12
+
+# =========================================================
+# HELPERS
+# =========================================================
+
+function tradeResetApprovals(p: player):
+	set {_id} to uuid of {_p}
+	delete {trade.ready::%{_id}%}
+	delete {trade.confirm::%{_id}%}
+	set {_partner-id} to {trade.partner::%{_id}%}
+	if {_partner-id} is set:
+		delete {trade.ready::%{_partner-id}%}
+		delete {trade.confirm::%{_partner-id}%}
+
+function tradeClearPlayerData(id: text):
+	delete {trade.partner::%{_id}%}
+	delete {trade.money::%{_id}%}
+	delete {trade.ready::%{_id}%}
+	delete {trade.confirm::%{_id}%}
+	delete {trade.menu::%{_id}%}
+	delete {trade.menuinv::%{_id}%}
+	delete {trade.input::%{_id}%}
+	delete {trade.ignoreclose::%{_id}%}
+	delete {trade.ending::%{_id}%}
+	delete {trade.items::%{_id}%::*}
+
+function tradeReturnItems(p: player):
+	set {_id} to uuid of {_p}
+	loop {trade.items::%{_id}%::*}:
+		give loop-value to {_p}
+	delete {trade.items::%{_id}%::*}
+
+function tradeRemoveOwnItem(p: player, index: number):
+	set {_id} to uuid of {_p}
+	set {_remove} to rounded down {_index}
+	if {trade.items::%{_id}%::%{_remove}%} is not set:
+		stop
+
+	set {_removed-item} to {trade.items::%{_id}%::%{_remove}%}
+	delete {_new::*}
+	set {_n} to 0
+	loop {trade.items::%{_id}%::*}:
+		add 1 to {_n}
+		if {_n} is not {_remove}:
+			add loop-value to {_new::*}
+
+	delete {trade.items::%{_id}%::*}
+	loop {_new::*}:
+		add loop-value to {trade.items::%{_id}%::*}
+
+	give {_removed-item} to {_p}
+	tradeResetApprovals({_p})
+
+function tradeRender(p: player):
+	set {_id} to uuid of {_p}
+	set {_partner-id} to {trade.partner::%{_id}%}
+	if {_partner-id} is not set:
+		stop
+	set {_partner} to player from {_partner-id}
+	if {_partner} is not set:
+		stop
+
+	if {trade.menuinv::%{_id}%} is not set:
+		set {_menu} to chest inventory with 6 rows named "<dark gray>Обмен с %name of {_partner}%"
+		set {trade.menuinv::%{_id}%} to {_menu}
+	else:
+		set {_menu} to {trade.menuinv::%{_id}%}
+
+	# Background
+	loop integers between 0 and 53:
+		set slot loop-value of {_menu} to gray stained glass pane named " "
+
+	# Offer areas
+	set {_own-slots::*} to 10, 11, 12, 19, 20, 21, 28, 29, 30, 37, 38 and 39
+	set {_other-slots::*} to 14, 15, 16, 23, 24, 25, 32, 33, 34, 41, 42 and 43
+
+	loop {_own-slots::*}:
+		set slot loop-value of {_menu} to air
+	loop {_other-slots::*}:
+		set slot loop-value of {_menu} to air
+
+	set slot 1 of {_menu} to player head named "<green><bold>ВАШЕ ПРЕДЛОЖЕНИЕ" with lore "<gray>ЛКМ по предмету: <white>добавить весь стак" and "<gray>ПКМ по предмету: <white>добавить 1 предмет" and "" and "<yellow>В предложении:" and "<gray>ЛКМ: вернуть весь стак" and "<gray>ПКМ: вернуть 1 предмет"
+	set slot 7 of {_menu} to player head named "<yellow><bold>ПРЕДЛОЖЕНИЕ %name of {_partner}%"
+
+	# Divider
+	set slot 4 of {_menu} to black stained glass pane named " "
+	set slot 13 of {_menu} to black stained glass pane named " "
+	set slot 22 of {_menu} to black stained glass pane named " "
+	set slot 31 of {_menu} to black stained glass pane named " "
+	set slot 40 of {_menu} to black stained glass pane named " "
+
+	# Own items
+	set {_n} to 0
+	loop {trade.items::%{_id}%::*}:
+		add 1 to {_n}
+		if {_n} is less than or equal to {@trade-max-slots}:
+			set {_slot} to {_own-slots::%{_n}%}
+			set slot {_slot} of {_menu} to loop-value
+
+	# Partner items
+	set {_n} to 0
+	loop {trade.items::%{_partner-id}%::*}:
+		add 1 to {_n}
+		if {_n} is less than or equal to {@trade-max-slots}:
+			set {_slot} to {_other-slots::%{_n}%}
+			set slot {_slot} of {_menu} to loop-value
+
+	# Money
+	if {trade.money::%{_id}%} is not set:
+		set {trade.money::%{_id}%} to 0
+	if {trade.money::%{_partner-id}%} is not set:
+		set {trade.money::%{_partner-id}%} to 0
+
+	set slot 45 of {_menu} to gold ingot named "<gold><bold>ВАШИ ДЕНЬГИ" with lore "<white>%{trade.money::%{_id}%}% монет" and "" and "<gray>Ваш баланс: <white>%economyBalance({_p})% монет" and "<yellow>Нажмите, чтобы изменить сумму."
+	set slot 53 of {_menu} to gold ingot named "<gold><bold>ДЕНЬГИ %name of {_partner}%" with lore "<white>%{trade.money::%{_partner-id}%}% монет"
+
+	# Cancel
+	set slot 49 of {_menu} to barrier named "<red><bold>ОТМЕНИТЬ ОБМЕН" with lore "<gray>Все ваши предметы будут возвращены."
+
+	# State / confirm button
+	if {trade.ready::%{_id}%} is true:
+		if {trade.ready::%{_partner-id}%} is true:
+			if {trade.confirm::%{_id}%} is true:
+				set slot 47 of {_menu} to lime concrete named "<green><bold>ВЫ ПОДТВЕРДИЛИ" with lore "<gray>Ждём второго игрока..."
+			else:
+				set slot 47 of {_menu} to diamond named "<aqua><bold>ПОДТВЕРДИТЬ ОБМЕН" with lore "<yellow>Финальное подтверждение." and "<red>После подтверждения изменить предложение нельзя."
+		else:
+			set slot 47 of {_menu} to lime concrete named "<green><bold>ВЫ ГОТОВЫ" with lore "<gray>Ждём второго игрока..." and "<yellow>Нажмите ещё раз, чтобы снять готовность."
+	else:
+		set slot 47 of {_menu} to lime dye named "<green><bold>ГОТОВ" with lore "<gray>Проверьте предметы и деньги," and "<gray>затем нажмите сюда."
+
+	if {trade.ready::%{_partner-id}%} is true:
+		if {trade.confirm::%{_partner-id}%} is true:
+			set slot 51 of {_menu} to lime concrete named "<green>%name of {_partner}% ПОДТВЕРДИЛ"
+		else:
+			set slot 51 of {_menu} to yellow concrete named "<yellow>%name of {_partner}% ГОТОВ"
+	else:
+		set slot 51 of {_menu} to red concrete named "<red>%name of {_partner}% НЕ ГОТОВ"
+
+function tradeRenderBoth(p: player):
+	set {_partner-id} to {trade.partner::%uuid of {_p}%}
+	tradeRender({_p})
+	if {_partner-id} is set:
+		set {_partner} to player from {_partner-id}
+		if {_partner} is set:
+			tradeRender({_partner})
+
+function tradeOpen(p: player):
+	set {_id} to uuid of {_p}
+	if {trade.partner::%{_id}%} is not set:
+		stop
+	tradeRender({_p})
+	set {trade.menu::%{_id}%} to true
+	open {trade.menuinv::%{_id}%} to {_p}
+
+function tradeOpenBoth(a: player, b: player):
+	set {_a-id} to uuid of {_a}
+	set {_b-id} to uuid of {_b}
+
+	set {trade.partner::%{_a-id}%} to {_b-id}
+	set {trade.partner::%{_b-id}%} to {_a-id}
+	set {trade.money::%{_a-id}%} to 0
+	set {trade.money::%{_b-id}%} to 0
+	delete {trade.items::%{_a-id}%::*}
+	delete {trade.items::%{_b-id}%::*}
+	delete {trade.ready::%{_a-id}%}
+	delete {trade.ready::%{_b-id}%}
+	delete {trade.confirm::%{_a-id}%}
+	delete {trade.confirm::%{_b-id}%}
+
+	tradeOpen({_a})
+	tradeOpen({_b})
+
+	send formatted "<green>Обмен с <white>%name of {_b}% <green>начат." to {_a}
+	send formatted "<green>Обмен с <white>%name of {_a}% <green>начат." to {_b}
+
+function tradeCancel(p: player, reason: text):
+	set {_id} to uuid of {_p}
+	set {_partner-id} to {trade.partner::%{_id}%}
+	if {_partner-id} is not set:
+		stop
+
+	set {_partner} to player from {_partner-id}
+
+	# Mark closing so inventory-close does not recursively cancel again.
+	set {trade.ending::%{_id}%} to true
+	set {trade.ending::%{_partner-id}%} to true
+
+	tradeReturnItems({_p})
+	if {_partner} is set:
+		tradeReturnItems({_partner})
+
+	if {_reason} is not "":
+		send formatted "<red>Обмен отменён. <gray>%{_reason}%" to {_p}
+		if {_partner} is set:
+			send formatted "<red>Обмен отменён. <gray>%{_reason}%" to {_partner}
+
+	close {_p}'s inventory
+	if {_partner} is set:
+		close {_partner}'s inventory
+
+	tradeClearPlayerData({_id})
+	tradeClearPlayerData({_partner-id})
+
+function tradeComplete(p: player):
+	set {_a} to {_p}
+	set {_a-id} to uuid of {_a}
+	set {_b-id} to {trade.partner::%{_a-id}%}
+	if {_b-id} is not set:
+		stop
+	set {_b} to player from {_b-id}
+	if {_b} is not set:
+		tradeCancel({_a}, "Второй игрок вышел с сервера.")
+		stop
+
+	# Both must still be fully confirmed.
+	if {trade.ready::%{_a-id}%} is not true:
+		stop
+	if {trade.ready::%{_b-id}%} is not true:
+		stop
+	if {trade.confirm::%{_a-id}%} is not true:
+		stop
+	if {trade.confirm::%{_b-id}%} is not true:
+		stop
+
+	if {trade.money::%{_a-id}%} is not set:
+		set {trade.money::%{_a-id}%} to 0
+	if {trade.money::%{_b-id}%} is not set:
+		set {trade.money::%{_b-id}%} to 0
+
+	set {_a-money} to {trade.money::%{_a-id}%}
+	set {_b-money} to {trade.money::%{_b-id}%}
+
+	economyEnsure({_a})
+	economyEnsure({_b})
+
+	# Re-check balances at the exact moment of exchange.
+	if economyBalance({_a}) is less than {_a-money}:
+		tradeCancel({_a}, "%name of {_a}% больше не имеет нужной суммы денег.")
+		stop
+	if economyBalance({_b}) is less than {_b-money}:
+		tradeCancel({_a}, "%name of {_b}% больше не имеет нужной суммы денег.")
+		stop
+
+	set {trade.ending::%{_a-id}%} to true
+	set {trade.ending::%{_b-id}%} to true
+
+	# IMPORTANT: copy both offers before touching/closing the trade GUI.
+	# The GUI contains visual copies of these same ItemStacks. On some
+	# Skript/Paper combinations transferring while that custom inventory
+	# is still open can make the item disappear when the GUI is closed.
+	delete {_a-items::*}
+	delete {_b-items::*}
+	loop {trade.items::%{_a-id}%::*}:
+		add loop-value to {_a-items::*}
+	loop {trade.items::%{_b-id}%::*}:
+		add loop-value to {_b-items::*}
+
+	# Close the trade inventories BEFORE giving any real items.
+	# trade.ending prevents on inventory close from cancelling the trade.
+	close {_a}'s inventory
+	close {_b}'s inventory
+
+	# Money exchange.
+	remove {_a-money} from {economy.balance::%{_a-id}%}
+	add {_a-money} to {economy.balance::%{_b-id}%}
+	remove {_b-money} from {economy.balance::%{_b-id}%}
+	add {_b-money} to {economy.balance::%{_a-id}%}
+
+	# Item exchange from independent snapshots, not from GUI-backed lists.
+	loop {_a-items::*}:
+		give loop-value to {_b}
+	loop {_b-items::*}:
+		give loop-value to {_a}
+
+	# Only delete escrow after both transfer loops have run.
+	delete {trade.items::%{_a-id}%::*}
+	delete {trade.items::%{_b-id}%::*}
+
+	send formatted "<green><bold>ОБМЕН ЗАВЕРШЁН! <gray>Вы успешно обменялись с <white>%name of {_b}%<gray>." to {_a}
+	send formatted "<green><bold>ОБМЕН ЗАВЕРШЁН! <gray>Вы успешно обменялись с <white>%name of {_a}%<gray>." to {_b}
+
+	tradeClearPlayerData({_a-id})
+	tradeClearPlayerData({_b-id})
+
+# =========================================================
+# COMMANDS
+# =========================================================
+
+command /trade <player>:
+	executable by: players
+	trigger:
+		if {auth.logged-in::%name of player%} is not true:
+			send "<red>Сначала войдите в аккаунт." to player
+			stop
+
+		set {_target} to arg-1
+		if {_target} is player:
+			send "<red>Нельзя обмениваться с самим собой." to player
+			stop
+		if {auth.logged-in::%name of {_target}%} is not true:
+			send "<red>Этот игрок ещё не вошёл в аккаунт." to player
+			stop
+		if {trade.partner::%uuid of player%} is set:
+			send "<red>Вы уже участвуете в обмене." to player
+			stop
+		if {trade.partner::%uuid of {_target}%} is set:
+			send "<red>Этот игрок уже участвует в другом обмене." to player
+			stop
+
+		set {trade.request::%uuid of {_target}%::%uuid of player%} to {@trade-request-time} from now
+		send formatted "<green>Запрос на обмен отправлен игроку <white>%name of {_target}%<green>." to player
+		send formatted "<gold>%name of player% <yellow>предлагает вам обмен." to {_target}
+		send formatted "<gray>Принять: <white>/tradeaccept %name of player%" to {_target}
+		send formatted "<gray>Отклонить: <white>/tradedeny %name of player%" to {_target}
+		send formatted "<dark gray>Запрос действует {@trade-request-time}." to {_target}
+
+command /tradeaccept <player>:
+	executable by: players
+	trigger:
+		set {_sender} to arg-1
+		if {_sender} is player:
+			send "<red>Нельзя принять обмен от самого себя." to player
+			stop
+
+		set {_until} to {trade.request::%uuid of player%::%uuid of {_sender}%}
+		if {_until} is not set:
+			send formatted "<red>У вас нет активного запроса на обмен от <white>%name of {_sender}%<red>." to player
+			stop
+		if {_until} is in the past:
+			delete {trade.request::%uuid of player%::%uuid of {_sender}%}
+			send "<red>Этот запрос на обмен уже истёк." to player
+			stop
+		if {trade.partner::%uuid of player%} is set:
+			send "<red>Вы уже участвуете в обмене." to player
+			stop
+		if {trade.partner::%uuid of {_sender}%} is set:
+			delete {trade.request::%uuid of player%::%uuid of {_sender}%}
+			send "<red>Этот игрок уже начал другой обмен." to player
+			stop
+
+		delete {trade.request::%uuid of player%::%uuid of {_sender}%}
+		tradeOpenBoth(player, {_sender})
+
+command /tradedeny <player>:
+	executable by: players
+	trigger:
+		set {_sender} to arg-1
+		if {trade.request::%uuid of player%::%uuid of {_sender}%} is not set:
+			send formatted "<red>У вас нет запроса от <white>%name of {_sender}%<red>." to player
+			stop
+		delete {trade.request::%uuid of player%::%uuid of {_sender}%}
+		send formatted "<gray>Вы отклонили запрос на обмен от <white>%name of {_sender}%<gray>." to player
+		send formatted "<red>%name of player% <gray>отклонил ваш запрос на обмен." to {_sender}
+
+command /tradecancel:
+	executable by: players
+	trigger:
+		if {trade.partner::%uuid of player%} is not set:
+			send "<red>Вы сейчас не участвуете в обмене." to player
+			stop
+		tradeCancel(player, "%name of player% отменил обмен.")
+
+# =========================================================
+# GUI
+# =========================================================
+
+on inventory click:
+	set {_id} to uuid of player
+	if {trade.menu::%{_id}%} is not true:
+		stop
+	if {trade.partner::%{_id}%} is not set:
+		stop
+
+	cancel event
+	if event-slot is not set:
+		stop
+
+	set {_raw} to raw index of event-slot
+	set {_partner-id} to {trade.partner::%{_id}%}
+	set {_partner} to player from {_partner-id}
+	if {_partner} is not set:
+		tradeCancel(player, "Второй игрок вышел с сервера.")
+		stop
+
+	# Bottom inventory:
+	# LMB = add the whole stack, RMB = add only 1 item.
+	if {_raw} is greater than or equal to 54:
+		if event-item is air:
+			stop
+		if {trade.ready::%{_id}%} is true:
+			send "<red>Сначала снимите готовность, чтобы изменить предложение." to player
+			stop
+		set {_size} to size of {trade.items::%{_id}%::*}
+		if {_size} is greater than or equal to {@trade-max-slots}:
+			send "<red>В обмен можно добавить максимум {@trade-max-slots} стаков." to player
+			stop
+
+		set {_clicked} to event-item
+
+		# RMB: move exactly one item from the clicked stack.
+		if click type is right mouse button:
+			set {_item} to {_clicked}
+			set amount of {_item} to 1
+			add {_item} to {trade.items::%{_id}%::*}
+
+			set {_old-amount} to amount of {_clicked}
+			if {_old-amount} is less than or equal to 1:
+				set event-slot to air
+			else:
+				set {_remaining} to {_clicked}
+				set amount of {_remaining} to {_old-amount} - 1
+				set event-slot to {_remaining}
+		else:
+			# LMB (and other normal clicks): move the whole stack.
+			add {_clicked} to {trade.items::%{_id}%::*}
+			set event-slot to air
+
+		tradeResetApprovals(player)
+		tradeRenderBoth(player)
+		stop
+
+	# Own offer slots:
+	# LMB = return the whole stack, RMB = return only 1 item.
+	set {_own-slots::*} to 10, 11, 12, 19, 20, 21, 28, 29, 30, 37, 38 and 39
+	set {_n} to 0
+	loop {_own-slots::*}:
+		add 1 to {_n}
+		if {_raw} is loop-value:
+			if {trade.ready::%{_id}%} is true:
+				send "<red>Сначала снимите готовность, чтобы изменить предложение." to player
+				stop
+
+			if {trade.items::%{_id}%::%{_n}%} is not set:
+				stop
+
+			if click type is right mouse button:
+				set {_stack} to {trade.items::%{_id}%::%{_n}%}
+				set {_stack-amount} to amount of {_stack}
+				if {_stack-amount} is less than or equal to 1:
+					tradeRemoveOwnItem(player, {_n})
+				else:
+					set {_one} to {_stack}
+					set amount of {_one} to 1
+					give {_one} to player
+
+					set amount of {_stack} to {_stack-amount} - 1
+					set {trade.items::%{_id}%::%{_n}%} to {_stack}
+					tradeResetApprovals(player)
+			else:
+				tradeRemoveOwnItem(player, {_n})
+
+			tradeRenderBoth(player)
+			stop
+
+	# Money input.
+	if {_raw} is 45:
+		if {trade.ready::%{_id}%} is true:
+			send "<red>Сначала снимите готовность, чтобы изменить сумму." to player
+			stop
+		set {trade.input::%{_id}%} to true
+		set {trade.ignoreclose::%{_id}%} to true
+		close player's inventory
+		send formatted "<gold>Введите в чат сумму, которую хотите добавить в обмен." to player
+		send formatted "<gray>Баланс: <white>%economyBalance(player)% монет<gray>. Для удаления денег из предложения введите <white>0<gray>." to player
+		stop
+
+	# Cancel.
+	if {_raw} is 49:
+		tradeCancel(player, "%name of player% отменил обмен.")
+		stop
+
+	# Ready / final confirmation.
+	if {_raw} is 47:
+		if {trade.ready::%{_id}%} is not true:
+			set {trade.ready::%{_id}%} to true
+			delete {trade.confirm::%{_id}%}
+			tradeRenderBoth(player)
+			stop
+
+		# If partner is not ready yet, second click removes ready state.
+		if {trade.ready::%{_partner-id}%} is not true:
+			delete {trade.ready::%{_id}%}
+			delete {trade.confirm::%{_id}%}
+			tradeRenderBoth(player)
+			stop
+
+		# Both are ready -> this is final confirm.
+		if {trade.confirm::%{_id}%} is not true:
+			set {trade.confirm::%{_id}%} to true
+			tradeRenderBoth(player)
+			if {trade.confirm::%{_partner-id}%} is true:
+				tradeComplete(player)
+			stop
+
+on inventory drag:
+	if {trade.menu::%uuid of player%} is true:
+		cancel event
+
+on inventory close:
+	set {_id} to uuid of player
+	if {trade.menu::%{_id}%} is not true:
+		stop
+	if {trade.ending::%{_id}%} is true:
+		stop
+	if {trade.ignoreclose::%{_id}%} is true:
+		delete {trade.ignoreclose::%{_id}%}
+		stop
+	if {trade.partner::%{_id}%} is set:
+		tradeCancel(player, "%name of player% закрыл окно обмена.")
+
+# =========================================================
+# MONEY INPUT
+# =========================================================
+
+on chat:
+	set {_id} to uuid of player
+	if {trade.input::%{_id}%} is not true:
+		stop
+	cancel event
+
+	if {trade.partner::%{_id}%} is not set:
+		delete {trade.input::%{_id}%}
+		stop
+
+	set {_amount} to unformatted message parsed as number
+	if {_amount} is not set:
+		send "<red>Введите сумму числом. Например: <white>500" to player
+		stop
+
+	set {_amount} to rounded down {_amount}
+	if {_amount} is less than 0:
+		send "<red>Сумма не может быть отрицательной." to player
+		stop
+	if {_amount} is greater than {@trade-max-money}:
+		send "<red>Слишком большая сумма для одного обмена." to player
+		stop
+
+	economyEnsure(player)
+	if economyBalance(player) is less than {_amount}:
+		send formatted "<red>Недостаточно денег. Ваш баланс: <white>%economyBalance(player)% монет<red>." to player
+		stop
+
+	set {trade.money::%{_id}%} to {_amount}
+	delete {trade.input::%{_id}%}
+	tradeResetApprovals(player)
+	tradeRenderBoth(player)
+	tradeOpen(player)
+
+	if {_amount} is 0:
+		send "<gray>Деньги убраны из предложения." to player
+	else:
+		send formatted "<green>В предложение добавлено <white>%{_amount}% монет<green>." to player
+
+# =========================================================
+# SAFETY
+# =========================================================
+
+on quit:
+	set {_id} to uuid of player
+
+	# Remove incoming/outgoing requests involving this online player.
+	delete {trade.request::%{_id}%::*}
+
+	if {trade.partner::%{_id}%} is set:
+		tradeCancel(player, "%name of player% вышел с сервера.")

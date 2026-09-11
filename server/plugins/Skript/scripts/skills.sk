@@ -1,0 +1,1326 @@
+# =========================================================
+# POLITARIA SKILLS
+# Purpur 1.21.1
+# Skript 2.15.4
+# =========================================================
+
+options:
+    skills-prefix: &b&lPOLITARIA&r &8»
+
+# =========================================================
+# LEVELS
+# =========================================================
+
+function skillLevelFromXP(xp: number) :: number:
+    if {_xp} >= 1125:
+        return 10
+    if {_xp} >= 900:
+        return 9
+    if {_xp} >= 700:
+        return 8
+    if {_xp} >= 525:
+        return 7
+    if {_xp} >= 375:
+        return 6
+    if {_xp} >= 250:
+        return 5
+    if {_xp} >= 150:
+        return 4
+    if {_xp} >= 75:
+        return 3
+    if {_xp} >= 25:
+        return 2
+    return 1
+
+function skillXPForLevel(level: number) :: number:
+    if {_level} is 1:
+        return 0
+    if {_level} is 2:
+        return 25
+    if {_level} is 3:
+        return 75
+    if {_level} is 4:
+        return 150
+    if {_level} is 5:
+        return 250
+    if {_level} is 6:
+        return 375
+    if {_level} is 7:
+        return 525
+    if {_level} is 8:
+        return 700
+    if {_level} is 9:
+        return 900
+    return 1125
+
+function skillNextXP(level: number) :: number:
+    if {_level} >= 10:
+        return 1125
+    return skillXPForLevel({_level} + 1)
+
+# =========================================================
+# MINING
+# =========================================================
+
+function miningXP(p: player) :: number:
+    if {skills.mining.xp::%uuid of {_p}%} is not set:
+        set {skills.mining.xp::%uuid of {_p}%} to 0
+    return {skills.mining.xp::%uuid of {_p}%}
+
+function miningLevel(p: player) :: number:
+    return skillLevelFromXP(miningXP({_p}))
+
+function miningChance(p: player) :: number:
+    return miningLevel({_p}) * 2
+
+function miningOreXP(name: text) :: number:
+    # Overworld ores
+    if {_name} is "coal ore":
+        return 1
+    if {_name} is "deepslate coal ore":
+        return 2
+    if {_name} is "copper ore":
+        return 1
+    if {_name} is "deepslate copper ore":
+        return 2
+    if {_name} is "iron ore":
+        return 2
+    if {_name} is "deepslate iron ore":
+        return 3
+    if {_name} is "gold ore":
+        return 3
+    if {_name} is "deepslate gold ore":
+        return 4
+    if {_name} is "redstone ore":
+        return 2
+    if {_name} is "deepslate redstone ore":
+        return 3
+    if {_name} is "lapis ore":
+        return 2
+    if {_name} is "deepslate lapis ore":
+        return 3
+    if {_name} is "diamond ore":
+        return 5
+    if {_name} is "deepslate diamond ore":
+        return 6
+    if {_name} is "emerald ore":
+        return 6
+    if {_name} is "deepslate emerald ore":
+        return 7
+
+    # Nether ores
+    if {_name} is "nether quartz ore":
+        return 1
+    if {_name} is "nether gold ore":
+        return 2
+    if {_name} is "ancient debris":
+        return 8
+
+    return 0
+
+function miningBonus(name: text) :: text:
+    if {_name} is "coal ore":
+        return "coal"
+    if {_name} is "deepslate coal ore":
+        return "coal"
+    if {_name} is "copper ore":
+        return "raw copper"
+    if {_name} is "deepslate copper ore":
+        return "raw copper"
+    if {_name} is "iron ore":
+        return "raw iron"
+    if {_name} is "deepslate iron ore":
+        return "raw iron"
+    if {_name} is "gold ore":
+        return "raw gold"
+    if {_name} is "deepslate gold ore":
+        return "raw gold"
+    if {_name} is "redstone ore":
+        return "redstone"
+    if {_name} is "deepslate redstone ore":
+        return "redstone"
+    if {_name} is "lapis ore":
+        return "lapis lazuli"
+    if {_name} is "deepslate lapis ore":
+        return "lapis lazuli"
+    if {_name} is "diamond ore":
+        return "diamond"
+    if {_name} is "deepslate diamond ore":
+        return "diamond"
+    if {_name} is "emerald ore":
+        return "emerald"
+    if {_name} is "deepslate emerald ore":
+        return "emerald"
+    if {_name} is "nether quartz ore":
+        return "quartz"
+    if {_name} is "nether gold ore":
+        return "gold nugget"
+    if {_name} is "ancient debris":
+        return "ancient debris"
+    return ""
+
+function miningAddXP(p: player, amount: number):
+    set {_old-level} to miningLevel({_p})
+    if {_old-level} >= 10:
+        stop
+    add {_amount} to {skills.mining.xp::%uuid of {_p}%}
+    set {_new-level} to miningLevel({_p})
+    set {_xp} to miningXP({_p})
+    if {_new-level} > {_old-level}:
+        send "{@skills-prefix} &fНавык &bШахтёрство &fповышен до &b%{_new-level}% уровня&f!" to {_p}
+        send action bar formatted "<aqua><bold>⛏ ШАХТЁРСТВО</bold> <dark_gray>» <green><bold>УРОВЕНЬ %{_new-level}%!" to {_p}
+        if {_old-level} < 4:
+            if {_new-level} >= 4:
+                send "{@skills-prefix} &fОткрыт навык: &bАвтоподбор&f." to {_p}
+        if {_new-level} >= 10:
+            send "{@skills-prefix} &6Шахтёрство достигло максимального уровня!" to {_p}
+        stop
+    set {_needed} to skillNextXP({_new-level})
+    send action bar formatted "<aqua>⛏ Шахтёрство <dark_gray>• <white>%{_xp}%<gray>/%{_needed}% XP <dark_gray>• <green>+%{_amount}% XP" to {_p}
+
+on break with priority monitor:
+    if event is cancelled:
+        stop
+    set {_name} to lowercase "%type of event-block%"
+    set {_earned-xp} to miningOreXP({_name})
+    if {_earned-xp} <= 0:
+        stop
+    if {skills.mining.placed::%location of event-block%} is set:
+        delete {skills.mining.placed::%location of event-block%}
+        stop
+    set {_drops::*} to drops of event-block using player's tool as player
+    set {_level} to miningLevel(player)
+    if {_level} >= 4:
+        clear drops
+        loop {_drops::*}:
+            if player can hold loop-value:
+                give loop-value to player
+            else:
+                drop loop-value at location of player
+    miningAddXP(player, {_earned-xp})
+    if player's tool is enchanted with silk touch:
+        stop
+    set {_chance} to miningChance(player)
+    chance of {_chance}%:
+        set {_bonus-name} to miningBonus({_name})
+        if {_bonus-name} is "":
+            stop
+        set {_bonus} to {_bonus-name} parsed as item type
+        if {_bonus} is not set:
+            stop
+        if {_level} >= 4:
+            if player can hold 1 of {_bonus}:
+                give 1 of {_bonus} to player
+            else:
+                drop 1 of {_bonus} at location of player
+        else:
+            drop 1 of {_bonus} at location of event-block
+        send action bar formatted "<aqua>⛏ <green><bold>УДАЧА!</bold> <white>Получен дополнительный ресурс." to player
+
+# =========================================================
+# CRAFTING
+# =========================================================
+
+function craftingXP(p: player) :: number:
+    if {skills.crafting.xp::%uuid of {_p}%} is not set:
+        set {skills.crafting.xp::%uuid of {_p}%} to 0
+    return {skills.crafting.xp::%uuid of {_p}%}
+
+function craftingLevel(p: player) :: number:
+    return skillLevelFromXP(craftingXP({_p}))
+
+function craftingChance(p: player) :: number:
+    return craftingLevel({_p}) * 0.5
+
+function craftingItemXP(kind: item type) :: number:
+    if {_kind} is wooden sword:
+        return 0
+    if {_kind} is wooden pickaxe:
+        return 0
+    if {_kind} is wooden axe:
+        return 0
+    if {_kind} is wooden shovel:
+        return 0
+    if {_kind} is wooden hoe:
+        return 0
+    if {_kind} is stone sword:
+        return 1
+    if {_kind} is stone pickaxe:
+        return 1
+    if {_kind} is stone axe:
+        return 1
+    if {_kind} is stone shovel:
+        return 1
+    if {_kind} is stone hoe:
+        return 1
+    if {_kind} is golden sword:
+        return 3
+    if {_kind} is golden pickaxe:
+        return 4
+    if {_kind} is golden axe:
+        return 4
+    if {_kind} is golden shovel:
+        return 2
+    if {_kind} is golden hoe:
+        return 3
+    if {_kind} is iron sword:
+        return 4
+    if {_kind} is iron pickaxe:
+        return 5
+    if {_kind} is iron axe:
+        return 5
+    if {_kind} is iron shovel:
+        return 3
+    if {_kind} is iron hoe:
+        return 4
+    if {_kind} is diamond sword:
+        return 10
+    if {_kind} is diamond pickaxe:
+        return 12
+    if {_kind} is diamond axe:
+        return 12
+    if {_kind} is diamond shovel:
+        return 8
+    if {_kind} is diamond hoe:
+        return 10
+    if {_kind} is leather helmet:
+        return 1
+    if {_kind} is leather chestplate:
+        return 2
+    if {_kind} is leather leggings:
+        return 2
+    if {_kind} is leather boots:
+        return 1
+    if {_kind} is golden helmet:
+        return 5
+    if {_kind} is golden chestplate:
+        return 8
+    if {_kind} is golden leggings:
+        return 7
+    if {_kind} is golden boots:
+        return 4
+    if {_kind} is iron helmet:
+        return 6
+    if {_kind} is iron chestplate:
+        return 10
+    if {_kind} is iron leggings:
+        return 9
+    if {_kind} is iron boots:
+        return 5
+    if {_kind} is diamond helmet:
+        return 15
+    if {_kind} is diamond chestplate:
+        return 24
+    if {_kind} is diamond leggings:
+        return 21
+    if {_kind} is diamond boots:
+        return 12
+    return 0
+
+function craftingUpgrade(kind: item type) :: text:
+    if {_kind} is wooden sword:
+        return "stone sword"
+    if {_kind} is wooden pickaxe:
+        return "stone pickaxe"
+    if {_kind} is wooden axe:
+        return "stone axe"
+    if {_kind} is wooden shovel:
+        return "stone shovel"
+    if {_kind} is wooden hoe:
+        return "stone hoe"
+    if {_kind} is stone sword:
+        return "iron sword"
+    if {_kind} is stone pickaxe:
+        return "iron pickaxe"
+    if {_kind} is stone axe:
+        return "iron axe"
+    if {_kind} is stone shovel:
+        return "iron shovel"
+    if {_kind} is stone hoe:
+        return "iron hoe"
+    if {_kind} is iron sword:
+        return "diamond sword"
+    if {_kind} is iron pickaxe:
+        return "diamond pickaxe"
+    if {_kind} is iron axe:
+        return "diamond axe"
+    if {_kind} is iron shovel:
+        return "diamond shovel"
+    if {_kind} is iron hoe:
+        return "diamond hoe"
+    if {_kind} is leather helmet:
+        return "iron helmet"
+    if {_kind} is leather chestplate:
+        return "iron chestplate"
+    if {_kind} is leather leggings:
+        return "iron leggings"
+    if {_kind} is leather boots:
+        return "iron boots"
+    if {_kind} is iron helmet:
+        return "diamond helmet"
+    if {_kind} is iron chestplate:
+        return "diamond chestplate"
+    if {_kind} is iron leggings:
+        return "diamond leggings"
+    if {_kind} is iron boots:
+        return "diamond boots"
+    return ""
+
+function craftingAddXP(p: player, amount: number):
+    set {_old-level} to craftingLevel({_p})
+    if {_old-level} >= 10:
+        stop
+    add {_amount} to {skills.crafting.xp::%uuid of {_p}%}
+    set {_new-level} to craftingLevel({_p})
+    set {_xp} to craftingXP({_p})
+    if {_new-level} > {_old-level}:
+        send "{@skills-prefix} &fНавык &eКрафт &fповышен до &b%{_new-level}% уровня&f!" to {_p}
+        send action bar formatted "<yellow><bold>⚒ КРАФТ</bold> <dark_gray>» <green><bold>УРОВЕНЬ %{_new-level}%!" to {_p}
+        if {_new-level} >= 10:
+            send "{@skills-prefix} &6Крафт достиг максимального уровня!" to {_p}
+        stop
+    set {_needed} to skillNextXP({_new-level})
+    send action bar formatted "<yellow>⚒ Крафт <dark_gray>• <white>%{_xp}%<gray>/%{_needed}% XP <dark_gray>• <green>+%{_amount}% XP" to {_p}
+
+on craft:
+    set {_crafted} to event-item
+    if {_crafted} is not set:
+        stop
+    set {_kind} to type of {_crafted}
+    set {_base-xp} to craftingItemXP({_kind})
+    if {_base-xp} <= 0:
+        stop
+    set {_before} to amount of {_kind} in player's inventory
+    set {_crafted-per-recipe} to amount of {_crafted}
+    wait 1 tick
+    set {_after} to amount of {_kind} in player's inventory
+    set {_difference} to {_after} - {_before}
+    if {_difference} <= 0:
+        set {_cursor} to cursor slot of player
+        if {_cursor} is set:
+            if type of {_cursor} is {_kind}:
+                set {_difference} to amount of {_cursor}
+    if {_difference} <= 0:
+        set {_difference} to {_crafted-per-recipe}
+    set {_craft-count} to floor({_difference} / {_crafted-per-recipe})
+    if {_craft-count} < 1:
+        set {_craft-count} to 1
+    set {_earned-xp} to {_base-xp} * {_craft-count}
+    craftingAddXP(player, {_earned-xp})
+    set {_upgrade-name} to craftingUpgrade({_kind})
+    if {_upgrade-name} is "":
+        stop
+    set {_upgrade} to {_upgrade-name} parsed as item type
+    if {_upgrade} is not set:
+        stop
+    set {_chance} to craftingChance(player)
+    loop {_craft-count} times:
+        chance of {_chance}%:
+            set {_cursor} to cursor slot of player
+            if {_cursor} is set:
+                if type of {_cursor} is {_kind}:
+                    remove {_crafted-per-recipe} of {_kind} from cursor slot of player
+                    give {_crafted-per-recipe} of {_upgrade} to player
+                    send "{@skills-prefix} &aУдачный крафт! &fПредмет улучшился: &b%{_kind}% &8→ &b%{_upgrade}%&f." to player
+                    send action bar formatted "<yellow>⚒ <green><bold>УДАЧНЫЙ КРАФТ!</bold> <white>%{_upgrade}%" to player
+                    stop
+            if player has {_crafted-per-recipe} of {_kind}:
+                remove {_crafted-per-recipe} of {_kind} from player
+                give {_crafted-per-recipe} of {_upgrade} to player
+                send "{@skills-prefix} &aУдачный крафт! &fПредмет улучшился: &b%{_kind}% &8→ &b%{_upgrade}%&f." to player
+                send action bar formatted "<yellow>⚒ <green><bold>УДАЧНЫЙ КРАФТ!</bold> <white>%{_upgrade}%" to player
+
+# =========================================================
+# FARMING
+# =========================================================
+
+function farmingXP(p: player) :: number:
+    if {skills.farming.xp::%uuid of {_p}%} is not set:
+        set {skills.farming.xp::%uuid of {_p}%} to 0
+    return {skills.farming.xp::%uuid of {_p}%}
+
+function farmingLevel(p: player) :: number:
+    return skillLevelFromXP(farmingXP({_p}))
+
+function farmingChance(p: player) :: number:
+    return farmingLevel({_p}) * 2
+
+function farmingCropXP(name: text) :: number:
+    # Classic crops
+    if {_name} is "wheat":
+        return 1
+    if {_name} is "carrots":
+        return 1
+    if {_name} is "potatoes":
+        return 1
+    if {_name} is "beetroots":
+        return 1
+    if {_name} is "nether wart":
+        return 2
+    if {_name} is "cocoa":
+        return 2
+
+    # Fruit / field farms
+    if {_name} is "melon":
+        return 2
+    if {_name} is "pumpkin":
+        return 2
+    if {_name} is "sugar cane":
+        return 1
+    if {_name} is "cactus":
+        return 1
+    if {_name} is "bamboo":
+        return 1
+    if {_name} is "sweet berry bush":
+        return 1
+
+    # Aquatic / End farms
+    if {_name} is "kelp":
+        return 1
+    if {_name} is "kelp plant":
+        return 1
+    if {_name} is "chorus plant":
+        return 2
+    if {_name} is "chorus flower":
+        return 2
+
+    # Sniffer crops
+    if {_name} is "torchflower crop":
+        return 2
+    if {_name} is "pitcher crop":
+        return 2
+
+    return 0
+
+function farmingNeedsAge(name: text) :: boolean:
+    if {_name} is "wheat":
+        return true
+    if {_name} is "carrots":
+        return true
+    if {_name} is "potatoes":
+        return true
+    if {_name} is "beetroots":
+        return true
+    if {_name} is "nether wart":
+        return true
+    if {_name} is "cocoa":
+        return true
+    if {_name} is "sweet berry bush":
+        return true
+    if {_name} is "torchflower crop":
+        return true
+    if {_name} is "pitcher crop":
+        return true
+    return false
+
+function farmingIsMature(name: text, cropAge: number) :: boolean:
+    if {_name} is "wheat":
+        if {_cropAge} >= 7:
+            return true
+        return false
+    if {_name} is "carrots":
+        if {_cropAge} >= 7:
+            return true
+        return false
+    if {_name} is "potatoes":
+        if {_cropAge} >= 7:
+            return true
+        return false
+    if {_name} is "beetroots":
+        if {_cropAge} >= 3:
+            return true
+        return false
+    if {_name} is "nether wart":
+        if {_cropAge} >= 3:
+            return true
+        return false
+    if {_name} is "cocoa":
+        if {_cropAge} >= 2:
+            return true
+        return false
+    if {_name} is "sweet berry bush":
+        if {_cropAge} >= 3:
+            return true
+        return false
+    if {_name} is "torchflower crop":
+        if {_cropAge} >= 1:
+            return true
+        return false
+    if {_name} is "pitcher crop":
+        if {_cropAge} >= 4:
+            return true
+        return false
+    return true
+
+function farmingBonus(name: text) :: text:
+    if {_name} is "wheat":
+        return "wheat"
+    if {_name} is "carrots":
+        return "carrot"
+    if {_name} is "potatoes":
+        return "potato"
+    if {_name} is "beetroots":
+        return "beetroot"
+    if {_name} is "nether wart":
+        return "nether wart"
+    if {_name} is "cocoa":
+        return "cocoa beans"
+    if {_name} is "melon":
+        return "melon slice"
+    if {_name} is "pumpkin":
+        return "pumpkin"
+    if {_name} is "sugar cane":
+        return "sugar cane"
+    if {_name} is "cactus":
+        return "cactus"
+    if {_name} is "bamboo":
+        return "bamboo"
+    if {_name} is "sweet berry bush":
+        return "sweet berries"
+    if {_name} is "kelp":
+        return "kelp"
+    if {_name} is "kelp plant":
+        return "kelp"
+    if {_name} is "chorus plant":
+        return "chorus fruit"
+    if {_name} is "chorus flower":
+        return "chorus fruit"
+    if {_name} is "torchflower crop":
+        return "torchflower"
+    if {_name} is "pitcher crop":
+        return "pitcher plant"
+    return ""
+
+function farmingAddXP(p: player, amount: number):
+    set {_old-level} to farmingLevel({_p})
+    if {_old-level} >= 10:
+        stop
+    add {_amount} to {skills.farming.xp::%uuid of {_p}%}
+    set {_new-level} to farmingLevel({_p})
+    set {_xp} to farmingXP({_p})
+    if {_new-level} > {_old-level}:
+        send "{@skills-prefix} &fНавык &aФермерство &fповышен до &a%{_new-level}% уровня&f!" to {_p}
+        send action bar formatted "<green><bold>🌾 ФЕРМЕРСТВО</bold> <dark_gray>» <green><bold>УРОВЕНЬ %{_new-level}%!" to {_p}
+        if {_old-level} < 4:
+            if {_new-level} >= 4:
+                send "{@skills-prefix} &fОткрыт навык фермера: &aАвтоподбор&f." to {_p}
+        if {_old-level} < 6:
+            if {_new-level} >= 6:
+                send "{@skills-prefix} &fОткрыт навык фермера: &aАвтопосадка&f." to {_p}
+        if {_new-level} >= 10:
+            send "{@skills-prefix} &6Фермерство достигло максимального уровня!" to {_p}
+        stop
+    set {_needed} to skillNextXP({_new-level})
+    send action bar formatted "<green>🌾 Фермерство <dark_gray>• <white>%{_xp}%<gray>/%{_needed}% XP <dark_gray>• <green>+%{_amount}% XP" to {_p}
+
+on break with priority monitor:
+    if event is cancelled:
+        stop
+    set {_name} to lowercase "%type of event-block%"
+    set {_earned-xp} to farmingCropXP({_name})
+    if {_earned-xp} <= 0:
+        stop
+
+    if farmingNeedsAge({_name}) is true:
+        set {_crop-age} to age of event-block
+        if farmingIsMature({_name}, {_crop-age}) is false:
+            stop
+
+    if {skills.farming.placed::%location of event-block%} is set:
+        delete {skills.farming.placed::%location of event-block%}
+        stop
+
+    set {_level} to farmingLevel(player)
+    set {_loc} to location of event-block
+    set {_drops::*} to drops of event-block using player's tool as player
+
+    if {_level} >= 4:
+        clear drops
+        loop {_drops::*}:
+            if player can hold loop-value:
+                give loop-value to player
+            else:
+                drop loop-value at {_loc}
+
+    farmingAddXP(player, {_earned-xp})
+
+    set {_chance} to farmingChance(player)
+    chance of {_chance}%:
+        set {_bonus-name} to farmingBonus({_name})
+        if {_bonus-name} is not "":
+            set {_bonus} to {_bonus-name} parsed as item type
+            if {_bonus} is set:
+                if {_level} >= 4:
+                    if player can hold 1 of {_bonus}:
+                        give 1 of {_bonus} to player
+                    else:
+                        drop 1 of {_bonus} at {_loc}
+                else:
+                    drop 1 of {_bonus} at {_loc}
+                send action bar formatted "<green>🌾 <green><bold>БОГАТЫЙ УРОЖАЙ!</bold> <white>Получен дополнительный ресурс." to player
+
+    # Auto replant only where replanting is actually needed.
+    if {_level} < 6:
+        stop
+    set {_replant-name} to {_name}
+    wait 1 tick
+    if block at {_loc} is not air:
+        stop
+    if {_replant-name} is "wheat":
+        set block at {_loc} to wheat
+        set age of block at {_loc} to 0
+        stop
+    if {_replant-name} is "carrots":
+        set block at {_loc} to carrots
+        set age of block at {_loc} to 0
+        stop
+    if {_replant-name} is "potatoes":
+        set block at {_loc} to potatoes
+        set age of block at {_loc} to 0
+        stop
+    if {_replant-name} is "beetroots":
+        set block at {_loc} to beetroots
+        set age of block at {_loc} to 0
+        stop
+    if {_replant-name} is "nether wart":
+        set block at {_loc} to nether wart
+        set age of block at {_loc} to 0
+        stop
+
+# =========================================================
+# HUNTER
+# =========================================================
+
+function hunterXP(p: player) :: number:
+    if {skills.hunter.xp::%uuid of {_p}%} is not set:
+        set {skills.hunter.xp::%uuid of {_p}%} to 0
+    return {skills.hunter.xp::%uuid of {_p}%}
+
+function hunterLevel(p: player) :: number:
+    return skillLevelFromXP(hunterXP({_p}))
+
+function hunterChance(p: player) :: number:
+    return hunterLevel({_p}) * 2
+
+function hunterMobXP(kind: entity type) :: number:
+    set {_name} to lowercase "%{_kind}%"
+
+    # Peaceful/passive mobs - 1 XP
+    if {_name} is "allay":
+        return 1
+    if {_name} is "armadillo":
+        return 1
+    if {_name} is "axolotl":
+        return 1
+    if {_name} is "bat":
+        return 1
+    if {_name} is "camel":
+        return 1
+    if {_name} is "cat":
+        return 1
+    if {_name} is "chicken":
+        return 1
+    if {_name} is "cod":
+        return 1
+    if {_name} is "cow":
+        return 1
+    if {_name} is "donkey":
+        return 1
+    if {_name} is "frog":
+        return 1
+    if {_name} is "glow squid":
+        return 1
+    if {_name} is "horse":
+        return 1
+    if {_name} is "mooshroom":
+        return 1
+    if {_name} is "mule":
+        return 1
+    if {_name} is "ocelot":
+        return 1
+    if {_name} is "parrot":
+        return 1
+    if {_name} is "pig":
+        return 1
+    if {_name} is "pufferfish":
+        return 1
+    if {_name} is "rabbit":
+        return 1
+    if {_name} is "salmon":
+        return 1
+    if {_name} is "sheep":
+        return 1
+    if {_name} is "skeleton horse":
+        return 1
+    if {_name} is "sniffer":
+        return 1
+    if {_name} is "snow golem":
+        return 1
+    if {_name} is "squid":
+        return 1
+    if {_name} is "strider":
+        return 1
+    if {_name} is "tadpole":
+        return 1
+    if {_name} is "tropical fish":
+        return 1
+    if {_name} is "turtle":
+        return 1
+    if {_name} is "villager":
+        return 1
+    if {_name} is "wandering trader":
+        return 1
+
+    # Neutral mobs - 2 XP
+    if {_name} is "bee":
+        return 2
+    if {_name} is "dolphin":
+        return 2
+    if {_name} is "fox":
+        return 2
+    if {_name} is "goat":
+        return 2
+    if {_name} is "iron golem":
+        return 2
+    if {_name} is "llama":
+        return 2
+    if {_name} is "panda":
+        return 2
+    if {_name} is "piglin":
+        return 2
+    if {_name} is "polar bear":
+        return 2
+    if {_name} is "trader llama":
+        return 2
+    if {_name} is "wolf":
+        return 2
+    if {_name} is "enderman":
+        return 2
+
+    # Common hostile mobs - 2 XP
+    if {_name} is "zombie":
+        return 2
+    if {_name} is "zombie villager":
+        return 2
+    if {_name} is "husk":
+        return 2
+    if {_name} is "drowned":
+        return 2
+    if {_name} is "skeleton":
+        return 2
+    if {_name} is "stray":
+        return 2
+    if {_name} is "bogged":
+        return 2
+    if {_name} is "spider":
+        return 2
+    if {_name} is "cave spider":
+        return 2
+    if {_name} is "creeper":
+        return 2
+    if {_name} is "silverfish":
+        return 2
+    if {_name} is "endermite":
+        return 2
+    if {_name} is "slime":
+        return 2
+    if {_name} is "magma cube":
+        return 2
+
+    # Medium hostile mobs - 3 XP
+    if {_name} is "blaze":
+        return 3
+    if {_name} is "breeze":
+        return 3
+    if {_name} is "ghast":
+        return 3
+    if {_name} is "guardian":
+        return 3
+    if {_name} is "phantom":
+        return 3
+    if {_name} is "witch":
+        return 3
+    if {_name} is "wither skeleton":
+        return 3
+    if {_name} is "pillager":
+        return 3
+    if {_name} is "vindicator":
+        return 3
+    if {_name} is "vex":
+        return 3
+    if {_name} is "shulker":
+        return 3
+    if {_name} is "hoglin":
+        return 3
+    if {_name} is "zoglin":
+        return 3
+
+    # Strong hostile mobs
+    if {_name} is "evoker":
+        return 4
+    if {_name} is "piglin brute":
+        return 4
+    if {_name} is "ravager":
+        return 6
+    if {_name} is "elder guardian":
+        return 6
+
+    # Extreme mobs / bosses
+    if {_name} is "warden":
+        return 15
+    if {_name} is "wither":
+        return 25
+    if {_name} is "ender dragon":
+        return 30
+
+    return 0
+
+function hunterBonus(kind: entity type) :: text:
+    set {_name} to lowercase "%{_kind}%"
+
+    # Peaceful / neutral drops
+    if {_name} is "armadillo":
+        return "armadillo scute"
+    if {_name} is "chicken":
+        return "raw chicken"
+    if {_name} is "cod":
+        return "cod"
+    if {_name} is "cow":
+        return "leather"
+    if {_name} is "donkey":
+        return "leather"
+    if {_name} is "glow squid":
+        return "glow ink sac"
+    if {_name} is "horse":
+        return "leather"
+    if {_name} is "llama":
+        return "leather"
+    if {_name} is "mooshroom":
+        return "leather"
+    if {_name} is "mule":
+        return "leather"
+    if {_name} is "pig":
+        return "raw porkchop"
+    if {_name} is "pufferfish":
+        return "pufferfish"
+    if {_name} is "rabbit":
+        return "rabbit hide"
+    if {_name} is "salmon":
+        return "salmon"
+    if {_name} is "sheep":
+        return "raw mutton"
+    if {_name} is "squid":
+        return "ink sac"
+    if {_name} is "tropical fish":
+        return "tropical fish"
+    if {_name} is "turtle":
+        return "seagrass"
+    if {_name} is "panda":
+        return "bamboo"
+    if {_name} is "polar bear":
+        return "cod"
+
+    # Hostile drops
+    if {_name} is "zombie":
+        return "rotten flesh"
+    if {_name} is "zombie villager":
+        return "rotten flesh"
+    if {_name} is "husk":
+        return "rotten flesh"
+    if {_name} is "drowned":
+        return "rotten flesh"
+    if {_name} is "skeleton":
+        return "bone"
+    if {_name} is "stray":
+        return "bone"
+    if {_name} is "bogged":
+        return "bone"
+    if {_name} is "spider":
+        return "string"
+    if {_name} is "cave spider":
+        return "string"
+    if {_name} is "creeper":
+        return "gunpowder"
+    if {_name} is "enderman":
+        return "ender pearl"
+    if {_name} is "slime":
+        return "slime ball"
+    if {_name} is "magma cube":
+        return "magma cream"
+    if {_name} is "blaze":
+        return "blaze rod"
+    if {_name} is "breeze":
+        return "breeze rod"
+    if {_name} is "ghast":
+        return "ghast tear"
+    if {_name} is "guardian":
+        return "prismarine shard"
+    if {_name} is "elder guardian":
+        return "prismarine shard"
+    if {_name} is "phantom":
+        return "phantom membrane"
+    if {_name} is "witch":
+        return "redstone"
+    if {_name} is "wither skeleton":
+        return "coal"
+    if {_name} is "piglin brute":
+        return "gold nugget"
+    if {_name} is "pillager":
+        return "arrow"
+    if {_name} is "vindicator":
+        return "emerald"
+    if {_name} is "evoker":
+        return "emerald"
+    if {_name} is "shulker":
+        return "shulker shell"
+    if {_name} is "hoglin":
+        return "raw porkchop"
+    if {_name} is "zoglin":
+        return "rotten flesh"
+    if {_name} is "ravager":
+        return "leather"
+    if {_name} is "warden":
+        return "sculk catalyst"
+    return ""
+
+function hunterAddXP(p: player, amount: number):
+    set {_old-level} to hunterLevel({_p})
+    if {_old-level} >= 10:
+        stop
+    add {_amount} to {skills.hunter.xp::%uuid of {_p}%}
+    set {_new-level} to hunterLevel({_p})
+    set {_xp} to hunterXP({_p})
+    if {_new-level} > {_old-level}:
+        send "{@skills-prefix} &fНавык &cОхотник &fповышен до &c%{_new-level}% уровня&f!" to {_p}
+        send action bar formatted "<red><bold>⚔ ОХОТНИК</bold> <dark_gray>» <green><bold>УРОВЕНЬ %{_new-level}%!" to {_p}
+        if {_old-level} < 4:
+            if {_new-level} >= 4:
+                send "{@skills-prefix} &fОткрыт навык охотника: &cАвтоподбор добычи&f." to {_p}
+        if {_new-level} >= 10:
+            send "{@skills-prefix} &6Охотник достиг максимального уровня!" to {_p}
+        stop
+    set {_needed} to skillNextXP({_new-level})
+    send action bar formatted "<red>⚔ Охотник <dark_gray>• <white>%{_xp}%<gray>/%{_needed}% XP <dark_gray>• <green>+%{_amount}% XP" to {_p}
+
+on death:
+    set {_killer} to attacker
+    if {_killer} is not set:
+        stop
+    if {_killer} is a projectile:
+        set {_killer} to shooter of {_killer}
+    if {_killer} is not a player:
+        stop
+    set {_p} to {_killer}
+    set {_kind} to type of victim
+    set {_earned-xp} to hunterMobXP({_kind})
+    if {_earned-xp} <= 0:
+        stop
+    set {_level} to hunterLevel({_p})
+    set {_loc} to location of victim
+    if {_level} >= 4:
+        set {_drops::*} to drops
+        clear drops
+        loop {_drops::*}:
+            if {_p} can hold loop-value:
+                give loop-value to {_p}
+            else:
+                drop loop-value at {_loc}
+    hunterAddXP({_p}, {_earned-xp})
+    set {_chance} to hunterChance({_p})
+    chance of {_chance}%:
+        set {_bonus-name} to hunterBonus({_kind})
+        if {_bonus-name} is "":
+            stop
+        set {_bonus} to {_bonus-name} parsed as item type
+        if {_bonus} is not set:
+            stop
+        if {_level} >= 4:
+            if {_p} can hold 1 of {_bonus}:
+                give 1 of {_bonus} to {_p}
+            else:
+                drop 1 of {_bonus} at {_loc}
+        else:
+            drop 1 of {_bonus} at {_loc}
+        send action bar formatted "<red>⚔ <green><bold>УДАЧНАЯ ОХОТА!</bold> <white>Получена дополнительная добыча." to {_p}
+
+# =========================================================
+# LUMBERJACK
+# =========================================================
+
+function lumberjackXP(p: player) :: number:
+    if {skills.lumberjack.xp::%uuid of {_p}%} is not set:
+        set {skills.lumberjack.xp::%uuid of {_p}%} to 0
+    return {skills.lumberjack.xp::%uuid of {_p}%}
+
+function lumberjackLevel(p: player) :: number:
+    return skillLevelFromXP(lumberjackXP({_p}))
+
+function lumberjackChance(p: player) :: number:
+    return lumberjackLevel({_p}) * 2
+
+function lumberjackLogXP(name: text) :: number:
+    # All Overworld tree types in 1.21.1
+    if {_name} is "oak log":
+        return 1
+    if {_name} is "stripped oak log":
+        return 1
+    if {_name} is "spruce log":
+        return 1
+    if {_name} is "stripped spruce log":
+        return 1
+    if {_name} is "birch log":
+        return 1
+    if {_name} is "stripped birch log":
+        return 1
+    if {_name} is "jungle log":
+        return 1
+    if {_name} is "stripped jungle log":
+        return 1
+    if {_name} is "acacia log":
+        return 1
+    if {_name} is "stripped acacia log":
+        return 1
+    if {_name} is "dark oak log":
+        return 1
+    if {_name} is "stripped dark oak log":
+        return 1
+    if {_name} is "mangrove log":
+        return 1
+    if {_name} is "stripped mangrove log":
+        return 1
+    if {_name} is "cherry log":
+        return 1
+    if {_name} is "stripped cherry log":
+        return 1
+
+    # Nether wood types
+    if {_name} is "crimson stem":
+        return 2
+    if {_name} is "stripped crimson stem":
+        return 2
+    if {_name} is "warped stem":
+        return 2
+    if {_name} is "stripped warped stem":
+        return 2
+
+    return 0
+
+function lumberjackAddXP(p: player, amount: number):
+    set {_old-level} to lumberjackLevel({_p})
+    if {_old-level} >= 10:
+        stop
+    add {_amount} to {skills.lumberjack.xp::%uuid of {_p}%}
+    set {_new-level} to lumberjackLevel({_p})
+    set {_xp} to lumberjackXP({_p})
+    if {_new-level} > {_old-level}:
+        send "{@skills-prefix} &fНавык &6Лесоруб &fповышен до &6%{_new-level}% уровня&f!" to {_p}
+        send action bar formatted "<gold><bold>🪓 ЛЕСОРУБ</bold> <dark_gray>» <green><bold>УРОВЕНЬ %{_new-level}%!" to {_p}
+        if {_old-level} < 4:
+            if {_new-level} >= 4:
+                send "{@skills-prefix} &fОткрыт навык лесоруба: &6Автоподбор&f." to {_p}
+        if {_new-level} >= 10:
+            send "{@skills-prefix} &6Лесоруб достиг максимального уровня!" to {_p}
+        stop
+    set {_needed} to skillNextXP({_new-level})
+    send action bar formatted "<gold>🪓 Лесоруб <dark_gray>• <white>%{_xp}%<gray>/%{_needed}% XP <dark_gray>• <green>+%{_amount}% XP" to {_p}
+
+on break with priority monitor:
+    if event is cancelled:
+        stop
+    set {_name} to lowercase "%type of event-block%"
+    set {_earned-xp} to lumberjackLogXP({_name})
+    if {_earned-xp} <= 0:
+        stop
+    if {skills.lumberjack.placed::%location of event-block%} is set:
+        delete {skills.lumberjack.placed::%location of event-block%}
+        stop
+    set {_kind} to type of event-block
+    set {_drops::*} to drops of event-block using player's tool as player
+    set {_level} to lumberjackLevel(player)
+    set {_loc} to location of event-block
+    if {_level} >= 4:
+        clear drops
+        loop {_drops::*}:
+            if player can hold loop-value:
+                give loop-value to player
+            else:
+                drop loop-value at {_loc}
+    lumberjackAddXP(player, {_earned-xp})
+    set {_chance} to lumberjackChance(player)
+    chance of {_chance}%:
+        if player can hold 1 of {_kind}:
+            give 1 of {_kind} to player
+        else:
+            drop 1 of {_kind} at {_loc}
+        send action bar formatted "<gold>🪓 <green><bold>УДАЧНАЯ РУБКА!</bold> <white>Получено дополнительное бревно." to player
+
+# =========================================================
+# ANTI-FARM TRACKING
+# =========================================================
+
+on place:
+    set {_name} to lowercase "%type of event-block%"
+
+    if miningOreXP({_name}) > 0:
+        set {skills.mining.placed::%location of event-block%} to true
+
+    if lumberjackLogXP({_name}) > 0:
+        set {skills.lumberjack.placed::%location of event-block%} to true
+
+    if farmingCropXP({_name}) > 0:
+        set {skills.farming.placed::%location of event-block%} to true
+
+on grow:
+    if {skills.farming.placed::%location of event-block%} is set:
+        delete {skills.farming.placed::%location of event-block%}
+
+# =========================================================
+# /SKILLS
+# =========================================================
+
+command /skills:
+    executable by: players
+    trigger:
+        set {_mining-xp} to miningXP(player)
+        set {_mining-level} to miningLevel(player)
+        set {_crafting-xp} to craftingXP(player)
+        set {_crafting-level} to craftingLevel(player)
+        set {_farming-xp} to farmingXP(player)
+        set {_farming-level} to farmingLevel(player)
+        set {_hunter-xp} to hunterXP(player)
+        set {_hunter-level} to hunterLevel(player)
+        set {_lumber-xp} to lumberjackXP(player)
+        set {_lumber-level} to lumberjackLevel(player)
+
+        send ""
+        send "&b&lPOLITARIA &8— &fНавыки"
+        send ""
+
+        if {_mining-level} >= 10:
+            send "&fШахтёрство: &b10&7/10 &8(&aMAX&8)"
+        else:
+            set {_next} to skillNextXP({_mining-level})
+            send "&fШахтёрство: &b%{_mining-level}%&7/10 &8(&f%{_mining-xp}%&7/%{_next}% XP&8)"
+        set {_chance} to miningChance(player)
+        send "  &7Шанс дополнительной руды: &b%{_chance}%%%"
+        if {_mining-level} >= 4:
+            send "  &a✔ &7Автоподбор"
+        else:
+            send "  &8✖ &7Автоподбор &8— уровень 4"
+        send ""
+
+        if {_crafting-level} >= 10:
+            send "&fКрафт: &e10&7/10 &8(&aMAX&8)"
+        else:
+            set {_next} to skillNextXP({_crafting-level})
+            send "&fКрафт: &e%{_crafting-level}%&7/10 &8(&f%{_crafting-xp}%&7/%{_next}% XP&8)"
+        set {_chance} to craftingChance(player)
+        send "  &7Шанс улучшения: &e%{_chance}%%%"
+        send ""
+
+        if {_farming-level} >= 10:
+            send "&fФермерство: &a10&7/10 &8(&aMAX&8)"
+        else:
+            set {_next} to skillNextXP({_farming-level})
+            send "&fФермерство: &a%{_farming-level}%&7/10 &8(&f%{_farming-xp}%&7/%{_next}% XP&8)"
+        set {_chance} to farmingChance(player)
+        send "  &7Шанс дополнительного урожая: &a%{_chance}%%%"
+        if {_farming-level} >= 4:
+            send "  &a✔ &7Автоподбор"
+        else:
+            send "  &8✖ &7Автоподбор &8— уровень 4"
+        if {_farming-level} >= 6:
+            send "  &a✔ &7Автопосадка базовых культур"
+        else:
+            send "  &8✖ &7Автопосадка &8— уровень 6"
+        send ""
+
+        if {_hunter-level} >= 10:
+            send "&fОхотник: &c10&7/10 &8(&aMAX&8)"
+        else:
+            set {_next} to skillNextXP({_hunter-level})
+            send "&fОхотник: &c%{_hunter-level}%&7/10 &8(&f%{_hunter-xp}%&7/%{_next}% XP&8)"
+        set {_chance} to hunterChance(player)
+        send "  &7Шанс дополнительной добычи: &c%{_chance}%%%"
+        if {_hunter-level} >= 4:
+            send "  &a✔ &7Автоподбор добычи"
+        else:
+            send "  &8✖ &7Автоподбор добычи &8— уровень 4"
+        send ""
+
+        if {_lumber-level} >= 10:
+            send "&fЛесоруб: &610&7/10 &8(&aMAX&8)"
+        else:
+            set {_next} to skillNextXP({_lumber-level})
+            send "&fЛесоруб: &6%{_lumber-level}%&7/10 &8(&f%{_lumber-xp}%&7/%{_next}% XP&8)"
+        set {_chance} to lumberjackChance(player)
+        send "  &7Шанс дополнительного дерева: &6%{_chance}%%%"
+        if {_lumber-level} >= 4:
+            send "  &a✔ &7Автоподбор"
+        else:
+            send "  &8✖ &7Автоподбор &8— уровень 4"
+        send ""
+
+# =========================================================
+# ADMIN
+# =========================================================
+
+command /skillset <text> <number>:
+    permission: politaria.admin
+    executable by: players
+    trigger:
+        if arg-2 < 1:
+            send "{@skills-prefix} &cМинимальный уровень: 1"
+            stop
+        if arg-2 > 10:
+            send "{@skills-prefix} &cМаксимальный уровень: 10"
+            stop
+        set {_skill} to lowercase arg-1
+        set {_xp} to skillXPForLevel(arg-2)
+        if {_skill} is "mining":
+            set {skills.mining.xp::%uuid of player%} to {_xp}
+            send "{@skills-prefix} &fШахтёрство установлено на уровень &b%arg-2%&f."
+            stop
+        if {_skill} is "crafting":
+            set {skills.crafting.xp::%uuid of player%} to {_xp}
+            send "{@skills-prefix} &fКрафт установлен на уровень &e%arg-2%&f."
+            stop
+        if {_skill} is "farming":
+            set {skills.farming.xp::%uuid of player%} to {_xp}
+            send "{@skills-prefix} &fФермерство установлено на уровень &a%arg-2%&f."
+            stop
+        if {_skill} is "hunter":
+            set {skills.hunter.xp::%uuid of player%} to {_xp}
+            send "{@skills-prefix} &fОхотник установлен на уровень &c%arg-2%&f."
+            stop
+        if {_skill} is "lumberjack":
+            set {skills.lumberjack.xp::%uuid of player%} to {_xp}
+            send "{@skills-prefix} &fЛесоруб установлен на уровень &6%arg-2%&f."
+            stop
+        send "{@skills-prefix} &7Использование: &f/skillset <mining/crafting/farming/hunter/lumberjack> <1-10>"
+
+# =========================================================
+# DEBUG
+# =========================================================
+
+command /skilldebug:
+    permission: politaria.admin
+    executable by: players
+    trigger:
+        send ""
+        send "&b&lSKILLS DEBUG"
+        send "&7Mining XP: &f%miningXP(player)%"
+        send "&7Mining level: &f%miningLevel(player)%"
+        send ""
+        send "&7Crafting XP: &f%craftingXP(player)%"
+        send "&7Crafting level: &f%craftingLevel(player)%"
+        send ""
+        send "&7Farming XP: &f%farmingXP(player)%"
+        send "&7Farming level: &f%farmingLevel(player)%"
+        send ""
+        send "&7Hunter XP: &f%hunterXP(player)%"
+        send "&7Hunter level: &f%hunterLevel(player)%"
+        send ""
+        send "&7Lumberjack XP: &f%lumberjackXP(player)%"
+        send "&7Lumberjack level: &f%lumberjackLevel(player)%"
+        send ""

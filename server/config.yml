@@ -1,0 +1,4 @@
+listeners:
+    - host: 0.0.0.0:12328
+      query_port: 12328
+network_compression_threshold: 64

@@ -1,0 +1,17 @@
+plugins { id 'java' }
+group = 'ru.politaria'
+version = '1.0.0'
+def serverDirectory = file('../..')
+repositories { maven { url = uri('https://repo.papermc.io/repository/maven-public/') } }
+dependencies {
+    compileOnly 'io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT'
+    compileOnly fileTree(new File(serverDirectory, 'plugins')) { include 'Skript*.jar' }
+    compileOnly fileTree(new File(serverDirectory, 'libraries')) { include '**/*.jar' }
+}
+java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }
+tasks.withType(JavaCompile).configureEach {
+    options.release = 21
+    options.encoding = 'UTF-8'
+    options.compilerArgs.add('-proc:none')
+}
+jar { archiveFileName = 'PolitariaApartments.jar' }

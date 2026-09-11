@@ -1,0 +1,2482 @@
+options:
+	country-menu-title: <dark gray>Управление страной
+	country-max-name-length: 24
+	country-min-name-length: 3
+	country-max-roles: 12
+	country-invite-time: 2 minutes
+	country-tax-per-chunk: 15
+	country-law-max-length: 240
+	country-spawn-protection-radius: 5
+
+# Core storage
+# {country.player::<uuid>} = country id
+# {country::<uuid>} = public country name (also used by social.sk)
+# {country.name::<id>}, {country.owner::<id>}, {country.icon::<id>}, {country.color::<id>}
+# {country.member::<id>::<uuid>}, {country.member-name::<id>::<uuid>}
+# {country.role-of::<id>::<uuid>} = legacy primary role id (kept for compatibility)
+# {country.roles-of::<id>::<uuid>::<role>} = true (player may have multiple roles)
+# {country.role-name::<id>::<role>}, {country.role-icon::<id>::<role>}, {country.role-color::<id>::<role>}
+# {country.role-perm::<id>::<role>::<permission>} = true
+# {country.open-recruitment::<id>} = true; managed through the INVITE permission.
+# {country.claim::<world>::<chunk x>::<chunk z>} = country id
+# Chunk property / Towny-like plot storage:
+# {country.chunk-sale::<chunk key>} = sale price
+# {country.chunk-owner::<chunk key>} = buyer UUID
+# {country.chunk-owner-name::<chunk key>} = buyer name
+# {country.chunk-public::<chunk key>::<permission>} = "ALLOW" / "DENY"
+# {country.chunk-role::<chunk key>::<role>::<permission>} = "ALLOW" / "DENY"
+# {country.chunk-player::<chunk key>::<uuid>::<permission>} = "ALLOW" / "DENY"
+# {country.chunk-player-name::<chunk key>::<uuid>} = cached player name
+
+# {country.tax-next::<id>} = next real-time daily territory payment.
+# {country.mob-spawn::<id>} = "ALL", "NEUTRAL" or "HOSTILE"; default ALL
+# {country.law::<id>::<number>} = law text; numbering is always contiguous.
+
+function countryId(p: player) :: text:
+	if {country.player::%uuid of {_p}%} is set:
+		return {country.player::%uuid of {_p}%}
+	return ""
+
+# Server administrators may manage any country through /countryadmin.
+# The permission is useful for staff groups; server operators retain access too.
+function countryIsAdmin(p: player) :: boolean:
+	if {_p} has permission "politaria.country.admin":
+		return true
+	if {_p} is op:
+		return true
+	return false
+
+function countryEditingId(p: player) :: text:
+	if countryIsAdmin({_p}) is true:
+		if {country.admin-edit::%uuid of {_p}%} is set:
+			set {_id} to {country.admin-edit::%uuid of {_p}%}
+			if {country.name::%{_id}%} is set:
+				return {_id}
+			delete {country.admin-edit::%uuid of {_p}%}
+	return countryId({_p})
+
+function countryCanEditSettings(p: player, id: text) :: boolean:
+	if countryIsAdmin({_p}) is true:
+		return true
+	if {country.owner::%{_id}%} is "%uuid of {_p}%":
+		return true
+	return false
+
+function countryCanManageRecruitment(p: player) :: boolean:
+	if countryIsAdmin({_p}) is true:
+		return true
+	if countryHasPermission({_p}, "INVITE") is true:
+		return true
+	return false
+
+function countryCanSetCapital(p: player) :: boolean:
+	if countryIsAdmin({_p}) is true:
+		return true
+	if countryHasPermission({_p}, "SET_SPAWN") is true:
+		return true
+	return false
+
+function countryIsEditingMenu(menu: text) :: boolean:
+	if {_menu} is "settings":
+		return true
+	if {_menu} is "icon-picker":
+		return true
+	if {_menu} is "color-picker":
+		return true
+	if {_menu} is "disband-confirm":
+		return true
+	return false
+
+function countryName(id: text) :: text:
+	if {country.name::%{_id}%} is set:
+		return {country.name::%{_id}%}
+	return "Без страны"
+
+function countryColor(id: text) :: text:
+	if {country.color::%{_id}%} is set:
+		return {country.color::%{_id}%}
+	return "<white>"
+
+function countryMobSpawnMode(id: text) :: text:
+	if {country.mob-spawn::%{_id}%} is "NEUTRAL":
+		return "NEUTRAL"
+	if {country.mob-spawn::%{_id}%} is "HOSTILE":
+		return "HOSTILE"
+	return "ALL"
+
+function countryMobSpawnModeName(id: text) :: text:
+	set {_mode} to countryMobSpawnMode({_id})
+	if {_mode} is "NEUTRAL":
+		return "Только нейтральные"
+	if {_mode} is "HOSTILE":
+		return "Только враждебные"
+	return "Все мобы"
+
+function countryCycleMobSpawnMode(id: text):
+	set {_mode} to countryMobSpawnMode({_id})
+	if {_mode} is "ALL":
+		set {country.mob-spawn::%{_id}%} to "NEUTRAL"
+		stop
+	if {_mode} is "NEUTRAL":
+		set {country.mob-spawn::%{_id}%} to "HOSTILE"
+		stop
+	delete {country.mob-spawn::%{_id}%}
+
+function countryRoleName(id: text, role: text) :: text:
+	if {_role} is "owner":
+		return "Правитель"
+	if {country.role-name::%{_id}%::%{_role}%} is set:
+		return {country.role-name::%{_id}%::%{_role}%}
+	return "Гражданин"
+
+function countryEnsureRoleStorage(id: text, memberUuid: text):
+	# Migrate old single-role storage into the new multi-role format.
+	set {_legacy-role} to {country.role-of::%{_id}%::%{_memberUuid}%}
+	if {_legacy-role} is set:
+		if {country.roles-of::%{_id}%::%{_memberUuid}%::%{_legacy-role}%} is not true:
+			set {country.roles-of::%{_id}%::%{_memberUuid}%::%{_legacy-role}%} to true
+
+function countryMemberHasRole(id: text, memberUuid: text, role: text) :: boolean:
+	countryEnsureRoleStorage({_id}, {_memberUuid})
+	if {country.roles-of::%{_id}%::%{_memberUuid}%::%{_role}%} is true:
+		return true
+	return false
+
+function countryMemberRoleCount(id: text, memberUuid: text) :: number:
+	countryEnsureRoleStorage({_id}, {_memberUuid})
+	set {_count} to 0
+	loop {country.roles-of::%{_id}%::%{_memberUuid}%::*}:
+		if loop-value is true:
+			add 1 to {_count}
+	return {_count}
+
+function countryMemberRolesText(id: text, memberUuid: text) :: text:
+	if {country.owner::%{_id}%} is {_memberUuid}:
+		return "Правитель"
+	countryEnsureRoleStorage({_id}, {_memberUuid})
+	set {_text} to ""
+	loop {country.roles-of::%{_id}%::%{_memberUuid}%::*}:
+		if loop-value is true:
+			set {_role} to loop-index
+			if {_text} is "":
+				set {_text} to countryRoleName({_id}, {_role})
+			else:
+				set {_text} to "%{_text}%, %countryRoleName({_id}, {_role})%"
+	if {_text} is "":
+		return "Гражданин"
+	return {_text}
+
+function countryHasPermission(p: player, permission: text) :: boolean:
+	set {_id} to countryId({_p})
+	if {_id} is "":
+		return false
+	set {_member-uuid} to "%uuid of {_p}%"
+	if {country.owner::%{_id}%} is {_member-uuid}:
+		return true
+	countryEnsureRoleStorage({_id}, {_member-uuid})
+	loop {country.roles-of::%{_id}%::%{_member-uuid}%::*}:
+		if loop-value is true:
+			set {_role} to loop-index
+			if {country.role-perm::%{_id}%::%{_role}%::%{_permission}%} is true:
+				return true
+	return false
+
+function countryLocationKey(where: location) :: text:
+	set {_block-x} to x-coordinate of {_where}
+	set {_block-z} to z-coordinate of {_where}
+	set {_cx} to floor({_block-x} / 16)
+	set {_cz} to floor({_block-z} / 16)
+	set {_world-name} to name of world of {_where}
+	return "v2|%{_world-name}%|%{_cx}%|%{_cz}%"
+
+function countryChunkKey(p: player) :: text:
+	return countryLocationKey(location of {_p})
+
+function countryChunkOwnerName(key: text) :: text:
+	if {country.chunk-owner-name::%{_key}%} is set:
+		return {country.chunk-owner-name::%{_key}%}
+	return "Неизвестный игрок"
+
+function countryChunkIsSold(key: text) :: boolean:
+	if {country.chunk-owner::%{_key}%} is set:
+		return true
+	return false
+
+function countryChunkCanCountryManage(p: player, key: text) :: boolean:
+	if countryChunkIsSold({_key}) is true:
+		return false
+	set {_country} to {country.claim::%{_key}%}
+	if {_country} is not set:
+		return false
+	if countryId({_p}) is not {_country}:
+		return false
+	if {country.owner::%{_country}%} is "%uuid of {_p}%":
+		return true
+	if countryHasPermission({_p}, "APARTMENTS") is true:
+		return true
+	return false
+
+function countryChunkCanManage(p: player, key: text) :: boolean:
+	if countryIsAdmin({_p}) is true:
+		return true
+	if countryChunkIsSold({_key}) is true:
+		if {country.chunk-owner::%{_key}%} is "%uuid of {_p}%":
+			return true
+		return false
+	return countryChunkCanCountryManage({_p}, {_key})
+
+function countryChunkPermissionStateName(state: text) :: text:
+	if {_state} is "ALLOW":
+		return "<light green>РАЗРЕШЕНО"
+	if {_state} is "DENY":
+		return "<red>ЗАПРЕЩЕНО"
+	return "<gray>НАСЛЕДОВАТЬ"
+
+function countryChunkCycleState(scope: text, key: text, target: text, permission: text):
+	if {_scope} is "PUBLIC":
+		set {_current} to {country.chunk-public::%{_key}%::%{_permission}%}
+		if {_current} is not set:
+			set {country.chunk-public::%{_key}%::%{_permission}%} to "ALLOW"
+		else if {_current} is "ALLOW":
+			set {country.chunk-public::%{_key}%::%{_permission}%} to "DENY"
+		else:
+			delete {country.chunk-public::%{_key}%::%{_permission}%}
+		stop
+	if {_scope} is "ROLE":
+		set {_current} to {country.chunk-role::%{_key}%::%{_target}%::%{_permission}%}
+		if {_current} is not set:
+			set {country.chunk-role::%{_key}%::%{_target}%::%{_permission}%} to "ALLOW"
+		else if {_current} is "ALLOW":
+			set {country.chunk-role::%{_key}%::%{_target}%::%{_permission}%} to "DENY"
+		else:
+			delete {country.chunk-role::%{_key}%::%{_target}%::%{_permission}%}
+		stop
+	if {_scope} is "PLAYER":
+		set {_current} to {country.chunk-player::%{_key}%::%{_target}%::%{_permission}%}
+		if {_current} is not set:
+			set {country.chunk-player::%{_key}%::%{_target}%::%{_permission}%} to "ALLOW"
+		else if {_current} is "ALLOW":
+			set {country.chunk-player::%{_key}%::%{_target}%::%{_permission}%} to "DENY"
+		else:
+			delete {country.chunk-player::%{_key}%::%{_target}%::%{_permission}%}
+
+function countryChunkHasPermission(p: player, key: text, permission: text) :: boolean:
+	set {_country} to {country.claim::%{_key}%}
+	if {_country} is not set:
+		return true
+
+	# Staff bypass.
+	if countryIsAdmin({_p}) is true:
+		return true
+
+	set {_uuid} to "%uuid of {_p}%"
+
+	# The buyer always controls their own sold chunk.
+	if {country.chunk-owner::%{_key}%} is set:
+		if {country.chunk-owner::%{_key}%} is {_uuid}:
+			return true
+
+	# A player-specific rule has the highest normal priority.
+	set {_specific} to {country.chunk-player::%{_key}%::%{_uuid}%::%{_permission}%}
+	if {_specific} is "ALLOW":
+		return true
+	if {_specific} is "DENY":
+		return false
+
+	# Country-role plot overrides. DENY wins over ALLOW if several roles conflict.
+	if countryId({_p}) is {_country}:
+		countryEnsureRoleStorage({_country}, {_uuid})
+		set {_role-allowed} to false
+		loop {country.roles-of::%{_country}%::%{_uuid}%::*}:
+			if loop-value is true:
+				set {_role} to loop-index
+				set {_role-state} to {country.chunk-role::%{_key}%::%{_role}%::%{_permission}%}
+				if {_role-state} is "DENY":
+					return false
+				if {_role-state} is "ALLOW":
+					set {_role-allowed} to true
+		if {_role-allowed} is true:
+			return true
+
+	# Rule for everyone.
+	set {_public} to {country.chunk-public::%{_key}%::%{_permission}%}
+	if {_public} is "ALLOW":
+		return true
+	if {_public} is "DENY":
+		return false
+
+	# Sold plots are private by default. Country permissions do not override the buyer.
+	if {country.chunk-owner::%{_key}%} is set:
+		return false
+
+	# Unsold country plots fall back to normal country permissions.
+	if countryId({_p}) is {_country}:
+		if countryHasPermission({_p}, {_permission}) is true:
+			return true
+	return false
+
+function countryChunkClearSettings(key: text):
+	delete {country.chunk-public::%{_key}%::*}
+	delete {country.chunk-role::%{_key}%::*}
+	delete {country.chunk-player::%{_key}%::*}
+	delete {country.chunk-player-name::%{_key}%::*}
+
+
+function countryHasAdjacentClaim(p: player, id: text) :: boolean:
+	set {_loc} to location of {_p}
+	set {_block-x} to x-coordinate of {_loc}
+	set {_block-z} to z-coordinate of {_loc}
+	set {_cx} to floor({_block-x} / 16)
+	set {_cz} to floor({_block-z} / 16)
+	set {_world-name} to name of world of {_loc}
+
+	set {_north-z} to {_cz} - 1
+	set {_south-z} to {_cz} + 1
+	set {_west-x} to {_cx} - 1
+	set {_east-x} to {_cx} + 1
+
+	set {_key} to "v2|%{_world-name}%|%{_cx}%|%{_north-z}%"
+	if {country.claim::%{_key}%} is {_id}:
+		return true
+
+	set {_key} to "v2|%{_world-name}%|%{_cx}%|%{_south-z}%"
+	if {country.claim::%{_key}%} is {_id}:
+		return true
+
+	set {_key} to "v2|%{_world-name}%|%{_west-x}%|%{_cz}%"
+	if {country.claim::%{_key}%} is {_id}:
+		return true
+
+	set {_key} to "v2|%{_world-name}%|%{_east-x}%|%{_cz}%"
+	if {country.claim::%{_key}%} is {_id}:
+		return true
+
+	return false
+
+function countryIsSpawnProtected(where: location) :: boolean:
+	set {_world} to world of {_where}
+	set {_spawn} to spawn point of {_world}
+	set {_chunk-x} to floor((x-coordinate of {_where}) / 16)
+	set {_chunk-z} to floor((z-coordinate of {_where}) / 16)
+	set {_spawn-chunk-x} to floor((x-coordinate of {_spawn}) / 16)
+	set {_spawn-chunk-z} to floor((z-coordinate of {_spawn}) / 16)
+	set {_distance-x} to {_chunk-x} - {_spawn-chunk-x}
+	set {_distance-z} to {_chunk-z} - {_spawn-chunk-z}
+	if {_distance-x} is less than 0:
+		set {_distance-x} to 0 - {_distance-x}
+	if {_distance-z} is less than 0:
+		set {_distance-z} to 0 - {_distance-z}
+	if {_distance-x} is less than or equal to {@country-spawn-protection-radius}:
+		if {_distance-z} is less than or equal to {@country-spawn-protection-radius}:
+			return true
+	return false
+
+function countryAtLocation(where: location) :: text:
+	set {_key} to countryLocationKey({_where})
+	if {country.claim::%{_key}%} is set:
+		set {_owner} to {country.claim::%{_key}%}
+		if {country.name::%{_owner}%} is set:
+			return {_owner}
+		# Remove a stale claim left behind after its country was deleted.
+		delete {country.claim::%{_key}%}
+		delete {country.claim-name::%{_key}%}
+	return ""
+
+function countryAt(p: player) :: text:
+	return countryAtLocation(location of {_p})
+
+function countryMemberCount(id: text) :: number:
+	set {_count} to 0
+	loop {country.member::%{_id}%::*}:
+		add 1 to {_count}
+	return {_count}
+
+function countryClaimCount(id: text) :: number:
+	set {_count} to 0
+	loop {country.claims::%{_id}%::*}:
+		add 1 to {_count}
+	return {_count}
+
+function countryDailyTax(id: text) :: number:
+	return countryClaimCount({_id}) * {@country-tax-per-chunk}
+
+function countryChargeTax(id: text, days: number):
+	set {_tax} to countryDailyTax({_id}) * {_days}
+	if {_tax} is less than 1:
+		stop
+	if {country.treasury::%{_id}%} is not set:
+		set {country.treasury::%{_id}%} to 0
+	remove {_tax} from {country.treasury::%{_id}%}
+	loop all players:
+		if countryId(loop-player) is {_id}:
+			send formatted "<gold>Ежедневная плата за территорию: <white>-%{_tax}% монет<gold>. <gray>Чанков: <white>%countryClaimCount({_id})%<gray>, казна: <white>%{country.treasury::%{_id}%}%<gray>." to loop-player
+
+function countryProcessTaxes():
+	loop {country.name::*}:
+		set {_id} to loop-index
+		if {country.tax-next::%{_id}%} is not set:
+			set {country.tax-next::%{_id}%} to 1 day from now
+		else:
+			set {_missed-days} to 0
+			while {country.tax-next::%{_id}%} is in the past:
+				add 1 to {_missed-days}
+				add 1 day to {country.tax-next::%{_id}%}
+			if {_missed-days} is greater than 0:
+				countryChargeTax({_id}, {_missed-days})
+
+function countryRoleCount(id: text) :: number:
+	set {_count} to 0
+	loop {country.role-name::%{_id}%::*}:
+		add 1 to {_count}
+	return {_count}
+
+function countryLawCount(id: text) :: number:
+	set {_count} to 0
+	loop {country.law::%{_id}%::*}:
+		add 1 to {_count}
+	return {_count}
+
+function countryDeleteLaw(id: text, number: number):
+	set {_count} to countryLawCount({_id})
+	set {_current} to {_number}
+	while {_current} is less than {_count}:
+		set {_next} to {_current} + 1
+		set {country.law::%{_id}%::%{_current}%} to {country.law::%{_id}%::%{_next}%}
+		add 1 to {_current}
+	delete {country.law::%{_id}%::%{_count}%}
+
+function countryMoveLaw(id: text, oldNumber: number, newNumber: number):
+	set {_text} to {country.law::%{_id}%::%{_oldNumber}%}
+	if {_oldNumber} is less than {_newNumber}:
+		set {_current} to {_oldNumber}
+		while {_current} is less than {_newNumber}:
+			set {_next} to {_current} + 1
+			set {country.law::%{_id}%::%{_current}%} to {country.law::%{_id}%::%{_next}%}
+			add 1 to {_current}
+	else if {_oldNumber} is greater than {_newNumber}:
+		set {_current} to {_oldNumber}
+		while {_current} is greater than {_newNumber}:
+			set {_previous} to {_current} - 1
+			set {country.law::%{_id}%::%{_current}%} to {country.law::%{_id}%::%{_previous}%}
+			subtract 1 from {_current}
+	set {country.law::%{_id}%::%{_newNumber}%} to {_text}
+
+function countryPermissionName(permission: text) :: text:
+	if {_permission} is "BUILD":
+		return "Строительство"
+	if {_permission} is "CLAIM":
+		return "Захват чанков"
+	if {_permission} is "UNCLAIM":
+		return "Отказ от чанков"
+	if {_permission} is "INVITE":
+		return "Приглашения и набор"
+	if {_permission} is "KICK":
+		return "Исключение игроков"
+	if {_permission} is "MANAGE_ROLES":
+		return "Настройка ролей"
+	if {_permission} is "ASSIGN_ROLES":
+		return "Выдача ролей"
+	if {_permission} is "SET_SPAWN":
+		return "Установка столицы"
+	if {_permission} is "NAME_CHUNKS":
+		return "Названия чанков"
+	if {_permission} is "TREASURY_WITHDRAW":
+		return "Снятие денег из казны"
+	if {_permission} is "INTERACT":
+		return "Взаимодействие с предметами"
+	if {_permission} is "MANAGE_LAWS":
+		return "Управление законами"
+	if {_permission} is "DECLARE_WAR":
+		return "Войны и перемирие"
+	if {_permission} is "APARTMENTS":
+		return "Управление квартирами"
+	return {_permission}
+
+function countryPermissionAtSlot(slot: number) :: text:
+	if {_slot} is 28:
+		return "BUILD"
+	if {_slot} is 29:
+		return "INTERACT"
+	if {_slot} is 30:
+		return "CLAIM"
+	if {_slot} is 31:
+		return "UNCLAIM"
+	if {_slot} is 32:
+		return "INVITE"
+	if {_slot} is 33:
+		return "KICK"
+	if {_slot} is 34:
+		return "MANAGE_ROLES"
+	if {_slot} is 37:
+		return "ASSIGN_ROLES"
+	if {_slot} is 38:
+		return "SET_SPAWN"
+	if {_slot} is 39:
+		return "NAME_CHUNKS"
+	if {_slot} is 40:
+		return "TREASURY_WITHDRAW"
+	if {_slot} is 41:
+		return "MANAGE_LAWS"
+	if {_slot} is 42:
+		return "DECLARE_WAR"
+	if {_slot} is 43:
+		return "APARTMENTS"
+	return ""
+
+function countryFill(menu: inventory):
+	loop integers between 0 and 53:
+		set slot loop-value of {_menu} to gray stained glass pane named " "
+
+function countryOpenDirectory(p: player, page: number):
+	loop {country.name::*}:
+		if {country.owner::%loop-index%} is set:
+			add loop-index to {_ids::*}
+	set {_count} to size of {_ids::*}
+	set {_max-page} to floor(({_count} + 27) / 28)
+	if {_max-page} is less than 1:
+		set {_max-page} to 1
+	if {_page} is less than 1:
+		set {_page} to 1
+	if {_page} is greater than {_max-page}:
+		set {_page} to {_max-page}
+	set {_menu} to chest inventory with 6 rows named "<dark gray>Список стран"
+	countryFill({_menu})
+	delete {country.menu-country::%uuid of {_p}%::*}
+	set {_slots::*} to 10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 40, 41, 42 and 43
+	set {_start} to ({_page} - 1) * 28 + 1
+	set {_end} to {_start} + 27
+	if {_end} is greater than {_count}:
+		set {_end} to {_count}
+	if {_count} is greater than 0:
+		loop integers between {_start} and {_end}:
+			set {_id} to {_ids::%loop-value%}
+			set {_position} to loop-value - {_start} + 1
+			set {_slot} to {_slots::%{_position}%}
+			set {_icon} to {country.icon::%{_id}%} parsed as item type
+			if {_icon} is not set:
+				set {_icon} to white banner
+			set {_recruitment} to "<red>Набор закрыт — только по приглашению"
+			if {country.open-recruitment::%{_id}%} is true:
+				set {_recruitment} to "<light green>Набор открыт — можно вступить"
+			if {country.admin-directory::%uuid of {_p}%} is true:
+				set {_recruitment} to "<gold>Администрирование: нажмите для настройки"
+			set slot {_slot} of {_menu} to {_icon} named "%countryColor({_id})%<bold>%countryName({_id})%" with lore "<gray>Жителей: <white>%countryMemberCount({_id})%" and "%{_recruitment}%" and "" and "<yellow>Открыть страну: вступление и столица"
+			set {country.menu-country::%uuid of {_p}%::%{_slot}%} to {_id}
+	else:
+		set slot 22 of {_menu} to barrier named "<gray>Стран пока нет" with lore "<gray>Вы можете создать первую страну"
+	if {_page} is greater than 1:
+		set slot 45 of {_menu} to arrow named "<yellow>Предыдущая страница"
+	set slot 48 of {_menu} to barrier named "<red>Назад"
+	set slot 49 of {_menu} to book named "<white>Страница %{_page}% из %{_max-page}%" with lore "<gray>Всего стран: <white>%{_count}%"
+	if {_page} is less than {_max-page}:
+		set slot 53 of {_menu} to arrow named "<yellow>Следующая страница"
+	set {country.directory-page::%uuid of {_p}%} to {_page}
+	open {_menu} to {_p}
+	set {country.menu::%uuid of {_p}%} to "directory"
+
+function countryOpenDirectoryEntry(p: player, id: text):
+	if {country.name::%{_id}%} is not set:
+		send "<red>Эта страна уже не существует." to {_p}
+		countryOpenDirectory({_p}, 1)
+		stop
+	set {_menu} to chest inventory with 3 rows named "<dark gray>Страна • вступление и столица"
+	loop integers between 0 and 26:
+		set slot loop-value of {_menu} to gray stained glass pane named " "
+	set {_icon} to {country.icon::%{_id}%} parsed as item type
+	if {_icon} is not set:
+		set {_icon} to white banner
+	set slot 4 of {_menu} to {_icon} named "%countryColor({_id})%<bold>%countryName({_id})%" with lore "<gray>Жителей: <white>%countryMemberCount({_id})%" and "<gray>Чанков: <white>%countryClaimCount({_id})%"
+	if countryId({_p}) is not "":
+		set slot 11 of {_menu} to gray dye named "<gray>ВЫ УЖЕ СОСТОИТЕ В СТРАНЕ" with lore "<gray>Одновременно можно состоять только в одной"
+	else if {country.open-recruitment::%{_id}%} is true:
+		set slot 11 of {_menu} to lime dye named "<light green><bold>ВСТУПИТЬ В СТРАНУ" with lore "<gray>Набор открыт для всех" and "<gray>Ваша роль: <white>Гражданин" and "<yellow>Нажмите, чтобы вступить"
+	else:
+		set slot 11 of {_menu} to red dye named "<red><bold>НАБОР ЗАКРЫТ" with lore "<gray>Попросите приглашение у правителя" and "<gray>или уполномоченного участника"
+	set {_capital-access} to false
+	if countryId({_p}) is {_id}:
+		set {_capital-access} to true
+	if {country.public-capital::%{_id}%} is true:
+		set {_capital-access} to true
+	if {country.spawn::%{_id}%} is not set:
+		set slot 15 of {_menu} to barrier named "<gray>СТОЛИЦА НЕ УСТАНОВЛЕНА"
+	else if {_capital-access} is true:
+		set slot 15 of {_menu} to ender pearl named "<aqua><bold>В СТОЛИЦУ" with lore "<gray>Телепортация через 5 секунд" and "<gray>Урон отменяет телепортацию"
+	else:
+		set slot 15 of {_menu} to barrier named "<red>СТОЛИЦА ЗАКРЫТА" with lore "<gray>Доступна только жителям страны"
+	set slot 22 of {_menu} to arrow named "<yellow>К списку стран"
+	set {country.selected-country::%uuid of {_p}%} to {_id}
+	open {_menu} to {_p}
+	set {country.menu::%uuid of {_p}%} to "directory-entry"
+
+function countryRecruitmentButton(p: player, menu: inventory, slot: number):
+	set {_id} to countryEditingId({_p})
+	if countryCanManageRecruitment({_p}) is true:
+		if {country.open-recruitment::%{_id}%} is true:
+			set slot {_slot} of {_menu} to lime dye named "<light green><bold>НАБОР ОТКРЫТ" with lore "<gray>Игроки могут вступить через список стран" and "<yellow>Нажмите, чтобы закрыть набор"
+		else:
+			set slot {_slot} of {_menu} to gray dye named "<red><bold>НАБОР ЗАКРЫТ" with lore "<gray>Вступление только по приглашению" and "<yellow>Нажмите, чтобы открыть набор"
+	else:
+		set slot {_slot} of {_menu} to barrier named "<gray>УПРАВЛЕНИЕ НАБОРОМ" with lore "<gray>Нужно право: Приглашения и набор"
+
+function countryToggleRecruitment(p: player):
+	set {_id} to countryEditingId({_p})
+	if {_id} is "":
+		stop
+	if {country.name::%{_id}%} is not set:
+		stop
+	if countryCanManageRecruitment({_p}) is not true:
+		send "<red>У вас нет права управлять набором игроков." to {_p}
+		stop
+	if {country.open-recruitment::%{_id}%} is true:
+		delete {country.open-recruitment::%{_id}%}
+		send "<yellow>Набор закрыт. Теперь вступить можно только по приглашению." to {_p}
+	else:
+		set {country.open-recruitment::%{_id}%} to true
+		send "<green>Набор открыт. Игроки без страны могут вступить через список стран в /c." to {_p}
+
+function countryOpenNoCountry(p: player):
+	set {_menu} to chest inventory with 3 rows named "{@country-menu-title}"
+	loop integers between 0 and 26:
+		set slot loop-value of {_menu} to gray stained glass pane named " "
+	set slot 11 of {_menu} to lime banner named "<light green><bold>СОЗДАТЬ СТРАНУ" with lore "<gray>Основать новое государство" and "<dark gray>Название вводится в чат"
+	if {country.invite::%uuid of {_p}%} is set:
+		if {country.invite-until::%uuid of {_p}%} is in the future:
+			set {_invite} to {country.invite::%uuid of {_p}%}
+			set slot 13 of {_menu} to paper named "<yellow><bold>ПРИГЛАШЕНИЕ" with lore "<gray>Страна: %countryColor({_invite})%%countryName({_invite})%" and "<light green>ЛКМ — принять" and "<red>ПКМ — отклонить"
+	set slot 22 of {_menu} to experience bottle named "<gold><bold>КВЕСТЫ — НАЧАТЬ ИГРУ" with lore "<gray>Восемь заданий с пошаговыми подсказками" and "<yellow>Нажмите, чтобы открыть"
+	set slot 15 of {_menu} to compass named "<aqua><bold>СПИСОК СТРАН" with lore "<gray>Посмотреть страны и открытый набор" and "<gray>Вступить в страну или посетить столицу"
+	set {_current-key} to countryChunkKey({_p})
+	if {country.chunk-owner::%{_current-key}%} is "%uuid of {_p}%":
+		set slot 17 of {_menu} to bricks named "<yellow><bold>МОЙ ЧАНК" with lore "<gray>Открыть настройки купленного участка" and "<gray>Также доступна команда <white>/plot"
+	open {_menu} to {_p}
+	set {country.menu::%uuid of {_p}%} to "none"
+
+function countryOpenFinance(p: player):
+	set {_id} to countryId({_p})
+	if {economy.balance::%uuid of {_p}%} is not set:
+		set {economy.balance::%uuid of {_p}%} to 1000
+	if {country.treasury::%{_id}%} is not set:
+		set {country.treasury::%{_id}%} to 0
+	set {_daily-tax} to countryDailyTax({_id})
+	set {_menu} to chest inventory with 3 rows named "<dark gray>Деньги и казна"
+	loop integers between 0 and 26:
+		set slot loop-value of {_menu} to gray stained glass pane named " "
+	set slot 4 of {_menu} to gold nugget named "<gold><bold>ВАШ БАЛАНС" with lore "<white>%{economy.balance::%uuid of {_p}%}% монет"
+	set slot 13 of {_menu} to chest named "<yellow><bold>КАЗНА СТРАНЫ" with lore "<white>%{country.treasury::%{_id}%}% монет" and "<gray>Страна: %countryColor({_id})%%countryName({_id})%" and "" and "<gray>Чанков: <white>%countryClaimCount({_id})%" and "<gray>Плата в сутки: <gold>%{_daily-tax}% монет"
+	set slot 11 of {_menu} to lime dye named "<light green><bold>ВНЕСТИ В КАЗНУ" with lore "<gray>Сумма вводится в чат"
+	if countryHasPermission({_p}, "TREASURY_WITHDRAW") is true:
+		set slot 15 of {_menu} to red dye named "<red><bold>СНЯТЬ ИЗ КАЗНЫ" with lore "<gray>Перевести средства на личный баланс" and "<dark gray>Доступно вашей роли"
+	set slot 22 of {_menu} to arrow named "<yellow>Назад"
+	open {_menu} to {_p}
+	set {economy.menu::%uuid of {_p}%} to "country"
+
+function countryOpenMain(p: player):
+	delete {country.admin-edit::%uuid of {_p}%}
+	delete {country.admin-directory::%uuid of {_p}%}
+	set {_id} to countryId({_p})
+	if {_id} is "":
+		countryOpenNoCountry({_p})
+		stop
+	set {_menu} to chest inventory with 5 rows named "{@country-menu-title}"
+	loop integers between 0 and 44:
+		set slot loop-value of {_menu} to gray stained glass pane named " "
+	set {_icon-type} to {country.icon::%{_id}%} parsed as item type
+	if {_icon-type} is not set:
+		set {_icon-type} to white banner
+	set {_viewer-uuid} to "%uuid of {_p}%"
+	set {_viewer-roles} to countryMemberRolesText({_id}, {_viewer-uuid})
+	set {_icon} to {_icon-type} named "%countryColor({_id})%<bold>%countryName({_id})%" with lore "<gray>Участников: <white>%countryMemberCount({_id})%" and "<gray>Чанков: <white>%countryClaimCount({_id})%" and "<gray>Ваши роли: <white>%{_viewer-roles}%"
+	set slot 4 of {_menu} to {_icon}
+	set slot 11 of {_menu} to grass block named "<green><bold>ТЕРРИТОРИЯ" with lore "<gray>Занимать и освобождать чанки"
+	set slot 13 of {_menu} to player head named "<aqua><bold>УЧАСТНИКИ" with lore "<gray>Приглашения, роли и исключение"
+	set slot 15 of {_menu} to name tag named "<light purple><bold>РОЛИ И ПРАВА" with lore "<gray>Создание пользовательских ролей" and "<gray>Иконки, цвета и разрешения"
+	set slot 20 of {_menu} to iron sword named "<red><bold>ВОЙНЫ" with lore "<gray>Список стран и объявление войны" and "<gray>Команда: <white>/war"
+	set slot 22 of {_menu} to gold ingot named "<gold><bold>ДЕНЬГИ И КАЗНА" with lore "<gray>Личный баланс и средства страны"
+	set slot 24 of {_menu} to written book named "<yellow><bold>ЗАКОНЫ" with lore "<gray>Нумерованный свод законов страны" and "<gray>Всего законов: <white>%countryLawCount({_id})%"
+	set slot 29 of {_menu} to lodestone named "<yellow><bold>СТОЛИЦА" with lore "<gray>Телепортироваться в столицу"
+	set slot 31 of {_menu} to comparator named "<gold><bold>НАСТРОЙКИ" with lore "<gray>Цвет, герб и управление страной"
+	set slot 38 of {_menu} to experience bottle named "<gold><bold>КВЕСТЫ" with lore "<gray>Задания, подсказки и награды" and "<yellow>Нажмите, чтобы открыть"
+	set slot 40 of {_menu} to compass named "<aqua><bold>СПИСОК СТРАН" with lore "<gray>Все страны и доступные столицы"
+	set slot 42 of {_menu} to bricks named "<yellow><bold>НЕДВИЖИМОСТЬ" with lore "<gray>Квартиры, продажа чанков" and "<gray>и индивидуальные настройки участков"
+	set slot 33 of {_menu} to oak door named "<red><bold>ПОКИНУТЬ СТРАНУ" with lore "<gray>Правитель вместо этого может распустить страну"
+	open {_menu} to {_p}
+	set {country.menu::%uuid of {_p}%} to "main"
+
+function countryOpenLaws(p: player, page: number):
+	set {_id} to countryId({_p})
+	if {_id} is "":
+		countryOpenNoCountry({_p})
+		stop
+	set {_count} to countryLawCount({_id})
+	set {_max-page} to floor(({_count} + 44) / 45)
+	if {_max-page} is less than 1:
+		set {_max-page} to 1
+	if {_page} is less than 1:
+		set {_page} to 1
+	if {_page} is greater than {_max-page}:
+		set {_page} to {_max-page}
+	set {_menu} to chest inventory with 6 rows named "<dark gray>Законы • %countryName({_id})%"
+	countryFill({_menu})
+	delete {country.menu-law::%uuid of {_p}%::*}
+	set {_start} to ({_page} - 1) * 45 + 1
+	set {_end} to {_start} + 44
+	if {_end} is greater than {_count}:
+		set {_end} to {_count}
+	if {_count} is greater than 0:
+		loop integers between {_start} and {_end}:
+			set {_slot} to loop-value - {_start}
+			set {_law-text} to {country.law::%{_id}%::%loop-value%}
+			set slot {_slot} of {_menu} to paper named "<yellow><bold>ЗАКОН №%loop-value%" with lore "<white>%{_law-text}%" and "" and "<gray>Нажмите, чтобы открыть"
+			set {country.menu-law::%uuid of {_p}%::%{_slot}%} to loop-value
+	if {_page} is greater than 1:
+		set slot 45 of {_menu} to arrow named "<yellow>Предыдущая страница"
+	set slot 48 of {_menu} to barrier named "<red>Назад"
+	set slot 49 of {_menu} to book named "<white>Страница %{_page}% из %{_max-page}%" with lore "<gray>Всего законов: <white>%{_count}%"
+	if countryHasPermission({_p}, "MANAGE_LAWS") is true:
+		set slot 50 of {_menu} to lime dye named "<light green><bold>СОЗДАТЬ ЗАКОН" with lore "<gray>Текст вводится в чат"
+	if {_page} is less than {_max-page}:
+		set slot 53 of {_menu} to arrow named "<yellow>Следующая страница"
+	set {country.law-page::%uuid of {_p}%} to {_page}
+	open {_menu} to {_p}
+	set {country.menu::%uuid of {_p}%} to "laws"
+
+function countryOpenLawEditor(p: player, number: number):
+	set {_id} to countryId({_p})
+	if {country.law::%{_id}%::%{_number}%} is not set:
+		countryOpenLaws({_p}, {country.law-page::%uuid of {_p}%})
+		stop
+	set {_menu} to chest inventory with 3 rows named "<dark gray>Закон №%{_number}%"
+	loop integers between 0 and 26:
+		set slot loop-value of {_menu} to gray stained glass pane named " "
+	set slot 4 of {_menu} to written book named "<yellow><bold>ЗАКОН №%{_number}%" with lore "<white>%{country.law::%{_id}%::%{_number}%}%"
+	if countryHasPermission({_p}, "MANAGE_LAWS") is true:
+		set slot 11 of {_menu} to writable book named "<aqua><bold>РЕДАКТИРОВАТЬ" with lore "<gray>Ввести новый текст в чат"
+		set slot 13 of {_menu} to compass named "<gold><bold>ИЗМЕНИТЬ НОМЕР" with lore "<gray>Переместить закон на другую позицию"
+		set slot 15 of {_menu} to red dye named "<red><bold>УДАЛИТЬ" with lore "<gray>Остальные законы будут перенумерованы"
+	set slot 22 of {_menu} to arrow named "<yellow>Назад к списку"
+	set {country.selected-law::%uuid of {_p}%} to {_number}
+	open {_menu} to {_p}
+	set {country.menu::%uuid of {_p}%} to "law-editor"
+
+function countryOpenTerritory(p: player):
+	set {_id} to countryId({_p})
+	set {_menu} to chest inventory with 3 rows named "<dark gray>Территория"
+	loop integers between 0 and 26:
+		set slot loop-value of {_menu} to gray stained glass pane named " "
+	set {_owner} to countryAt({_p})
+	if {_owner} is "":
+		set {_status} to "<green>Свободный чанк"
+	else:
+		set {_status} to "%countryColor({_owner})%%countryName({_owner})%"
+	set slot 4 of {_menu} to map named "<white><bold>ТЕКУЩИЙ ЧАНК" with lore "<gray>Владелец: %{_status}%" and "<gray>Координаты: <white>%countryChunkKey({_p})%"
+	set slot 11 of {_menu} to lime concrete named "<light green><bold>ЗАНЯТЬ ЧАНК" with lore "<gray>Добавить текущий чанк к стране" and "<gray>Разовая цена: <gold>{@country-tax-per-chunk} монет из казны" and "<gray>Ежедневная плата: <gold>{@country-tax-per-chunk} монет" and "<dark gray>Требуется право: Захват чанков"
+	if countryIsSpawnProtected(location of {_p}) is true:
+		set slot 11 of {_menu} to barrier named "<red><bold>ЗАЩИЩЁННАЯ ЗОНА СПАВНА" with lore "<gray>В радиусе {@country-spawn-protection-radius} чанков" and "<gray>от спавна нельзя занимать территорию"
+	set {_chunk-key} to countryChunkKey({_p})
+	if {country.claim-name::%{_chunk-key}%} is set:
+		set {_chunk-name} to {country.claim-name::%{_chunk-key}%}
+	else:
+		set {_chunk-name} to "Не установлено"
+	set slot 13 of {_menu} to name tag named "<yellow><bold>НАЗВАНИЕ ЧАНКА" with lore "<gray>Сейчас: <white>%{_chunk-name}%" and "<gray>Нажмите и введите название в чат" and "<dark gray>Напишите - для удаления названия"
+	set slot 15 of {_menu} to red concrete named "<red><bold>ОСВОБОДИТЬ ЧАНК" with lore "<gray>Отказаться от текущего чанка" and "<dark gray>Требуется право: Отказ от чанков"
+	set slot 22 of {_menu} to arrow named "<yellow>Назад"
+	open {_menu} to {_p}
+	set {country.menu::%uuid of {_p}%} to "territory"
+
+
+function countryOpenPropertyHub(p: player):
+	set {_menu} to chest inventory with 3 rows named "<dark gray>Недвижимость"
+	loop integers between 0 and 26:
+		set slot loop-value of {_menu} to gray stained glass pane named " "
+	set slot 11 of {_menu} to bricks named "<yellow><bold>КВАРТИРЫ" with lore "<gray>Старая система квартир и аренды" and "<gray>Открывает команду <white>/apartments"
+	set slot 13 of {_menu} to gold ingot named "<gold><bold>ПРОДАЖА ЧАНКА" with lore "<gray>Выставить текущий чанк на продажу" and "<gray>или купить выставленный участок"
+	set slot 15 of {_menu} to comparator named "<aqua><bold>НАСТРОЙКИ ЧАНКА" with lore "<gray>Название и индивидуальные права" and "<gray>для ролей, всех и отдельных игроков"
+	set slot 22 of {_menu} to arrow named "<yellow>Назад"
+	open {_menu} to {_p}
+	set {country.menu::%uuid of {_p}%} to "property-hub"
+
+function countryOpenChunkSale(p: player):
+	set {_key} to countryChunkKey({_p})
+	set {_country} to countryAt({_p})
+	set {_menu} to chest inventory with 3 rows named "<dark gray>Продажа чанка"
+	loop integers between 0 and 26:
+		set slot loop-value of {_menu} to gray stained glass pane named " "
+	if {_country} is "":
+		set slot 13 of {_menu} to barrier named "<red><bold>НЕЙТРАЛЬНАЯ ТЕРРИТОРИЯ" with lore "<gray>Продавать можно только чанки страны"
+	else if {country.chunk-owner::%{_key}%} is set:
+		set {_owner-name} to countryChunkOwnerName({_key})
+		set slot 4 of {_menu} to player head named "<yellow><bold>ЧАСТНЫЙ ЧАНК" with lore "<gray>Страна: %countryColor({_country})%%countryName({_country})%" and "<gray>Владелец: <white>%{_owner-name}%"
+		if {country.chunk-owner::%{_key}%} is "%uuid of {_p}%":
+			set slot 13 of {_menu} to emerald named "<light green><bold>ЭТО ВАШ ЧАНК" with lore "<gray>Настройки доступны в соседнем разделе"
+		else:
+			set slot 13 of {_menu} to barrier named "<red><bold>ЧАНК УЖЕ ПРОДАН" with lore "<gray>Владелец: <white>%{_owner-name}%"
+	else if {country.chunk-sale::%{_key}%} is set:
+		set {_price} to {country.chunk-sale::%{_key}%}
+		set slot 4 of {_menu} to gold ingot named "<gold><bold>ЧАНК ПРОДАЁТСЯ" with lore "<gray>Страна: %countryColor({_country})%%countryName({_country})%" and "<gray>Цена: <gold>%{_price}% монет"
+		if countryChunkCanCountryManage({_p}, {_key}) is true:
+			set slot 11 of {_menu} to red dye named "<red><bold>СНЯТЬ С ПРОДАЖИ" with lore "<gray>Отменить продажу этого чанка"
+		set slot 15 of {_menu} to emerald named "<light green><bold>КУПИТЬ ЧАНК" with lore "<gray>Цена: <gold>%{_price}% монет" and "<gray>После покупки вы сможете" and "<gray>полностью настраивать этот чанк"
+	else:
+		set slot 4 of {_menu} to grass block named "<white><bold>ТЕКУЩИЙ ЧАНК" with lore "<gray>Страна: %countryColor({_country})%%countryName({_country})%"
+		if countryChunkCanCountryManage({_p}, {_key}) is true:
+			set slot 13 of {_menu} to lime dye named "<light green><bold>ВЫСТАВИТЬ НА ПРОДАЖУ" with lore "<gray>Цена будет введена в чат"
+		else:
+			set slot 13 of {_menu} to barrier named "<red><bold>НЕТ ПРАВА НА ПРОДАЖУ" with lore "<gray>Нужно право управления квартирами"
+	set slot 22 of {_menu} to arrow named "<yellow>Назад"
+	open {_menu} to {_p}
+	set {country.menu::%uuid of {_p}%} to "chunk-sale"
+
+function countryOpenChunkSettings(p: player):
+	set {_key} to countryChunkKey({_p})
+	set {_country} to countryAt({_p})
+	set {_menu} to chest inventory with 4 rows named "<dark gray>Настройки чанка"
+	loop integers between 0 and 35:
+		set slot loop-value of {_menu} to gray stained glass pane named " "
+	if {_country} is "":
+		set slot 13 of {_menu} to barrier named "<red><bold>НЕЙТРАЛЬНЫЙ ЧАНК"
+		set slot 31 of {_menu} to arrow named "<yellow>Назад"
+		open {_menu} to {_p}
+		set {country.menu::%uuid of {_p}%} to "chunk-settings"
+		stop
+	set {_name} to {country.claim-name::%{_key}%}
+	if {_name} is not set:
+		set {_name} to "Без названия"
+	if {country.chunk-owner::%{_key}%} is set:
+		set {_owner-text} to countryChunkOwnerName({_key})
+	else:
+		set {_owner-text} to "Страна"
+	set slot 4 of {_menu} to map named "<white><bold>%{_name}%" with lore "<gray>Страна: %countryColor({_country})%%countryName({_country})%" and "<gray>Владелец участка: <white>%{_owner-text}%"
+	if countryChunkCanManage({_p}, {_key}) is not true:
+		set slot 13 of {_menu} to barrier named "<red><bold>НЕТ ДОСТУПА К НАСТРОЙКАМ" with lore "<gray>Проданный чанк настраивает только покупатель" and "<gray>Обычный чанк — страна"
+	else:
+		set slot 10 of {_menu} to name tag named "<yellow><bold>НАЗВАНИЕ ЧАНКА" with lore "<gray>Сейчас: <white>%{_name}%" and "<yellow>Нажмите, чтобы изменить"
+		set slot 12 of {_menu} to oak door named "<green><bold>ПРАВА ДЛЯ ВСЕХ" with lore "<gray>Настроить строительство" and "<gray>и взаимодействие для всех игроков"
+		set slot 14 of {_menu} to chest named "<light purple><bold>ПРАВА РОЛЕЙ" with lore "<gray>Отдельные правила для ролей страны"
+		set slot 16 of {_menu} to player head named "<aqua><bold>КОНКРЕТНЫЙ ИГРОК" with lore "<gray>Выбрать игрока по нику" and "<gray>и настроить его права"
+	set slot 31 of {_menu} to arrow named "<yellow>Назад"
+	open {_menu} to {_p}
+	set {country.menu::%uuid of {_p}%} to "chunk-settings"
+
+function countryOpenChunkPermissionEditor(p: player, scope: text, target: text):
+	set {_key} to {country.edit-chunk::%uuid of {_p}%}
+	if {_key} is not set:
+		set {_key} to countryChunkKey({_p})
+		set {country.edit-chunk::%uuid of {_p}%} to {_key}
+	if countryChunkCanManage({_p}, {_key}) is not true:
+		send "<red>Вы больше не можете настраивать этот чанк." to {_p}
+		close inventory of {_p}
+		stop
+	set {_menu} to chest inventory with 3 rows named "<dark gray>Права чанка"
+	loop integers between 0 and 26:
+		set slot loop-value of {_menu} to gray stained glass pane named " "
+	if {_scope} is "PUBLIC":
+		set {_title} to "Все игроки"
+		set {_build-state} to {country.chunk-public::%{_key}%::BUILD}
+		set {_interact-state} to {country.chunk-public::%{_key}%::INTERACT}
+	else if {_scope} is "ROLE":
+		set {_country} to {country.claim::%{_key}%}
+		set {_title} to countryRoleName({_country}, {_target})
+		set {_build-state} to {country.chunk-role::%{_key}%::%{_target}%::BUILD}
+		set {_interact-state} to {country.chunk-role::%{_key}%::%{_target}%::INTERACT}
+	else:
+		set {_title} to {country.chunk-player-name::%{_key}%::%{_target}%}
+		if {_title} is not set:
+			set {_title} to "Игрок"
+		set {_build-state} to {country.chunk-player::%{_key}%::%{_target}%::BUILD}
+		set {_interact-state} to {country.chunk-player::%{_key}%::%{_target}%::INTERACT}
+	if {_build-state} is not set:
+		set {_build-state} to "INHERIT"
+	if {_interact-state} is not set:
+		set {_interact-state} to "INHERIT"
+	set {_build-state-name} to countryChunkPermissionStateName({_build-state})
+	set {_interact-state-name} to countryChunkPermissionStateName({_interact-state})
+	set slot 4 of {_menu} to paper named "<white><bold>%{_title}%" with lore "<gray>Нажатие переключает:" and "<gray>Наследовать → Разрешить → Запретить"
+	set slot 11 of {_menu} to iron pickaxe named "<yellow><bold>СТРОИТЕЛЬСТВО" with lore "%{_build-state-name}%" and "<gray>Ломать, ставить блоки и использовать вёдра"
+	set slot 15 of {_menu} to chest named "<aqua><bold>ВЗАИМОДЕЙСТВИЕ" with lore "%{_interact-state-name}%" and "<gray>Сундуки, двери, кнопки и другие блоки"
+	set slot 22 of {_menu} to arrow named "<yellow>Назад"
+	set {country.chunk-scope::%uuid of {_p}%} to {_scope}
+	set {country.chunk-target::%uuid of {_p}%} to {_target}
+	open {_menu} to {_p}
+	set {country.menu::%uuid of {_p}%} to "chunk-permission"
+
+function countryOpenChunkRoleList(p: player):
+	set {_key} to {country.edit-chunk::%uuid of {_p}%}
+	if {_key} is not set:
+		set {_key} to countryChunkKey({_p})
+	if countryChunkCanManage({_p}, {_key}) is not true:
+		send "<red>Вы не можете настраивать этот чанк." to {_p}
+		stop
+	set {_country} to {country.claim::%{_key}%}
+	set {_menu} to chest inventory with 5 rows named "<dark gray>Права ролей чанка"
+	loop integers between 0 and 44:
+		set slot loop-value of {_menu} to gray stained glass pane named " "
+	delete {country.chunk-menu-role::%uuid of {_p}%::*}
+	set {_slots::*} to 10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23
+	set {_pos} to 1
+	loop {country.role-name::%{_country}%::*}:
+		if {_pos} is greater than size of {_slots::*}:
+			stop loop
+		set {_role} to loop-index
+		set {_slot} to {_slots::%{_pos}%}
+		set {_type} to {country.role-icon::%{_country}%::%{_role}%} parsed as item type
+		if {_type} is not set:
+			set {_type} to paper
+		set slot {_slot} of {_menu} to {_type} named "%{country.role-color::%{_country}%::%{_role}%}%<bold>%loop-value%" with lore "<gray>Настроить права этой роли"
+		set {country.chunk-menu-role::%uuid of {_p}%::%{_slot}%} to {_role}
+		add 1 to {_pos}
+	set slot 40 of {_menu} to arrow named "<yellow>Назад"
+	open {_menu} to {_p}
+	set {country.menu::%uuid of {_p}%} to "chunk-role-list"
+
+function countryOpenMembers(p: player):
+	set {_id} to countryId({_p})
+	set {_menu} to chest inventory with 6 rows named "<dark gray>Участники страны"
+	countryFill({_menu})
+	delete {country.menu-member::%uuid of {_p}%::*}
+	set {_slots::*} to 10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 40, 41, 42 and 43
+	set {_position} to 1
+	loop {country.member::%{_id}%::*}:
+		if {_position} is greater than size of {_slots::*}:
+			stop loop
+		set {_member-uuid} to loop-index
+		set {_member-name} to {country.member-name::%{_id}%::%{_member-uuid}%}
+		if {_member-name} is not set:
+			set {_member-name} to "Неизвестный игрок"
+		set {_slot} to {_slots::%{_position}%}
+		set {_roles-text} to countryMemberRolesText({_id}, {_member-uuid})
+		set {_member-profile} to offlineplayer({_member-uuid}, false)
+		if {_member-profile} is set:
+			set {_member-head} to head of {_member-profile}
+		else:
+			set {_member-head} to player head
+		set name of {_member-head} to "<white><bold>%{_member-name}%"
+		set lore of {_member-head} to "<gray>Роли: <white>%{_roles-text}%" and "" and "<yellow>Нажмите для управления"
+		set slot {_slot} of {_menu} to {_member-head}
+		set {country.menu-member::%uuid of {_p}%::%{_slot}%} to {_member-uuid}
+		add 1 to {_position}
+	if countryHasPermission({_p}, "INVITE") is true:
+		set slot 45 of {_menu} to lime dye named "<light green><bold>ПРИГЛАСИТЬ" with lore "<gray>Введите ник игрока в чат"
+	countryRecruitmentButton({_p}, {_menu}, 47)
+	set slot 49 of {_menu} to arrow named "<yellow>Назад"
+	open {_menu} to {_p}
+	set {country.menu::%uuid of {_p}%} to "members"
+
+function countryOpenMember(p: player, memberUuid: text):
+	set {_id} to countryId({_p})
+	set {_name} to {country.member-name::%{_id}%::%{_memberUuid}%}
+	set {_roles-text} to countryMemberRolesText({_id}, {_memberUuid})
+	set {_menu} to chest inventory with 3 rows named "<dark gray>Управление участником"
+	loop integers between 0 and 26:
+		set slot loop-value of {_menu} to gray stained glass pane named " "
+	set {_member-profile} to offlineplayer({_memberUuid}, false)
+	if {_member-profile} is set:
+		set {_member-head} to head of {_member-profile}
+	else:
+		set {_member-head} to player head
+	set name of {_member-head} to "<white><bold>%{_name}%"
+	set lore of {_member-head} to "<gray>Роли: <white>%{_roles-text}%"
+	set slot 4 of {_menu} to {_member-head}
+	set slot 11 of {_menu} to name tag named "<light purple><bold>РОЛИ УЧАСТНИКА" with lore "<gray>Можно выдать несколько ролей одновременно" and "<gray>Нажмите, чтобы изменить"
+	set slot 15 of {_menu} to barrier named "<red><bold>ИСКЛЮЧИТЬ" with lore "<gray>Удалить участника из страны"
+	set slot 22 of {_menu} to arrow named "<yellow>Назад"
+	set {country.selected-member::%uuid of {_p}%} to {_memberUuid}
+	open {_menu} to {_p}
+	set {country.menu::%uuid of {_p}%} to "member"
+
+function countryOpenRoleAssignment(p: player):
+	set {_id} to countryId({_p})
+	set {_member} to {country.selected-member::%uuid of {_p}%}
+	if {_member} is not set:
+		countryOpenMembers({_p})
+		stop
+	countryEnsureRoleStorage({_id}, {_member})
+	set {_menu} to chest inventory with 5 rows named "<dark gray>Роли участника"
+	loop integers between 0 and 44:
+		set slot loop-value of {_menu} to gray stained glass pane named " "
+	delete {country.menu-role::%uuid of {_p}%::*}
+	set {_slots::*} to 10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22 and 23
+	set {_position} to 1
+	loop {country.role-name::%{_id}%::*}:
+		if {_position} is greater than size of {_slots::*}:
+			stop loop
+		set {_role} to loop-index
+		set {_slot} to {_slots::%{_position}%}
+		set {_type} to {country.role-icon::%{_id}%::%{_role}%} parsed as item type
+		if {_type} is not set:
+			set {_type} to paper
+		if countryMemberHasRole({_id}, {_member}, {_role}) is true:
+			set {_item} to {_type} named "%{country.role-color::%{_id}%::%{_role}%}%<bold>%loop-value%" with lore "<light green>ВЫДАНА" and "<gray>Нажмите, чтобы снять"
+		else:
+			set {_item} to {_type} named "%{country.role-color::%{_id}%::%{_role}%}%<bold>%loop-value%" with lore "<red>НЕ ВЫДАНА" and "<gray>Нажмите, чтобы выдать"
+		set slot {_slot} of {_menu} to {_item}
+		set {country.menu-role::%uuid of {_p}%::%{_slot}%} to {_role}
+		add 1 to {_position}
+	set slot 36 of {_menu} to book named "<yellow><bold>КАК ЭТО РАБОТАЕТ" with lore "<gray>Игрок может иметь несколько ролей" and "<gray>Права всех его ролей объединяются."
+	set slot 40 of {_menu} to arrow named "<yellow>Назад"
+	open {_menu} to {_p}
+	set {country.menu::%uuid of {_p}%} to "assign-role"
+
+function countryOpenRoles(p: player):
+	set {_id} to countryId({_p})
+	set {_menu} to chest inventory with 6 rows named "<dark gray>Роли и права"
+	countryFill({_menu})
+	delete {country.menu-role::%uuid of {_p}%::*}
+	set {_slots::*} to 10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22 and 23
+	set {_position} to 1
+	loop {country.role-name::%{_id}%::*}:
+		if {_position} is greater than size of {_slots::*}:
+			stop loop
+		set {_role} to loop-index
+		set {_slot} to {_slots::%{_position}%}
+		set {_type} to {country.role-icon::%{_id}%::%{_role}%} parsed as item type
+		if {_type} is not set:
+			set {_type} to paper
+		set {_item} to {_type} named "%{country.role-color::%{_id}%::%{_role}%}%<bold>%loop-value%" with lore "<gray>Нажмите, чтобы настроить"
+		set slot {_slot} of {_menu} to {_item}
+		set {country.menu-role::%uuid of {_p}%::%{_slot}%} to {_role}
+		add 1 to {_position}
+	if countryHasPermission({_p}, "MANAGE_ROLES") is true:
+		set slot 45 of {_menu} to lime dye named "<light green><bold>СОЗДАТЬ РОЛЬ" with lore "<gray>До {@country-max-roles} пользовательских ролей"
+	set slot 49 of {_menu} to arrow named "<yellow>Назад"
+	open {_menu} to {_p}
+	set {country.menu::%uuid of {_p}%} to "roles"
+
+function countryOpenRoleEditor(p: player, role: text):
+	set {_id} to countryId({_p})
+	set {_menu} to chest inventory with 6 rows named "<dark gray>Настройка роли"
+	countryFill({_menu})
+	set {_type} to {country.role-icon::%{_id}%::%{_role}%} parsed as item type
+	if {_type} is not set:
+		set {_type} to paper
+	set slot 4 of {_menu} to {_type} named "%{country.role-color::%{_id}%::%{_role}%}%<bold>%{country.role-name::%{_id}%::%{_role}%}%"
+	set slot 20 of {_menu} to item frame named "<yellow><bold>ВЫБРАТЬ ИКОНКУ"
+	set slot 24 of {_menu} to magenta dye named "<light purple><bold>ВЫБРАТЬ ЦВЕТ"
+	set {_permission-slots::*} to 28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 40, 41, 42 and 43
+	loop {_permission-slots::*}:
+		set {_permission} to countryPermissionAtSlot(loop-value)
+		if {country.role-perm::%{_id}%::%{_role}%::%{_permission}%} is true:
+			set slot loop-value of {_menu} to lime dye named "<light green><bold>%countryPermissionName({_permission})%" with lore "<green>РАЗРЕШЕНО" and "<gray>Нажмите, чтобы запретить"
+		else:
+			set slot loop-value of {_menu} to gray dye named "<gray><bold>%countryPermissionName({_permission})%" with lore "<red>ЗАПРЕЩЕНО" and "<gray>Нажмите, чтобы разрешить"
+	if {_role} is not "citizen":
+		set slot 48 of {_menu} to barrier named "<red><bold>УДАЛИТЬ РОЛЬ" with lore "<gray>Участники получат роль Гражданин"
+	set slot 45 of {_menu} to arrow named "<yellow>Назад"
+	set {country.selected-role::%uuid of {_p}%} to {_role}
+	open {_menu} to {_p}
+	set {country.menu::%uuid of {_p}%} to "role-editor"
+
+function countryOpenIconPicker(p: player, context: text):
+	set {_menu} to chest inventory with 4 rows named "<dark gray>Выбор иконки"
+	loop integers between 0 and 35:
+		set slot loop-value of {_menu} to gray stained glass pane named " "
+	delete {country.menu-choice::%uuid of {_p}%::*}
+	set {_icons::*} to "white banner", "shield", "golden sword", "iron helmet", "gold ingot", "emerald", "diamond", "book", "map", "compass", "wheat", "oak sapling", "bricks", "redstone torch", "bell" and "spyglass"
+	set {_slots::*} to 10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28 and 30
+	loop {_icons::*}:
+		set {_type} to loop-value parsed as item type
+		if {_type} is not set:
+			set {_type} to paper
+		set {_slot} to {_slots::%loop-index%}
+		set slot {_slot} of {_menu} to {_type} named "<yellow><bold>%loop-value%" with lore "<gray>Нажмите, чтобы выбрать"
+		set {country.menu-choice::%uuid of {_p}%::%{_slot}%} to loop-value
+	set slot 31 of {_menu} to arrow named "<yellow>Назад"
+	set {country.picker-context::%uuid of {_p}%} to {_context}
+	open {_menu} to {_p}
+	set {country.menu::%uuid of {_p}%} to "icon-picker"
+
+function countryOpenColorPicker(p: player, context: text):
+	set {_menu} to chest inventory with 4 rows named "<dark gray>Выбор цвета"
+	loop integers between 0 and 35:
+		set slot loop-value of {_menu} to gray stained glass pane named " "
+	delete {country.menu-choice::%uuid of {_p}%::*}
+	set {_materials::*} to "white dye", "light gray dye", "gray dye", "black dye", "red dye", "orange dye", "yellow dye", "lime dye", "green dye", "cyan dye", "light blue dye", "blue dye", "purple dye", "magenta dye" and "pink dye"
+	set {_colors::*} to "<white>", "<gray>", "<dark gray>", "<black>", "<red>", "<gold>", "<yellow>", "<light green>", "<dark green>", "<dark aqua>", "<aqua>", "<blue>", "<dark purple>", "<light purple>" and "<#FF7EB6>"
+	set {_names::*} to "Белый", "Светло-серый", "Серый", "Чёрный", "Красный", "Оранжевый", "Жёлтый", "Лаймовый", "Зелёный", "Бирюзовый", "Голубой", "Синий", "Фиолетовый", "Пурпурный" and "Розовый"
+	set {_slots::*} to 10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25 and 31
+	loop {_materials::*}:
+		set {_type} to loop-value parsed as item type
+		set {_slot} to {_slots::%loop-index%}
+		set slot {_slot} of {_menu} to {_type} named "%{_colors::%loop-index%}%<bold>%{_names::%loop-index%}%" with lore "<gray>Нажмите, чтобы выбрать"
+		set {country.menu-choice::%uuid of {_p}%::%{_slot}%} to {_colors::%loop-index%}
+	set slot 35 of {_menu} to arrow named "<yellow>Назад"
+	set {country.picker-context::%uuid of {_p}%} to {_context}
+	open {_menu} to {_p}
+	set {country.menu::%uuid of {_p}%} to "color-picker"
+
+function countryOpenSettings(p: player):
+	set {_id} to countryEditingId({_p})
+	if {_id} is "":
+		countryOpenNoCountry({_p})
+		stop
+	set {_menu} to chest inventory with 4 rows named "<dark gray>Настройки • %countryName({_id})%"
+	loop integers between 0 and 35:
+		set slot loop-value of {_menu} to gray stained glass pane named " "
+	set slot 11 of {_menu} to white banner named "<yellow><bold>ИЗМЕНИТЬ ГЕРБ" with lore "<gray>Выбрать готовую иконку страны"
+	set slot 13 of {_menu} to magenta dye named "<light purple><bold>ИЗМЕНИТЬ ЦВЕТ" with lore "<gray>Выбрать цвет страны"
+	set slot 15 of {_menu} to lodestone named "<aqua><bold>УСТАНОВИТЬ СТОЛИЦУ" with lore "<gray>Сохранить текущую точку"
+	countryRecruitmentButton({_p}, {_menu}, 24)
+	if {country.public-capital::%{_id}%} is true:
+		set slot 20 of {_menu} to ender eye named "<light green><bold>ПУБЛИЧНАЯ СТОЛИЦА" with lore "<green>ОТКРЫТА ДЛЯ ВСЕХ" and "<gray>Чужие игроки могут использовать" and "<white>/capital %countryName({_id})%" and "" and "<yellow>Нажмите, чтобы закрыть"
+	else:
+		set slot 20 of {_menu} to ender pearl named "<red><bold>ПУБЛИЧНАЯ СТОЛИЦА" with lore "<red>ЗАКРЫТА ДЛЯ ЧУЖИХ" and "<gray>Телепортироваться могут только жители" and "" and "<yellow>Нажмите, чтобы открыть"
+	if countryCanEditSettings({_p}, {_id}) is true:
+		set slot 22 of {_menu} to tnt named "<red><bold>РАСПУСТИТЬ СТРАНУ" with lore "<gray>Удалить страну и освободить все чанки"
+	set {_mob-mode} to countryMobSpawnMode({_id})
+	set {_mob-mode-name} to countryMobSpawnModeName({_id})
+	if {_mob-mode} is "ALL":
+		set slot 29 of {_menu} to creeper spawn egg named "<green><bold>СПАВН МОБОВ" with lore "<gray>Сейчас: <white>%{_mob-mode-name}%" and "" and "<gray>Настройка действует на естественный спавн" and "<gray>во всех чанках страны." and "" and "<yellow>Нажмите, чтобы переключить"
+	else if {_mob-mode} is "NEUTRAL":
+		set slot 29 of {_menu} to cow spawn egg named "<aqua><bold>СПАВН МОБОВ" with lore "<gray>Сейчас: <white>%{_mob-mode-name}%" and "" and "<gray>Враждебные мобы естественно" and "<gray>появляться не будут." and "" and "<yellow>Нажмите, чтобы переключить"
+	else:
+		set slot 29 of {_menu} to zombie spawn egg named "<red><bold>СПАВН МОБОВ" with lore "<gray>Сейчас: <white>%{_mob-mode-name}%" and "" and "<gray>Нейтральные и мирные мобы естественно" and "<gray>появляться не будут." and "" and "<yellow>Нажмите, чтобы переключить"
+	set slot 31 of {_menu} to arrow named "<yellow>Назад"
+	open {_menu} to {_p}
+	set {country.menu::%uuid of {_p}%} to "settings"
+
+function countryOpenDisbandConfirmation(p: player):
+	set {_menu} to chest inventory with 3 rows named "<dark red>Подтверждение удаления"
+	loop integers between 0 and 26:
+		set slot loop-value of {_menu} to gray stained glass pane named " "
+	set slot 11 of {_menu} to lime concrete named "<green><bold>ОТМЕНА" with lore "<gray>Вернуться к настройкам"
+	set slot 15 of {_menu} to red concrete named "<red><bold>УДАЛИТЬ НАВСЕГДА" with lore "<red>Страна, роли и территория будут удалены"
+	open {_menu} to {_p}
+	set {country.menu::%uuid of {_p}%} to "disband-confirm"
+
+function countryOpenLeaveConfirmation(p: player):
+	set {_id} to countryId({_p})
+	if {_id} is "":
+		countryOpenNoCountry({_p})
+		stop
+	set {_menu} to chest inventory with 3 rows named "<dark red>Подтверждение выхода"
+	loop integers between 0 and 26:
+		set slot loop-value of {_menu} to gray stained glass pane named " "
+	set slot 4 of {_menu} to oak door named "<red><bold>ПОКИНУТЬ %countryName({_id})%?" with lore "<gray>Вы потеряете свою роль" and "<gray>и доступ к возможностям страны."
+	set slot 11 of {_menu} to lime concrete named "<green><bold>ОСТАТЬСЯ" with lore "<gray>Вернуться в меню страны"
+	set slot 15 of {_menu} to red concrete named "<red><bold>ПОКИНУТЬ СТРАНУ" with lore "<red>Это действие требует подтверждения"
+	open {_menu} to {_p}
+	set {country.menu::%uuid of {_p}%} to "leave-confirm"
+
+command /country:
+	aliases: /c, /countries, /nation
+	executable by: players
+	trigger:
+		if {auth.logged-in::%name of player%} is not true:
+			send "<red>Сначала войдите в аккаунт." to player
+			stop
+		countryOpenMain(player)
+		questComplete(player, 1)
+
+command /plot:
+	aliases: /chunk, /plotmenu
+	executable by: players
+	trigger:
+		if {auth.logged-in::%name of player%} is not true:
+			send "<red>Сначала войдите в аккаунт." to player
+			stop
+		set {_key} to countryChunkKey(player)
+		set {_country} to countryAt(player)
+		if {_country} is "":
+			send "<red>Вы находитесь на нейтральной территории." to player
+			stop
+		set {country.edit-chunk::%uuid of player%} to {_key}
+		countryOpenPropertyHub(player)
+
+command /countryadmin [<text>]:
+	aliases: /cadmin
+	executable by: players
+	trigger:
+		if {auth.logged-in::%name of player%} is not true:
+			send "<red>Сначала войдите в аккаунт." to player
+			stop
+		if countryIsAdmin(player) is not true:
+			send "<red>У вас нет права администратора стран. <gray>Требуется politaria.country.admin." to player
+			stop
+		if arg-1 is not set:
+			delete {country.admin-edit::%uuid of player%}
+			set {country.admin-directory::%uuid of player%} to true
+			send "<gold>Выберите страну из списка, чтобы открыть её настройки." to player
+			countryOpenDirectory(player, 1)
+			stop
+		delete {country.admin-directory::%uuid of player%}
+		set {_name} to lowercase arg-1
+		set {_id} to {country.name-id::%{_name}%}
+		# Also accept the internal id from /countryadmin information, if needed.
+		if {_id} is not set:
+			if {country.name::%arg-1%} is set:
+				set {_id} to arg-1
+		if {_id} is not set:
+			send "<red>Страна <white>%arg-1% <red>не найдена." to player
+			stop
+		set {country.admin-edit::%uuid of player%} to {_id}
+		send formatted "<gold>Администрирование страны: %countryColor({_id})%<bold>%countryName({_id})%"
+		countryOpenSettings(player)
+
+command /laws:
+	executable by: players
+	trigger:
+		if {auth.logged-in::%name of player%} is not true:
+			send "<red>Сначала войдите в аккаунт." to player
+			stop
+		if countryId(player) is "":
+			send "<red>Вы не состоите в стране." to player
+			stop
+		countryOpenLaws(player, 1)
+
+on chat:
+	if {country.input::%uuid of player%} is not set:
+		stop
+	cancel event
+	set {_input} to unformatted message
+	replace all "<" with "‹" in {_input}
+	replace all ">" with "›" in {_input}
+	set {_mode} to {country.input::%uuid of player%}
+	delete {country.input::%uuid of player%}
+
+
+	if {_mode} is "chunk-sale-price":
+		set {_key} to {country.edit-chunk::%uuid of player%}
+		delete {country.edit-chunk::%uuid of player%}
+		if {_key} is not set:
+			send "<red>Не удалось определить чанк." to player
+			stop
+		if countryChunkCanCountryManage(player, {_key}) is not true:
+			send "<red>Вы больше не можете выставить этот чанк на продажу." to player
+			stop
+		if {country.chunk-owner::%{_key}%} is set:
+			send "<red>Этот чанк уже продан." to player
+			stop
+		set {_price} to {_input} parsed as number
+		if {_price} is not set:
+			send "<red>Введите цену числом." to player
+			stop
+		set {_price} to rounded down {_price}
+		if {_price} is less than 1:
+			send "<red>Цена должна быть больше нуля." to player
+			stop
+		set {country.chunk-sale::%{_key}%} to {_price}
+		send formatted "<green>Чанк выставлен на продажу за <gold>%{_price}% монет<green>." to player
+		stop
+
+	if {_mode} is "chunk-custom-name":
+		set {_key} to {country.edit-chunk::%uuid of player%}
+		delete {country.edit-chunk::%uuid of player%}
+		if {_key} is not set:
+			send "<red>Не удалось определить чанк." to player
+			stop
+		if countryChunkCanManage(player, {_key}) is not true:
+			send "<red>Вы больше не можете менять этот чанк." to player
+			stop
+		if {_input} is "-":
+			delete {country.claim-name::%{_key}%}
+			send "<yellow>Название чанка удалено." to player
+			stop
+		if length of {_input} is greater than 24:
+			send "<red>Название чанка не должно быть длиннее 24 символов." to player
+			stop
+		if length of {_input} is less than 1:
+			send "<red>Название чанка не может быть пустым." to player
+			stop
+		set {country.claim-name::%{_key}%} to {_input}
+		send formatted "<green>Название чанка изменено на <white>%{_input}%<green>." to player
+		stop
+
+	if {_mode} is "chunk-player-select":
+		set {_key} to {country.edit-chunk::%uuid of player%}
+		if {_key} is not set:
+			send "<red>Не удалось определить чанк." to player
+			stop
+		if countryChunkCanManage(player, {_key}) is not true:
+			send "<red>Вы больше не можете менять этот чанк." to player
+			stop
+		loop all players:
+			if lowercase name of loop-player is lowercase {_input}:
+				set {_target-player} to loop-player
+		if {_target-player} is not set:
+			send "<red>Игрок должен быть онлайн, чтобы добавить его в права чанка." to player
+			stop
+		set {_target-uuid} to "%uuid of {_target-player}%"
+		set {country.chunk-player-name::%{_key}%::%{_target-uuid}%} to name of {_target-player}
+		countryOpenChunkPermissionEditor(player, "PLAYER", {_target-uuid})
+		stop
+
+	if {_mode} is "law-create":
+		set {_id} to countryId(player)
+		if countryHasPermission(player, "MANAGE_LAWS") is not true:
+			send "<red>У вас больше нет права управлять законами." to player
+			stop
+		if length of {_input} is less than 3:
+			send "<red>Текст закона должен содержать минимум 3 символа." to player
+			stop
+		if length of {_input} is greater than {@country-law-max-length}:
+			send "<red>Текст закона не должен быть длиннее {@country-law-max-length} символов." to player
+			stop
+		set {_number} to countryLawCount({_id}) + 1
+		set {country.law::%{_id}%::%{_number}%} to {_input}
+		send formatted "<green>Создан закон <white>№%{_number}%<green>: <white>%{_input}%" to player
+		countryOpenLawEditor(player, {_number})
+		stop
+
+	if {_mode} is "law-edit":
+		set {_id} to countryId(player)
+		set {_number} to {country.selected-law::%uuid of player%}
+		if countryHasPermission(player, "MANAGE_LAWS") is not true:
+			send "<red>У вас больше нет права управлять законами." to player
+			stop
+		if {country.law::%{_id}%::%{_number}%} is not set:
+			send "<red>Этот закон больше не существует." to player
+			stop
+		if length of {_input} is less than 3:
+			send "<red>Текст закона должен содержать минимум 3 символа." to player
+			stop
+		if length of {_input} is greater than {@country-law-max-length}:
+			send "<red>Текст закона не должен быть длиннее {@country-law-max-length} символов." to player
+			stop
+		set {country.law::%{_id}%::%{_number}%} to {_input}
+		send formatted "<green>Закон <white>№%{_number}% <green>изменён." to player
+		countryOpenLawEditor(player, {_number})
+		stop
+
+	if {_mode} is "law-move":
+		set {_id} to countryId(player)
+		set {_old-number} to {country.selected-law::%uuid of player%}
+		if countryHasPermission(player, "MANAGE_LAWS") is not true:
+			send "<red>У вас больше нет права управлять законами." to player
+			stop
+		if {country.law::%{_id}%::%{_old-number}%} is not set:
+			send "<red>Этот закон больше не существует." to player
+			stop
+		set {_new-number} to {_input} parsed as number
+		if {_new-number} is not set:
+			send "<red>Введите номер закона целым числом." to player
+			stop
+		set {_new-number} to rounded down {_new-number}
+		set {_count} to countryLawCount({_id})
+		if {_new-number} is less than 1:
+			send formatted "<red>Номер должен быть от 1 до %{_count}%." to player
+			stop
+		if {_new-number} is greater than {_count}:
+			send formatted "<red>Номер должен быть от 1 до %{_count}%." to player
+			stop
+		countryMoveLaw({_id}, {_old-number}, {_new-number})
+		set {country.selected-law::%uuid of player%} to {_new-number}
+		send formatted "<green>Закон перемещён с номера <white>%{_old-number}% <green>на номер <white>%{_new-number}%<green>." to player
+		countryOpenLawEditor(player, {_new-number})
+		stop
+
+	if {_mode} is "create-country":
+		if lowercase {_input} is "отмена":
+			send "<yellow>Создание страны отменено." to player
+			stop
+		if countryId(player) is not "":
+			send "<red>Вы уже состоите в стране." to player
+			stop
+		if countryIsSpawnProtected(location of player) is true:
+			send "<red>Создать страну в радиусе {@country-spawn-protection-radius} чанков от спавна нельзя." to player
+			stop
+		if countryAt(player) is not "":
+			send "<red>Создать страну можно только на нейтральной территории. Перейдите в свободный чанк." to player
+			stop
+		if length of {_input} is less than {@country-min-name-length}:
+			send "<red>Название должно содержать минимум {@country-min-name-length} символа." to player
+			stop
+		if length of {_input} is greater than {@country-max-name-length}:
+			send "<red>Название не должно быть длиннее {@country-max-name-length} символов." to player
+			stop
+		set {_lower} to lowercase {_input}
+		if {country.name-id::%{_lower}%} is set:
+			send "<red>Страна с таким названием уже существует." to player
+			stop
+		set {_id} to "%random uuid%"
+		set {country.name::%{_id}%} to {_input}
+		set {country.name-id::%{_lower}%} to {_id}
+		set {country.owner::%{_id}%} to "%uuid of player%"
+		set {country.icon::%{_id}%} to "white banner"
+		set {country.color::%{_id}%} to "<white>"
+		set {country.player::%uuid of player%} to {_id}
+		set {country::%uuid of player%} to {_input}
+		set {country.member::%{_id}%::%uuid of player%} to true
+		set {country.member-name::%{_id}%::%uuid of player%} to name of player
+		set {country.role-of::%{_id}%::%uuid of player%} to "owner"
+		set {country.roles-of::%{_id}%::%uuid of player%::owner} to true
+		execute console command "identity country %uuid of player% %{_id}%"
+		set {country.role-name::%{_id}%::citizen} to "Гражданин"
+		set {country.role-icon::%{_id}%::citizen} to "paper"
+		set {country.role-color::%{_id}%::citizen} to "<white>"
+		set {country.role-perm::%{_id}%::citizen::BUILD} to true
+		set {country.role-perm::%{_id}%::citizen::INTERACT} to true
+		set {country.treasury::%{_id}%} to 0
+		set {country.tax-next::%{_id}%} to 1 day from now
+		set {_founding-chunk} to countryChunkKey(player)
+		set {country.claim::%{_founding-chunk}%} to {_id}
+		set {country.claims::%{_id}%::%{_founding-chunk}%} to true
+		delete {country.last-chunk::%uuid of player%}
+		send formatted "<light green><bold>Страна %{_input}% создана!</bold> <gray>Текущий чанк автоматически стал её первой территорией. Настройте герб, цвет и роли через /country." to player
+		countryOpenMain(player)
+		stop
+
+	if {_mode} is "invite-player":
+		set {_id} to countryId(player)
+		if countryHasPermission(player, "INVITE") is not true:
+			send "<red>У вас больше нет права приглашать игроков." to player
+			stop
+		loop all players:
+			if lowercase name of loop-player is lowercase {_input}:
+				set {_target} to loop-player
+		if {_target} is not set:
+			send "<red>Игрок не найден на сервере." to player
+			stop
+		if countryId({_target}) is not "":
+			send "<red>Этот игрок уже состоит в стране." to player
+			stop
+		set {country.invite::%uuid of {_target}%} to {_id}
+		set {country.invite-until::%uuid of {_target}%} to {@country-invite-time} from now
+		send formatted "<green>Приглашение отправлено игроку <white>%name of {_target}%<green>." to player
+		send "" to {_target}
+		send formatted "<yellow><bold>ПРИГЛАШЕНИЕ В СТРАНУ</bold> <dark gray>• %countryColor({_id})%%countryName({_id})%" to {_target}
+		send formatted "<command:/country><tooltip:Открыть меню страны><light green><bold>[  ОТКРЫТЬ МЕНЮ  ]" to {_target}
+		send "" to {_target}
+		stop
+
+	if {_mode} is "create-role":
+		set {_id} to countryId(player)
+		if countryHasPermission(player, "MANAGE_ROLES") is not true:
+			send "<red>У вас больше нет права создавать роли." to player
+			stop
+		if length of {_input} is less than 2:
+			send "<red>Название роли должно содержать от 2 до 20 символов." to player
+			stop
+		if length of {_input} is greater than 20:
+			send "<red>Название роли должно содержать от 2 до 20 символов." to player
+			stop
+		if countryRoleCount({_id}) is greater than or equal to {@country-max-roles}:
+			send "<red>Достигнут лимит пользовательских ролей." to player
+			stop
+		set {_role} to "%random uuid%"
+		set {country.role-name::%{_id}%::%{_role}%} to {_input}
+		set {country.role-icon::%{_id}%::%{_role}%} to "paper"
+		set {country.role-color::%{_id}%::%{_role}%} to "<white>"
+		send formatted "<green>Роль <white>%{_input}% <green>создана. Теперь настройте её права." to player
+		countryOpenRoleEditor(player, {_role})
+		stop
+
+	if {_mode} is "name-chunk":
+		set {_id} to countryId(player)
+		set {_key} to {country.input-chunk::%uuid of player%}
+		delete {country.input-chunk::%uuid of player%}
+		if {_key} is not set:
+			send "<red>Не удалось определить выбранный чанк." to player
+			stop
+		if {country.chunk-owner::%{_key}%} is set:
+			send "<red>Проданный чанк может настраивать только его владелец через раздел недвижимости." to player
+			stop
+		if {country.claim::%{_key}%} is not {_id}:
+			send "<red>Этот чанк больше не принадлежит вашей стране." to player
+			stop
+		if countryHasPermission(player, "NAME_CHUNKS") is not true:
+			send "<red>У вашей роли нет права изменять названия чанков." to player
+			stop
+		if {_input} is "-":
+			delete {country.claim-name::%{_key}%}
+			delete {country.last-chunk::%uuid of player%}
+			send "<yellow>Название чанка удалено." to player
+			stop
+		if length of {_input} is greater than 24:
+			send "<red>Название чанка не должно быть длиннее 24 символов." to player
+			stop
+		if length of {_input} is less than 1:
+			send "<red>Название чанка не может быть пустым." to player
+			stop
+		set {country.claim-name::%{_key}%} to {_input}
+		delete {country.last-chunk::%uuid of player%}
+		send formatted "<green>Теперь этот чанк называется <white>%{_input}%<green>." to player
+
+on inventory click:
+	if {country.menu::%uuid of player%} is not set:
+		stop
+	cancel event
+	if {auth.logged-in::%name of player%} is not true:
+		close player's inventory
+		stop
+	if {ui.click-until::%uuid of player%} is in the future:
+		stop
+	set {ui.click-until::%uuid of player%} to 8 ticks from now
+	if event-slot is not set:
+		stop
+	set {_slot} to raw index of event-slot
+	set {_menu} to {country.menu::%uuid of player%}
+	set {_id} to countryId(player)
+	if countryIsEditingMenu({_menu}) is true:
+		set {_id} to countryEditingId(player)
+		if {_id} is "":
+			close player's inventory
+			stop
+
+	if {_menu} is "directory":
+		set {_page} to {country.directory-page::%uuid of player%}
+		if {_page} is not set:
+			set {_page} to 1
+		if {_slot} is 48:
+			countryOpenMain(player)
+			stop
+		if {_slot} is 45:
+			countryOpenDirectory(player, {_page} - 1)
+			stop
+		if {_slot} is 53:
+			countryOpenDirectory(player, {_page} + 1)
+			stop
+		set {_selected} to {country.menu-country::%uuid of player%::%{_slot}%}
+		if {_selected} is set:
+			if {country.admin-directory::%uuid of player%} is true:
+				if countryIsAdmin(player) is true:
+					set {country.admin-edit::%uuid of player%} to {_selected}
+					countryOpenSettings(player)
+					stop
+				delete {country.admin-directory::%uuid of player%}
+			countryOpenDirectoryEntry(player, {_selected})
+		stop
+
+	if {_menu} is "directory-entry":
+		if {_slot} is 22:
+			set {_page} to {country.directory-page::%uuid of player%}
+			if {_page} is not set:
+				set {_page} to 1
+			countryOpenDirectory(player, {_page})
+			stop
+		set {_selected} to {country.selected-country::%uuid of player%}
+		if {_selected} is not set:
+			close player's inventory
+			stop
+		if {country.name::%{_selected}%} is not set:
+			countryOpenDirectory(player, 1)
+			send "<red>Эта страна уже не существует." to player
+			stop
+		if {_slot} is 11:
+			if countryId(player) is not "":
+				send "<red>Вы уже состоите в стране." to player
+				stop
+			if {country.owner::%{_selected}%} is not set:
+				countryOpenDirectory(player, 1)
+				stop
+			if {country.open-recruitment::%{_selected}%} is not true:
+				countryOpenDirectoryEntry(player, {_selected})
+				send "<red>Набор в эту страну закрыт. Нужно приглашение." to player
+				stop
+			set {country.player::%uuid of player%} to {_selected}
+			set {country::%uuid of player%} to countryName({_selected})
+			set {country.member::%{_selected}%::%uuid of player%} to true
+			set {country.member-name::%{_selected}%::%uuid of player%} to name of player
+			set {country.role-of::%{_selected}%::%uuid of player%} to "citizen"
+			set {country.roles-of::%{_selected}%::%uuid of player%::citizen} to true
+			delete {country.invite::%uuid of player%}
+			delete {country.invite-until::%uuid of player%}
+			execute console command "identity country %uuid of player% %{_selected}%"
+			send formatted "<light green>Вы вступили в страну %countryColor({_selected})%%countryName({_selected})%<light green>." to player
+			countryOpenMain(player)
+			stop
+		if {_slot} is 15:
+			if {country.spawn::%{_selected}%} is not set:
+				send "<red>Столица этой страны ещё не установлена." to player
+				stop
+			if countryId(player) is not {_selected}:
+				if {country.public-capital::%{_selected}%} is not true:
+					send "<red>Столица закрыта для чужих игроков." to player
+					stop
+			close player's inventory
+			execute player command "capital %countryName({_selected})%"
+		stop
+
+	if {_menu} is "none":
+		if {_slot} is 17:
+			set {_key} to countryChunkKey(player)
+			if {country.chunk-owner::%{_key}%} is "%uuid of player%":
+				set {country.edit-chunk::%uuid of player%} to {_key}
+				countryOpenPropertyHub(player)
+			stop
+		if {_slot} is 22:
+			close player's inventory
+			wait 1 tick
+			if player is online:
+				questsOpen(player)
+			stop
+		if countryId(player) is not "":
+			countryOpenMain(player)
+			stop
+		if {_slot} is 15:
+			countryOpenDirectory(player, 1)
+			stop
+		if {_slot} is 11:
+			close player's inventory
+			set {country.input::%uuid of player%} to "create-country"
+			send "<yellow>Введите название новой страны в чат или напишите <white>отмена<yellow>." to player
+			stop
+		if {_slot} is 13:
+			set {_invite} to {country.invite::%uuid of player%}
+			if {_invite} is not set:
+				stop
+			if {country.invite-until::%uuid of player%} is not in the future:
+				delete {country.invite::%uuid of player%}
+				delete {country.invite-until::%uuid of player%}
+				close player's inventory
+				send "<red>Срок приглашения истёк." to player
+				stop
+			if click type is right mouse button:
+				delete {country.invite::%uuid of player%}
+				delete {country.invite-until::%uuid of player%}
+				close player's inventory
+				send "<gray>Приглашение отклонено." to player
+				stop
+			if {country.name::%{_invite}%} is not set:
+				delete {country.invite::%uuid of player%}
+				delete {country.invite-until::%uuid of player%}
+				close player's inventory
+				send "<red>Пригласившая страна уже не существует." to player
+				stop
+			set {country.player::%uuid of player%} to {_invite}
+			set {country::%uuid of player%} to countryName({_invite})
+			set {country.member::%{_invite}%::%uuid of player%} to true
+			set {country.member-name::%{_invite}%::%uuid of player%} to name of player
+			set {country.role-of::%{_invite}%::%uuid of player%} to "citizen"
+			set {country.roles-of::%{_invite}%::%uuid of player%::citizen} to true
+			execute console command "identity country %uuid of player% %{_invite}%"
+			delete {country.invite::%uuid of player%}
+			delete {country.invite-until::%uuid of player%}
+			close player's inventory
+			send formatted "<light green>Вы вступили в страну %countryColor({_invite})%%countryName({_invite})%<light green>." to player
+			stop
+
+	if {_menu} is "main":
+		if {_slot} is 38:
+			close player's inventory
+			wait 1 tick
+			if player is online:
+				questsOpen(player)
+			stop
+		if {_slot} is 40:
+			countryOpenDirectory(player, 1)
+			stop
+		if {_slot} is 42:
+			countryOpenPropertyHub(player)
+			stop
+		if {_slot} is 11:
+			countryOpenTerritory(player)
+		if {_slot} is 13:
+			countryOpenMembers(player)
+		if {_slot} is 15:
+			countryOpenRoles(player)
+		if {_slot} is 20:
+			close player's inventory
+			execute player command "war"
+			stop
+		if {_slot} is 22:
+			close player's inventory
+			wait 1 tick
+			countryOpenFinance(player)
+			stop
+		if {_slot} is 24:
+			countryOpenLaws(player, 1)
+			stop
+		if {_slot} is 29:
+			close player's inventory
+			execute player command "capital"
+			stop
+		if {_slot} is 31:
+			countryOpenSettings(player)
+		if {_slot} is 33:
+			if {country.owner::%{_id}%} is "%uuid of player%":
+				send "<red>Правитель не может покинуть страну. Передайте власть или распустите её." to player
+				stop
+			countryOpenLeaveConfirmation(player)
+		stop
+
+	if {_menu} is "laws":
+		set {_page} to {country.law-page::%uuid of player%}
+		if {_page} is not set:
+			set {_page} to 1
+		if {_slot} is 45:
+			countryOpenLaws(player, {_page} - 1)
+			stop
+		if {_slot} is 48:
+			countryOpenMain(player)
+			stop
+		if {_slot} is 50:
+			if countryHasPermission(player, "MANAGE_LAWS") is not true:
+				send "<red>У вашей роли нет права управлять законами." to player
+				stop
+			set {country.input::%uuid of player%} to "law-create"
+			close player's inventory
+			send "<yellow>Введите текст нового закона в чат." to player
+			stop
+		if {_slot} is 53:
+			countryOpenLaws(player, {_page} + 1)
+			stop
+		set {_law-number} to {country.menu-law::%uuid of player%::%{_slot}%}
+		if {_law-number} is set:
+			countryOpenLawEditor(player, {_law-number})
+		stop
+
+	if {_menu} is "law-editor":
+		set {_law-number} to {country.selected-law::%uuid of player%}
+		if {_slot} is 22:
+			countryOpenLaws(player, {country.law-page::%uuid of player%})
+			stop
+		if countryHasPermission(player, "MANAGE_LAWS") is not true:
+			send "<red>У вашей роли нет права управлять законами." to player
+			stop
+		if {country.law::%{_id}%::%{_law-number}%} is not set:
+			send "<red>Этот закон больше не существует." to player
+			countryOpenLaws(player, {country.law-page::%uuid of player%})
+			stop
+		if {_slot} is 11:
+			set {country.input::%uuid of player%} to "law-edit"
+			close player's inventory
+			send formatted "<yellow>Введите новый текст закона <white>№%{_law-number}% <yellow>в чат." to player
+			stop
+		if {_slot} is 13:
+			set {country.input::%uuid of player%} to "law-move"
+			close player's inventory
+			send formatted "<yellow>Введите новый номер закона. <gray>Доступно: <white>1–%countryLawCount({_id})%<gray>." to player
+			stop
+		if {_slot} is 15:
+			countryDeleteLaw({_id}, {_law-number})
+			delete {country.selected-law::%uuid of player%}
+			send formatted "<yellow>Закон №%{_law-number}% удалён. Остальные законы автоматически перенумерованы." to player
+			countryOpenLaws(player, {country.law-page::%uuid of player%})
+		stop
+
+
+	if {_menu} is "property-hub":
+		if {_slot} is 22:
+			countryOpenMain(player)
+			stop
+		if {_slot} is 11:
+			close player's inventory
+			execute player command "apartments"
+			stop
+		if {_slot} is 13:
+			countryOpenChunkSale(player)
+			stop
+		if {_slot} is 15:
+			set {country.edit-chunk::%uuid of player%} to countryChunkKey(player)
+			countryOpenChunkSettings(player)
+			stop
+		stop
+
+	if {_menu} is "chunk-sale":
+		if {_slot} is 22:
+			countryOpenPropertyHub(player)
+			stop
+		set {_key} to countryChunkKey(player)
+		set {_country} to countryAt(player)
+		if {_country} is "":
+			stop
+		if {_slot} is 11:
+			if {country.chunk-sale::%{_key}%} is set:
+				if countryChunkCanCountryManage(player, {_key}) is true:
+					delete {country.chunk-sale::%{_key}%}
+					send "<yellow>Чанк снят с продажи." to player
+					countryOpenChunkSale(player)
+			stop
+		if {_slot} is 13:
+			if {country.chunk-owner::%{_key}%} is set:
+				stop
+			if {country.chunk-sale::%{_key}%} is set:
+				stop
+			if countryChunkCanCountryManage(player, {_key}) is not true:
+				send "<red>У вас нет права продавать этот чанк." to player
+				stop
+			set {country.edit-chunk::%uuid of player%} to {_key}
+			set {country.input::%uuid of player%} to "chunk-sale-price"
+			close player's inventory
+			send "<yellow>Введите цену чанка в монетах." to player
+			stop
+		if {_slot} is 15:
+			if {country.chunk-owner::%{_key}%} is set:
+				stop
+			set {_price} to {country.chunk-sale::%{_key}%}
+			if {_price} is not set:
+				stop
+			if {economy.balance::%uuid of player%} is not set:
+				set {economy.balance::%uuid of player%} to 1000
+			if {economy.balance::%uuid of player%} is less than {_price}:
+				send formatted "<red>Недостаточно денег. Нужно <gold>%{_price}% монет<red>." to player
+				stop
+			remove {_price} from {economy.balance::%uuid of player%}
+			if {country.treasury::%{_country}%} is not set:
+				set {country.treasury::%{_country}%} to 0
+			add {_price} to {country.treasury::%{_country}%}
+			set {country.chunk-owner::%{_key}%} to "%uuid of player%"
+			set {country.chunk-owner-name::%{_key}%} to name of player
+			delete {country.chunk-sale::%{_key}%}
+			countryChunkClearSettings({_key})
+			delete {country.last-chunk::%uuid of player%}
+			delete {country.last-territory-state::%uuid of player%}
+			send formatted "<light green><bold>Чанк куплен!</bold> <gray>С вашего баланса снято <gold>%{_price}% монет<gray>. Теперь вы можете настроить участок." to player
+			countryOpenChunkSettings(player)
+			stop
+		stop
+
+	if {_menu} is "chunk-settings":
+		if {_slot} is 31:
+			countryOpenPropertyHub(player)
+			stop
+		set {_key} to {country.edit-chunk::%uuid of player%}
+		if {_key} is not set:
+			set {_key} to countryChunkKey(player)
+			set {country.edit-chunk::%uuid of player%} to {_key}
+		if countryChunkCanManage(player, {_key}) is not true:
+			send "<red>Вы не можете настраивать этот чанк." to player
+			stop
+		if {_slot} is 10:
+			set {country.input::%uuid of player%} to "chunk-custom-name"
+			close player's inventory
+			send "<yellow>Введите новое название чанка. Напишите <white>-<yellow>, чтобы удалить название." to player
+			stop
+		if {_slot} is 12:
+			countryOpenChunkPermissionEditor(player, "PUBLIC", "")
+			stop
+		if {_slot} is 14:
+			countryOpenChunkRoleList(player)
+			stop
+		if {_slot} is 16:
+			set {country.input::%uuid of player%} to "chunk-player-select"
+			close player's inventory
+			send "<yellow>Введите ник игрока, которому хотите настроить права. Игрок должен быть онлайн." to player
+			stop
+		stop
+
+	if {_menu} is "chunk-role-list":
+		if {_slot} is 40:
+			countryOpenChunkSettings(player)
+			stop
+		set {_role} to {country.chunk-menu-role::%uuid of player%::%{_slot}%}
+		if {_role} is set:
+			countryOpenChunkPermissionEditor(player, "ROLE", {_role})
+		stop
+
+	if {_menu} is "chunk-permission":
+		if {_slot} is 22:
+			if {country.chunk-scope::%uuid of player%} is "ROLE":
+				countryOpenChunkRoleList(player)
+			else:
+				countryOpenChunkSettings(player)
+			stop
+		set {_key} to {country.edit-chunk::%uuid of player%}
+		if {_key} is not set:
+			stop
+		if countryChunkCanManage(player, {_key}) is not true:
+			close player's inventory
+			send "<red>Вы больше не можете настраивать этот чанк." to player
+			stop
+		set {_scope} to {country.chunk-scope::%uuid of player%}
+		set {_target} to {country.chunk-target::%uuid of player%}
+		if {_slot} is 11:
+			countryChunkCycleState({_scope}, {_key}, {_target}, "BUILD")
+			countryOpenChunkPermissionEditor(player, {_scope}, {_target})
+			stop
+		if {_slot} is 15:
+			countryChunkCycleState({_scope}, {_key}, {_target}, "INTERACT")
+			countryOpenChunkPermissionEditor(player, {_scope}, {_target})
+			stop
+		stop
+
+	if {_menu} is "territory":
+		if {_slot} is 22:
+			countryOpenMain(player)
+			stop
+		if {_slot} is 11:
+			if countryHasPermission(player, "CLAIM") is not true:
+				send "<red>У вашей роли нет права занимать чанки." to player
+				stop
+			if countryIsSpawnProtected(location of player) is true:
+				send "<red>В радиусе {@country-spawn-protection-radius} чанков от спавна нельзя занимать территорию." to player
+				stop
+			if {country.treasury::%{_id}%} is less than 0:
+				send "<red>Сначала погасите долг казны, чтобы присоединять новые чанки." to player
+				stop
+			if {country.treasury::%{_id}%} is not set:
+				set {country.treasury::%{_id}%} to 0
+			if {country.treasury::%{_id}%} is less than {@country-tax-per-chunk}:
+				send "<red>В казне недостаточно денег. Присоединение чанка стоит {@country-tax-per-chunk} монет." to player
+				stop
+			set {_current-owner} to countryAt(player)
+			if {_current-owner} is {_id}:
+				send "<yellow>Этот чанк уже присоединён к вашей стране." to player
+				stop
+			if {_current-owner} is not "":
+				send formatted "<red>Этот чанк уже принадлежит стране %countryName({_current-owner})%." to player
+				stop
+			if countryHasAdjacentClaim(player, {_id}) is not true:
+				send "<red>Можно присоединять только чанки, соседние по стороне с территорией вашей страны." to player
+				stop
+			set {_key} to countryChunkKey(player)
+			set {country.claim::%{_key}%} to {_id}
+			set {country.claims::%{_id}%::%{_key}%} to true
+			delete {country.last-chunk::%uuid of player%}
+			if {country.claim::%{_key}%} is {_id}:
+				remove {@country-tax-per-chunk} from {country.treasury::%{_id}%}
+				send "<green>Чанк присоединён к стране. <gray>Из казны снято <white>{@country-tax-per-chunk} монет<gray>." to player
+			else:
+				send "<red>Не удалось сохранить владельца чанка." to player
+			countryOpenTerritory(player)
+			stop
+		if {_slot} is 13:
+			set {_key} to countryChunkKey(player)
+			if {country.chunk-owner::%{_key}%} is set:
+				send "<red>Этот чанк продан. Название может менять только его владелец через раздел недвижимости." to player
+				stop
+			if countryAt(player) is not {_id}:
+				send "<red>Назвать можно только чанк своей страны." to player
+				stop
+			if countryHasPermission(player, "NAME_CHUNKS") is not true:
+				send "<red>У вашей роли нет права изменять названия чанков." to player
+				stop
+			set {country.input-chunk::%uuid of player%} to countryChunkKey(player)
+			set {country.input::%uuid of player%} to "name-chunk"
+			close player's inventory
+			send "<yellow>Введите название чанка в чат. Напишите <white>-<yellow>, чтобы удалить название." to player
+			stop
+		if {_slot} is 15:
+			set {_key} to countryChunkKey(player)
+			if {country.chunk-owner::%{_key}%} is set:
+				send formatted "<red>Нельзя освободить проданный чанк. Владелец: <white>%countryChunkOwnerName({_key})%<red>." to player
+				stop
+			if {country.chunk-sale::%{_key}%} is set:
+				send "<red>Сначала снимите чанк с продажи." to player
+				stop
+			if countryHasPermission(player, "UNCLAIM") is not true:
+				send "<red>У вашей роли нет права освобождать чанки." to player
+				stop
+			if countryAt(player) is not {_id}:
+				send "<red>Этот чанк не принадлежит вашей стране." to player
+				stop
+			set {_key} to countryChunkKey(player)
+			delete {country.claim::%{_key}%}
+			delete {country.claims::%{_id}%::%{_key}%}
+			delete {country.claim-name::%{_key}%}
+			delete {country.chunk-sale::%{_key}%}
+			countryChunkClearSettings({_key})
+			delete {country.last-chunk::%uuid of player%}
+			send "<yellow>Чанк освобождён." to player
+			countryOpenTerritory(player)
+		stop
+
+	if {_menu} is "members":
+		if {_slot} is 47:
+			countryToggleRecruitment(player)
+			countryOpenMembers(player)
+			stop
+		if {_slot} is 49:
+			countryOpenMain(player)
+			stop
+		if {_slot} is 45:
+			if countryHasPermission(player, "INVITE") is true:
+				close player's inventory
+				set {country.input::%uuid of player%} to "invite-player"
+				send "<yellow>Введите ник игрока в чат." to player
+			stop
+		set {_member} to {country.menu-member::%uuid of player%::%{_slot}%}
+		if {_member} is set:
+			countryOpenMember(player, {_member})
+		stop
+
+	if {_menu} is "member":
+		if {_slot} is 22:
+			countryOpenMembers(player)
+			stop
+		set {_member} to {country.selected-member::%uuid of player%}
+		if {_member} is {country.owner::%{_id}%}:
+			send "<red>Ролью правителя нельзя управлять здесь." to player
+			stop
+		if {_slot} is 11:
+			if countryHasPermission(player, "ASSIGN_ROLES") is true:
+				countryOpenRoleAssignment(player)
+			else:
+				send "<red>У вас нет права выдавать роли." to player
+			stop
+		if {_slot} is 15:
+			if countryHasPermission(player, "KICK") is not true:
+				send "<red>У вас нет права исключать участников." to player
+				stop
+			delete {country.member::%{_id}%::%{_member}%}
+			delete {country.member-name::%{_id}%::%{_member}%}
+			delete {country.role-of::%{_id}%::%{_member}%}
+			delete {country.roles-of::%{_id}%::%{_member}%::*}
+			execute console command "identity country %{_member}% none"
+			delete {country.player::%{_member}%}
+			delete {country::%{_member}%}
+			set {_online} to player from {_member}
+			if {_online} is set:
+				send "<red>Вы были исключены из страны." to {_online}
+			send "<yellow>Игрок исключён из страны." to player
+			countryOpenMembers(player)
+		stop
+
+	if {_menu} is "assign-role":
+		if {_slot} is 40:
+			countryOpenMember(player, {country.selected-member::%uuid of player%})
+			stop
+		set {_role} to {country.menu-role::%uuid of player%::%{_slot}%}
+		if {_role} is set:
+			if countryHasPermission(player, "ASSIGN_ROLES") is not true:
+				send "<red>У вас больше нет права выдавать роли." to player
+				stop
+			set {_member} to {country.selected-member::%uuid of player%}
+			if {_member} is not set:
+				countryOpenMembers(player)
+				stop
+			countryEnsureRoleStorage({_id}, {_member})
+			if {country.roles-of::%{_id}%::%{_member}%::%{_role}%} is true:
+				# Гражданин нельзя снять, если это последняя роль игрока.
+				if countryMemberRoleCount({_id}, {_member}) is less than or equal to 1:
+					send "<red>Нельзя снять последнюю роль участника." to player
+					stop
+				delete {country.roles-of::%{_id}%::%{_member}%::%{_role}%}
+				if {country.role-of::%{_id}%::%{_member}%} is {_role}:
+					set {_new-primary} to ""
+					loop {country.roles-of::%{_id}%::%{_member}%::*}:
+						if loop-value is true:
+							set {_new-primary} to loop-index
+							stop loop
+					if {_new-primary} is "":
+						delete {country.role-of::%{_id}%::%{_member}%}
+					else:
+						set {country.role-of::%{_id}%::%{_member}%} to {_new-primary}
+				send formatted "<yellow>С участника снята роль <white>%countryRoleName({_id}, {_role})%<yellow>." to player
+			else:
+				set {country.roles-of::%{_id}%::%{_member}%::%{_role}%} to true
+				if {country.role-of::%{_id}%::%{_member}%} is not set:
+					set {country.role-of::%{_id}%::%{_member}%} to {_role}
+				send formatted "<green>Участнику выдана роль <white>%countryRoleName({_id}, {_role})%<green>." to player
+			countryOpenRoleAssignment(player)
+		stop
+
+	if {_menu} is "roles":
+		if {_slot} is 49:
+			countryOpenMain(player)
+			stop
+		if {_slot} is 45:
+			if countryHasPermission(player, "MANAGE_ROLES") is true:
+				close player's inventory
+				set {country.input::%uuid of player%} to "create-role"
+				send "<yellow>Введите название новой роли в чат." to player
+			stop
+		set {_role} to {country.menu-role::%uuid of player%::%{_slot}%}
+		if {_role} is set:
+			if countryHasPermission(player, "MANAGE_ROLES") is true:
+				countryOpenRoleEditor(player, {_role})
+			else:
+				send "<red>У вас нет права настраивать роли." to player
+		stop
+
+	if {_menu} is "role-editor":
+		set {_role} to {country.selected-role::%uuid of player%}
+		if countryHasPermission(player, "MANAGE_ROLES") is not true:
+			close player's inventory
+			send "<red>У вас больше нет права настраивать роли." to player
+			stop
+		if {_slot} is 45:
+			countryOpenRoles(player)
+			stop
+		if {_slot} is 20:
+			countryOpenIconPicker(player, "role")
+			stop
+		if {_slot} is 24:
+			countryOpenColorPicker(player, "role")
+			stop
+		set {_permission} to countryPermissionAtSlot({_slot})
+		if {_permission} is not "":
+			if {country.role-perm::%{_id}%::%{_role}%::%{_permission}%} is true:
+				delete {country.role-perm::%{_id}%::%{_role}%::%{_permission}%}
+			else:
+				set {country.role-perm::%{_id}%::%{_role}%::%{_permission}%} to true
+			countryOpenRoleEditor(player, {_role})
+			stop
+		if {_slot} is 48:
+			if {_role} is "citizen":
+				stop
+			loop {country.member::%{_id}%::*}:
+				set {_member-uuid} to loop-index
+				countryEnsureRoleStorage({_id}, {_member-uuid})
+				delete {country.roles-of::%{_id}%::%{_member-uuid}%::%{_role}%}
+				if {country.role-of::%{_id}%::%{_member-uuid}%} is {_role}:
+					set {country.role-of::%{_id}%::%{_member-uuid}%} to "citizen"
+				if countryMemberRoleCount({_id}, {_member-uuid}) is less than 1:
+					set {country.roles-of::%{_id}%::%{_member-uuid}%::citizen} to true
+					set {country.role-of::%{_id}%::%{_member-uuid}%} to "citizen"
+			delete {country.role-name::%{_id}%::%{_role}%}
+			delete {country.role-icon::%{_id}%::%{_role}%}
+			delete {country.role-color::%{_id}%::%{_role}%}
+			delete {country.role-perm::%{_id}%::%{_role}%::*}
+			send "<yellow>Роль удалена. Она снята со всех участников." to player
+			countryOpenRoles(player)
+		stop
+
+	if {_menu} is "icon-picker":
+		if {_slot} is 31:
+			if {country.picker-context::%uuid of player%} is "role":
+				countryOpenRoleEditor(player, {country.selected-role::%uuid of player%})
+			else:
+				countryOpenSettings(player)
+			stop
+		set {_choice} to {country.menu-choice::%uuid of player%::%{_slot}%}
+		if {_choice} is set:
+			if {country.picker-context::%uuid of player%} is "role":
+				set {_role} to {country.selected-role::%uuid of player%}
+				set {country.role-icon::%{_id}%::%{_role}%} to {_choice}
+				countryOpenRoleEditor(player, {_role})
+			else:
+				set {country.icon::%{_id}%} to {_choice}
+				countryOpenSettings(player)
+		stop
+
+	if {_menu} is "color-picker":
+		if {_slot} is 35:
+			if {country.picker-context::%uuid of player%} is "role":
+				countryOpenRoleEditor(player, {country.selected-role::%uuid of player%})
+			else:
+				countryOpenSettings(player)
+			stop
+		set {_choice} to {country.menu-choice::%uuid of player%::%{_slot}%}
+		if {_choice} is set:
+			if {country.picker-context::%uuid of player%} is "role":
+				set {_role} to {country.selected-role::%uuid of player%}
+				set {country.role-color::%{_id}%::%{_role}%} to {_choice}
+				countryOpenRoleEditor(player, {_role})
+			else:
+				set {country.color::%{_id}%} to {_choice}
+				countryOpenSettings(player)
+		stop
+
+	if {_menu} is "settings":
+		if {_slot} is 24:
+			countryToggleRecruitment(player)
+			countryOpenSettings(player)
+			stop
+		if {_slot} is 29:
+			if countryCanEditSettings(player, {_id}) is not true:
+				send "<red>Только правитель может менять настройки спавна мобов." to player
+				stop
+			countryCycleMobSpawnMode({_id})
+			set {_mob-mode-name} to countryMobSpawnModeName({_id})
+			send formatted "<green>Режим естественного спавна мобов: <white>%{_mob-mode-name}%<green>." to player
+			countryOpenSettings(player)
+			stop
+		if {_slot} is 31:
+			countryOpenMain(player)
+			stop
+		if {_slot} is 11:
+			if countryCanEditSettings(player, {_id}) is true:
+				countryOpenIconPicker(player, "country")
+			else:
+				send "<red>Только правитель может менять герб." to player
+			stop
+		if {_slot} is 13:
+			if countryCanEditSettings(player, {_id}) is true:
+				countryOpenColorPicker(player, "country")
+			else:
+				send "<red>Только правитель может менять цвет." to player
+			stop
+		if {_slot} is 15:
+			if countryCanSetCapital(player) is true:
+				set {country.spawn::%{_id}%} to location of player
+				send "<green>Столица установлена в текущей точке." to player
+			else:
+				send "<red>У вас нет права устанавливать столицу." to player
+			stop
+		if {_slot} is 20:
+			if countryCanEditSettings(player, {_id}) is not true:
+				send "<red>Только правитель может менять публичный доступ к столице." to player
+				stop
+			if {country.public-capital::%{_id}%} is true:
+				delete {country.public-capital::%{_id}%}
+				send "<yellow>Столица теперь закрыта для чужих игроков." to player
+			else:
+				set {country.public-capital::%{_id}%} to true
+				send "<green>Столица теперь открыта для телепортации всех игроков." to player
+			countryOpenSettings(player)
+			stop
+		if {_slot} is 22:
+			if countryCanEditSettings(player, {_id}) is true:
+				set {_has-sold-plots} to false
+				loop {country.claims::%{_id}%::*}:
+					if {country.chunk-owner::%loop-index%} is set:
+						set {_has-sold-plots} to true
+						stop loop
+				if {_has-sold-plots} is true:
+					send "<red>Нельзя распустить страну, пока у неё есть проданные частные чанки." to player
+					stop
+				if {war.country::%{_id}%} is set:
+					send "<red>Нельзя распустить страну во время войны." to player
+					stop
+				countryOpenDisbandConfirmation(player)
+		stop
+
+	if {_menu} is "leave-confirm":
+		if {_slot} is 11:
+			countryOpenMain(player)
+			stop
+		if {_slot} is 15:
+			set {_id} to countryId(player)
+			if {_id} is "":
+				close player's inventory
+				stop
+			if {country.owner::%{_id}%} is "%uuid of player%":
+				countryOpenMain(player)
+				send "<red>Правитель не может покинуть страну. Передайте власть или распустите её." to player
+				stop
+			delete {country.member::%{_id}%::%uuid of player%}
+			delete {country.member-name::%{_id}%::%uuid of player%}
+			delete {country.role-of::%{_id}%::%uuid of player%}
+			delete {country.roles-of::%{_id}%::%uuid of player%::*}
+			execute console command "identity country %uuid of player% none"
+			delete {country.player::%uuid of player%}
+			delete {country::%uuid of player%}
+			close player's inventory
+			send "<yellow>Вы покинули страну." to player
+		stop
+
+	if {_menu} is "disband-confirm":
+		if {_slot} is 11:
+			countryOpenSettings(player)
+			stop
+		if {_slot} is 15:
+			if countryCanEditSettings(player, {_id}) is not true:
+				stop
+			if {war.country::%{_id}%} is set:
+				countryOpenSettings(player)
+				send "<red>Нельзя распустить страну во время войны." to player
+				stop
+			loop {country.claims::%{_id}%::*}:
+				delete {country.claim::%loop-index%}
+				delete {country.claim-name::%loop-index%}
+				delete {country.chunk-sale::%loop-index%}
+				delete {country.chunk-owner::%loop-index%}
+				delete {country.chunk-owner-name::%loop-index%}
+				countryChunkClearSettings(loop-index)
+			loop {country.member::%{_id}%::*}:
+				execute console command "identity country %loop-index% none"
+				delete {country.player::%loop-index%}
+				delete {country::%loop-index%}
+			set {_lower} to lowercase {country.name::%{_id}%}
+			delete {country.name-id::%{_lower}%}
+			delete {country.name::%{_id}%}
+			delete {country.owner::%{_id}%}
+			delete {country.icon::%{_id}%}
+			delete {country.color::%{_id}%}
+			delete {country.spawn::%{_id}%}
+			delete {country.public-capital::%{_id}%}
+			delete {country.open-recruitment::%{_id}%}
+			delete {country.mob-spawn::%{_id}%}
+			delete {country.treasury::%{_id}%}
+			delete {country.tax-next::%{_id}%}
+			delete {country.member::%{_id}%::*}
+			delete {country.member-name::%{_id}%::*}
+			delete {country.role-of::%{_id}%::*}
+			delete {country.roles-of::%{_id}%::*}
+			delete {country.role-name::%{_id}%::*}
+			delete {country.role-icon::%{_id}%::*}
+			delete {country.role-color::%{_id}%::*}
+			delete {country.role-perm::%{_id}%::*}
+			delete {country.claims::%{_id}%::*}
+			delete {country.law::%{_id}%::*}
+			delete {country.admin-edit::%uuid of player%}
+			close player's inventory
+			send "<red>Страна распущена, все её чанки освобождены." to player
+		stop
+
+on load:
+	set {country.tax-per-chunk} to {@country-tax-per-chunk}
+	# PolitariaApartments processes taxes at 00:00 Europe/Moscow and catches up after downtime.
+
+on inventory drag:
+	if {country.menu::%uuid of player%} is set:
+		cancel event
+
+on inventory close:
+	if {country.menu::%uuid of player%} is set:
+		delete {country.menu::%uuid of player%}
+
+# Protect claimed chunks. Wilderness remains free to use.
+# Plot-specific rules override normal country permissions.
+on break:
+	if player has permission "politaria.apartment.event.build":
+		stop
+	set {_owner} to countryAtLocation(location of event-block)
+	if {_owner} is not "":
+		set {_key} to countryLocationKey(location of event-block)
+		if countryChunkHasPermission(player, {_key}, "BUILD") is not true:
+			cancel event
+			if {country.chunk-owner::%{_key}%} is set:
+				send action bar formatted "<red>Частная территория игрока <white>%countryChunkOwnerName({_key})%<red>." to player
+			else:
+				send action bar "<red>У вас нет права строить в этом чанке." to player
+
+on place:
+	if player has permission "politaria.apartment.event.build":
+		stop
+	set {_owner} to countryAtLocation(location of event-block)
+	if {_owner} is not "":
+		set {_key} to countryLocationKey(location of event-block)
+		if countryChunkHasPermission(player, {_key}, "BUILD") is not true:
+			cancel event
+			if {country.chunk-owner::%{_key}%} is set:
+				send action bar formatted "<red>Частная территория игрока <white>%countryChunkOwnerName({_key})%<red>." to player
+			else:
+				send action bar "<red>У вас нет права строить в этом чанке." to player
+
+on bucket empty:
+	if player has permission "politaria.apartment.event.build":
+		stop
+	set {_owner} to countryAtLocation(location of event-block)
+	if {_owner} is not "":
+		set {_key} to countryLocationKey(location of event-block)
+		if countryChunkHasPermission(player, {_key}, "BUILD") is not true:
+			cancel event
+
+on bucket fill:
+	if player has permission "politaria.apartment.event.build":
+		stop
+	set {_owner} to countryAtLocation(location of event-block)
+	if {_owner} is not "":
+		set {_key} to countryLocationKey(location of event-block)
+		if countryChunkHasPermission(player, {_key}, "BUILD") is not true:
+			cancel event
+
+on right click:
+	if player has permission "politaria.apartment.event.interact":
+		stop
+	if clicked block is not set:
+		stop
+	set {_owner} to countryAtLocation(location of clicked block)
+	if {_owner} is not "":
+		set {_key} to countryLocationKey(location of clicked block)
+		if countryChunkHasPermission(player, {_key}, "INTERACT") is not true:
+			cancel event
+			if {country.chunk-owner::%{_key}%} is set:
+				send action bar formatted "<red>Частная территория игрока <white>%countryChunkOwnerName({_key})%<red>." to player
+			else:
+				send action bar "<red>У вас нет права взаимодействовать в этом чанке." to player
+
+
+function countryMobAllowedInTerritory(e: entity, id: text) :: boolean:
+	set {_mode} to countryMobSpawnMode({_id})
+	if {_mode} is "ALL":
+		return true
+
+	set {_hostile} to false
+
+	# Большинство враждебных мобов.
+	if {_e} is a monster:
+		set {_hostile} to true
+
+	# Phantom в некоторых версиях Skript/Paper
+	# не определяется через "is a monster", поэтому проверяем отдельно.
+	if {_e} is a phantom:
+		set {_hostile} to true
+
+	if {_mode} is "NEUTRAL":
+		if {_hostile} is true:
+			return false
+		return true
+
+	if {_mode} is "HOSTILE":
+		if {_hostile} is true:
+			return true
+		return false
+
+	return true
+
+# Control natural mob spawning inside claimed country chunks.
+# ALL = vanilla behaviour
+# NEUTRAL = block hostile monsters
+# HOSTILE = block non-hostile mobs
+on spawn:
+	if spawn reason is not natural:
+		stop
+	set {_owner} to countryAtLocation(location of event-entity)
+	if {_owner} is "":
+		stop
+	if countryMobAllowedInTerritory(event-entity, {_owner}) is not true:
+		cancel event
+
+# Remove mobs that walk/fly/swim into a country where their type is disabled.
+# Runs periodically so it also catches mobs already standing inside after a mode change.
+every 10 ticks:
+	loop all living entities:
+		if loop-entity is a player:
+			continue
+		set {_owner} to countryAtLocation(location of loop-entity)
+		if {_owner} is "":
+			continue
+		if countryMobAllowedInTerritory(loop-entity, {_owner}) is not true:
+			kill loop-entity
+
+on join:
+	if {country.player::%uuid of player%} is set:
+		set {_id} to {country.player::%uuid of player%}
+		set {country::%uuid of player%} to countryName({_id})
+		set {country.member-name::%{_id}%::%uuid of player%} to name of player
+		countryEnsureRoleStorage({_id}, "%uuid of player%")
+		execute console command "identity country %uuid of player% %{_id}%"
+	else:
+		execute console command "identity country %uuid of player% none"
+	delete {country.last-chunk::%uuid of player%}
+	delete {country.last-territory-state::%uuid of player%}
+
+# Show the current territory above the hotbar when crossing a chunk border.
+on player move:
+	if {auth.logged-in::%name of player%} is not true:
+		stop
+	set {_key} to countryChunkKey(player)
+	if {country.last-chunk::%uuid of player%} is {_key}:
+		stop
+	set {country.last-chunk::%uuid of player%} to {_key}
+	set {_owner} to countryAt(player)
+	set {_chunk-name} to {country.claim-name::%{_key}%}
+	set {_plot-owner} to {country.chunk-owner::%{_key}%}
+	if {_plot-owner} is set:
+		set {_new-state} to "plot::%{_key}%::%{_plot-owner}%::%{_chunk-name}%"
+	else if {_chunk-name} is set:
+		set {_new-state} to "named::%{_key}%::%{_chunk-name}%"
+	else if {_owner} is "":
+		set {_new-state} to "neutral"
+	else:
+		set {_new-state} to "country::%{_owner}%"
+	if {country.last-territory-state::%uuid of player%} is {_new-state}:
+		stop
+	set {country.last-territory-state::%uuid of player%} to {_new-state}
+	if {_plot-owner} is set:
+		set {_plot-owner-name} to countryChunkOwnerName({_key})
+		if {_chunk-name} is set:
+			send action bar formatted "<yellow><bold>%{_chunk-name}%</bold> <dark gray>• <white>%{_plot-owner-name}% <dark gray>• %countryColor({_owner})%%countryName({_owner})%" to player
+		else:
+			send action bar formatted "<yellow><bold>ЧАСТНАЯ ТЕРРИТОРИЯ</bold> <dark gray>• <white>%{_plot-owner-name}% <dark gray>• %countryColor({_owner})%%countryName({_owner})%" to player
+		stop
+	if {_chunk-name} is set:
+		send action bar formatted "%countryColor({_owner})%<bold>%{_chunk-name}%</bold> <dark gray>• %countryColor({_owner})%%countryName({_owner})%" to player
+		stop
+	if {_owner} is "":
+		send action bar "<gray><bold>НЕЙТРАЛЬНАЯ ТЕРРИТОРИЯ" to player
+	else:
+		send action bar formatted "%countryColor({_owner})%<bold>%countryName({_owner})%" to player
+
+on quit:
+	delete {country.admin-edit::%uuid of player%}
+	delete {country.admin-directory::%uuid of player%}
+	delete {country.menu-country::%uuid of player%::*}
+	delete {country.directory-page::%uuid of player%}
+	delete {country.selected-country::%uuid of player%}
+	delete {country.menu::%uuid of player%}
+	delete {country.input::%uuid of player%}
+	delete {country.input-chunk::%uuid of player%}
+	delete {country.last-chunk::%uuid of player%}
+	delete {country.last-territory-state::%uuid of player%}
+	delete {country.menu-choice::%uuid of player%::*}
+	delete {country.menu-law::%uuid of player%::*}
+	delete {country.law-page::%uuid of player%}
+	delete {country.selected-law::%uuid of player%}
+	delete {country.edit-chunk::%uuid of player%}
+	delete {country.chunk-scope::%uuid of player%}
+	delete {country.chunk-target::%uuid of player%}
+	delete {country.chunk-menu-role::%uuid of player%::*}
+	delete {ui.click-until::%uuid of player%}
