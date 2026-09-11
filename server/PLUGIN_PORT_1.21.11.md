@@ -19,9 +19,11 @@ Intentionally pinned/retained:
 - CoreProtect 24.0
 - Orebfuscator 5.6.1
 - FastLeafDecay 2.0.1
-- ProAntiTab 2.4.3
 - AutoBackup 1.1
 - DisableJoinMessage 1.1
+
+Disabled on 1.21.11:
+- ProAntiTab 2.4.3: the latest available build throws a `NullPointerException` from `BukkitLoader.updateCommands` when a player joins on Purpur 1.21.11. Its config/data folder is intentionally kept so it can be restored later without losing settings.
 
 Removed / not managed by this workflow:
 - WorldEdit
@@ -36,4 +38,5 @@ Compatibility fixes:
 Expected warnings that are intentional configuration choices, not startup failures:
 - offline-mode / voice-chat encryption warning: Politaria uses its own authentication flow
 - GrimAC + ViaBackwards vehicle warning: applies to old translated clients using vehicles
-- ProAntiTab missing permissions-plugin warning: its global filtering still works, while permission-group features are unused
+- old `minecraft:chain` recipe/advancement entries may be removed from existing player data during the first 1.21.11 load
+- Orebfuscator may fall back from `L64X128StarStarRandom` to `SplittableRandom`; this is a fallback warning, not a startup failure
