@@ -28,12 +28,12 @@ jobs:
 
           dl() {
             echo "Downloading $2"
-            curl -g -fL --retry 4 --retry-delay 2 -A 'Politaria-Plugin-Port/1.3' "$1" -o "$2"
+            curl -g -fL --retry 4 --retry-delay 2 -A 'Politaria-Plugin-Port/1.4' "$1" -o "$2"
           }
 
           gh_asset() {
             repo="$1"; regex="$2"; dest="$3"
-            url=$(curl -g -fsSL -A 'Politaria-Plugin-Port/1.3' "https://api.github.com/repos/$repo/releases/latest" \
+            url=$(curl -g -fsSL -A 'Politaria-Plugin-Port/1.4' "https://api.github.com/repos/$repo/releases/latest" \
               | jq -r --arg re "$regex" '.assets[] | select(.name | test($re; "i")) | .browser_download_url' \
               | head -n1)
             test -n "$url" && test "$url" != null || { echo "No asset: $repo / $regex"; exit 1; }
@@ -42,7 +42,7 @@ jobs:
 
           modrinth_required() {
             project="$1"; dest="$2"
-            json=$(curl -g -fsSL -A 'Politaria-Plugin-Port/1.3' "https://api.modrinth.com/v2/project/$project/version?game_versions=%5B%221.21.11%22%5D")
+            json=$(curl -g -fsSL -A 'Politaria-Plugin-Port/1.4' "https://api.modrinth.com/v2/project/$project/version?game_versions=%5B%221.21.11%22%5D")
             url=$(printf '%s' "$json" | jq -r '[.[] | select(.version_type=="release") | select(any(.loaders[]; .=="bukkit" or .=="paper" or .=="purpur" or .=="spigot"))][0].files | ((map(select(.primary==true)) + .)[0].url) // empty')
             test -n "$url" || { echo "No stable 1.21.11 Modrinth release: $project"; exit 1; }
             dl "$url" "$dest"
@@ -50,7 +50,7 @@ jobs:
 
           modrinth_optional() {
             project="$1"; dest="$2"
-            json=$(curl -g -fsSL -A 'Politaria-Plugin-Port/1.3' "https://api.modrinth.com/v2/project/$project/version?game_versions=%5B%221.21.11%22%5D" || true)
+            json=$(curl -g -fsSL -A 'Politaria-Plugin-Port/1.4' "https://api.modrinth.com/v2/project/$project/version?game_versions=%5B%221.21.11%22%5D" || true)
             url=$(printf '%s' "$json" | jq -r '[.[] | select(.version_type=="release") | select(any(.loaders[]; .=="bukkit" or .=="paper" or .=="purpur" or .=="spigot"))][0].files | ((map(select(.primary==true)) + .)[0].url) // empty' 2>/dev/null || true)
             if [[ -n "$url" ]]; then
               dl "$url" "$dest"
@@ -81,14 +81,13 @@ jobs:
           # TAB 5.2.0 only supported up to 1.21.5. Use the current universal build.
           gh_asset NEZNAMY/TAB '^TAB[.]v[0-9.]+[.]jar$' "$P/TAB.jar"
 
-          # Citizens: use the current successful distribution jar, not the old v1_21_R1 build.
-          cjson=$(curl -g -fsSL -A 'Politaria-Plugin-Port/1.3' 'https://ci.citizensnpcs.co/job/Citizens2/lastSuccessfulBuild/api/json?tree=artifacts[fileName,relativePath]')
-          crel=$(printf '%s' "$cjson" | jq -r '.artifacts[] | select(.relativePath | test("^dist/target/Citizens-[^/]+[.]jar$";"i")) | .relativePath' | head -n1)
-          if [[ -z "$crel" ]]; then
-            crel=$(printf '%s' "$cjson" | jq -r '.artifacts[] | select(.fileName | test("^Citizens-[^/]+[.]jar$";"i")) | .relativePath' | head -n1)
-          fi
-          test -n "$crel" || { echo 'Citizens distribution artifact not found'; exit 1; }
-          dl "https://ci.citizensnpcs.co/job/Citizens2/lastSuccessfulBuild/artifact/$crel" "$P/Citizens.jar"
+          # Citizens Jenkins does not expose its JSON API anonymously, so discover the current distro jar from the artifact directory.
+          citizens_dir='https://ci.citizensnpcs.co/job/Citizens2/lastSuccessfulBuild/artifact/dist/target/'
+          cfile=$(curl -g -fsSL -A 'Politaria-Plugin-Port/1.4' "$citizens_dir" \
+            | grep -oE 'Citizens-[0-9.]+-b[0-9]+[.]jar' \
+            | head -n1)
+          test -n "$cfile" || { echo 'Citizens distribution artifact not found'; exit 1; }
+          dl "${citizens_dir}${cfile}" "$P/Citizens.jar"
 
           # Builds explicitly published for Minecraft 1.21.11.
           modrinth_required worldedit "$P/WorldEdit.jar"
@@ -103,7 +102,6 @@ jobs:
 
           # Grim 2.3.73 already supports 1.21.11, but take a newer stable 1.21.11 build when Modrinth exposes one.
           if compgen -G "$P/grimac-bukkit-*.jar" > /dev/null; then
-            old_grim=$(compgen -G "$P/grimac-bukkit-*.jar" | head -n1)
             modrinth_optional grimac "$P/GrimAC-new.jar"
             if [[ -s "$P/GrimAC-new.jar" ]]; then
               rm -f "$P"/grimac-bukkit-*.jar "$P"/GrimAC.jar
