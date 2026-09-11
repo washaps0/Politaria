@@ -1,25 +1,15 @@
-#Owner:
-#  tabprefix: "&0&l[&a&lOwner&0&l] &a"
-#  tagprefix: "&2&lOwner &a"
+# TAB group formatting for Politaria.
+# PolitariaIdentity provides the dynamic %politaria_tags% placeholder.
+
 Player:
   tabprefix: "&0&l[&7&lPlayer&0&l] &3"
   tagprefix: "&2&lPlayer &3"
-example_group:
-  header:
-    - "This is an example of per-group header/footer"
-  footer:
-    - "applied to a group"
 
- # default settings for all groups, all groups will take properties from this section unless player's primary group overrides a specific setting
+# Defaults for players that do not match a specific TAB group.
+# LuckPerms is not installed on this server, so do not reference its placeholders here.
 _DEFAULT_:
-  tabprefix: "%luckperms-prefix%"
-  tagprefix: "%luckperms-prefix%"
+  tabprefix: ""
+  tagprefix: ""
   customtabname: "%politaria_tags%%player%"
-  tabsuffix: "%luckperms-suffix%"
-  tagsuffix: "%luckperms-suffix%"
-
-per-world:
-  world1:
-    Owner:
-      tabprefix: "&0&l[&a&lOwner&0&l] &a"
-      tagprefix: "&2&lOwner &a"
+  tabsuffix: ""
+  tagsuffix: ""

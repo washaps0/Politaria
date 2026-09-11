@@ -217,7 +217,7 @@ function justiceOpenCuffControl(p: player, target: player):
 	loop integers between 0 and 26:
 		set slot loop-value of {_menu} to gray stained glass pane named " "
 	set {_mode} to {justice.cuff-mode::%uuid of {_target}%}
-	set slot 4 of {_menu} to chain named "<aqua><bold>%name of {_target}%" with lore "<gray>Режим: <white>%{_mode}%"
+	set slot 4 of {_menu} to iron bars named "<aqua><bold>%name of {_target}%" with lore "<gray>Режим: <white>%{_mode}%"
 	set slot 10 of {_menu} to lead named "<yellow><bold>ВЕСТИ ЗА СОБОЙ" with lore "<gray>Игрок сможет двигаться только рядом с вами"
 	set slot 12 of {_menu} to feather named "<light green><bold>РАЗРЕШИТЬ ХОДИТЬ" with lore "<gray>Свободное движение, но действия всё ещё заблокированы"
 	set slot 14 of {_menu} to iron boots named "<red><bold>ЗАПРЕТИТЬ ДВИЖЕНИЕ" with lore "<gray>Полностью зафиксировать игрока на месте"
@@ -371,7 +371,7 @@ function justiceDecorateSocial(p: player):
 		set slot 29 of current inventory of {_p} to barrier named "<red><bold>ЗАДЕРЖАТЬ НЕЛЬЗЯ" with lore "<gray>Нельзя задерживать граждан чужой страны"
 		stop
 	if {justice.cuffed-by::%{_targetUuid}%} is "%uuid of {_p}%":
-		set slot 29 of current inventory of {_p} to chain named "<aqua><bold>НАРУЧНИКИ" with lore "<green>Игрок задержан вами" and "<yellow>Нажмите для управления"
+		set slot 29 of current inventory of {_p} to iron bars named "<aqua><bold>НАРУЧНИКИ" with lore "<green>Игрок задержан вами" and "<yellow>Нажмите для управления"
 		stop
 	if {justice.cuffed-by::%{_targetUuid}%} is set:
 		set slot 29 of current inventory of {_p} to barrier named "<red><bold>УЖЕ ЗАДЕРЖАН"
@@ -379,7 +379,7 @@ function justiceDecorateSocial(p: player):
 	if {justice.cuff-target::%uuid of {_p}%} is set:
 		set slot 29 of current inventory of {_p} to barrier named "<red><bold>ВЫ УЖЕ ВЕДЁТЕ ЗАДЕРЖАННОГО"
 		stop
-	set slot 29 of current inventory of {_p} to chain named "<aqua><bold>ЗАДЕРЖАТЬ" with lore "<gray>Надеть наручники" and "<yellow>Нажмите, чтобы задержать"
+	set slot 29 of current inventory of {_p} to iron bars named "<aqua><bold>ЗАДЕРЖАТЬ" with lore "<gray>Надеть наручники" and "<yellow>Нажмите, чтобы задержать"
 
 on inventory open:
 	wait 3 ticks
