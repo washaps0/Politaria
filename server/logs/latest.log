@@ -1,175 +1,360 @@
-[15:58:04] [ServerMain/INFO]: [bootstrap] Running Java 21 (OpenJDK 64-Bit Server VM 21.0.11+10-LTS; Eclipse Adoptium Temurin-21.0.11+10) on Linux 6.8.0-100-generic (amd64)
-[15:58:04] [ServerMain/INFO]: [bootstrap] Loading Purpur 1.21.1-2329-ver/1.21.1@803bf62 (2024-10-31T20:25:04Z) for Minecraft 1.21.1
-[15:58:04] [ServerMain/INFO]: [PluginInitializerManager] Initializing plugins...
-[15:58:05] [ServerMain/INFO]: [PluginInitializerManager] Initialized 13 plugins
-[15:58:05] [ServerMain/INFO]: [PluginInitializerManager] Bukkit plugins (13):
- - AntiXray (2.0), BlueMap (5.16), PolitariaIdentity (1.5.4), PolitariaMapBridge (1.0.0), ProtocolLib (5.4.0), SkinsRestorer (15.12.5), Skript (2.15.4), TAB (5.2.0), ViaBackwards (5.11.0), ViaVersion (5.11.0), WorldEdit (7.3.9+6959-7adf70b), fast-leaf-decay (2.0.1), voicechat (2.6.21)
-[15:58:10] [ServerMain/INFO]: Environment: Environment[sessionHost=https://sessionserver.mojang.com, servicesHost=https://api.minecraftservices.com, name=PROD]
-[15:58:12] [ServerMain/INFO]: Loaded 1290 recipes
-[15:58:12] [ServerMain/INFO]: Loaded 1399 advancements
-[15:58:13] [Server thread/INFO]: Starting minecraft server version 1.21.1
-[15:58:13] [Server thread/INFO]: Loading properties
-[15:58:13] [Server thread/INFO]: This server is running Purpur version 1.21.1-2329-ver/1.21.1@803bf62 (2024-10-31T20:25:04Z) (Implementing API version 1.21.1-R0.1-SNAPSHOT)
-[15:58:14] [Server thread/INFO]: [spark] This server bundles the spark profiler. For more information please visit https://docs.papermc.io/paper/profiling
-[15:58:14] [Server thread/INFO]: Server Ping Player Sample Count: 12
-[15:58:14] [Server thread/INFO]: Using 4 threads for Netty based IO
-[15:58:15] [Server thread/INFO]: [ChunkTaskScheduler] Chunk system is using 1 I/O threads, 1 worker threads, and population gen parallelism of 1 threads
-[15:58:15] [Server thread/WARN]: [Pufferfish] SIMD operations are available for your server, but are not configured!
-[15:58:15] [Server thread/WARN]: [Pufferfish] To enable additional optimizations, add "--add-modules=jdk.incubator.vector" to your startup flags, BEFORE the "-jar".
-[15:58:15] [Server thread/WARN]: [Pufferfish] If you have already added this flag, then SIMD operations are not supported on your JVM or CPU.
-[15:58:15] [Server thread/WARN]: [Pufferfish] Debug: Java: 21.0.11, test run: true
-[15:58:15] [Server thread/INFO]: Default game type: SURVIVAL
-[15:58:15] [Server thread/INFO]: Generating keypair
-[15:58:15] [Server thread/INFO]: Starting Minecraft server on 0.0.0.0:26088
-[15:58:15] [Server thread/INFO]: Using epoll channel type
-[15:58:16] [Server thread/INFO]: Paper: Using libdeflate (Linux x86_64) compression from Velocity.
-[15:58:16] [Server thread/INFO]: Paper: Using OpenSSL 3.x.x (Linux x86_64) cipher from Velocity.
-[15:58:17] [Server thread/INFO]: [ViaVersion] Loading server plugin ViaVersion v5.11.0
-[15:58:17] [Server thread/INFO]: [ViaVersion] ViaVersion 5.11.0 is now loaded. Registering protocol transformers and injecting...
-[15:58:18] [Server thread/INFO]: [ViaBackwards] Loading translations...
-[15:58:18] [Server thread/INFO]: [ViaBackwards] Registering protocols...
-[15:58:19] [Server thread/INFO]: [ProtocolLib] Loading server plugin ProtocolLib v5.4.0
-[15:58:19] [Server thread/INFO]: [TAB] Loading server plugin TAB v5.2.0
-[15:58:19] [Server thread/INFO]: [Skript] Loading server plugin Skript v2.15.4
-[15:58:19] [Server thread/INFO]: [ViaBackwards] Loading server plugin ViaBackwards v5.11.0
-[15:58:19] [Server thread/INFO]: [BlueMap] Loading server plugin BlueMap v5.16
-[15:58:19] [Server thread/INFO]: [PolitariaIdentity] Loading server plugin PolitariaIdentity v1.5.4
-[15:58:19] [Server thread/INFO]: [WorldEdit] Loading server plugin WorldEdit v7.3.9+6959-7adf70b
-[15:58:20] [Server thread/INFO]: Got request to register class com.sk89q.worldedit.bukkit.BukkitServerInterface with WorldEdit [com.sk89q.worldedit.extension.platform.PlatformManager@4b1bdd9e]
-[15:58:20] [Server thread/INFO]: [SkinsRestorer] Loading server plugin SkinsRestorer v15.12.5
-[15:58:20] [Server thread/INFO]: [AntiXray] Loading server plugin AntiXray v2.0
-[15:58:20] [Server thread/INFO]: [voicechat] Loading server plugin voicechat v2.6.21
-[15:58:20] [Server thread/INFO]: [PolitariaMapBridge] Loading server plugin PolitariaMapBridge v1.0.0
-[15:58:20] [Server thread/INFO]: [fast-leaf-decay] Loading server plugin fast-leaf-decay v2.0.1
-[15:58:20] [Server thread/INFO]: Server permissions file permissions.yml is empty, ignoring it
-[15:58:20] [Server thread/INFO]: [ProtocolLib] Enabling ProtocolLib v5.4.0
-[15:58:20] [Server thread/INFO]: [WorldEdit] Enabling WorldEdit v7.3.9+6959-7adf70b
-[15:58:20] [Server thread/INFO]: Registering commands with com.sk89q.worldedit.bukkit.BukkitServerInterface
-[15:58:20] [Server thread/INFO]: WEPIF: Using the Bukkit Permissions API.
-[15:58:20] [Server thread/INFO]: Using com.sk89q.worldedit.bukkit.adapter.impl.v1_21.PaperweightAdapter as the Bukkit adapter
-[15:58:22] [Server thread/INFO]: [SkinsRestorer] Enabling SkinsRestorer v15.12.5
-[15:58:23] [Server thread/INFO]: [SkinsRestorer] Running on Minecraft 1.21.1.
-[15:58:24] [Server thread/INFO]: [SkinsRestorer] Using paper join listener!
-[15:58:24] [Server thread/WARN]: **** SERVER IS RUNNING IN OFFLINE/INSECURE MODE!
-[15:58:24] [Server thread/WARN]: The server will make no attempt to authenticate usernames. Beware.
-[15:58:24] [Server thread/WARN]: While this makes the game possible to play without internet access, it also opens up the ability for hackers to connect with any username they choose.
-[15:58:24] [Server thread/WARN]: To change this, set "online-mode" to "true" in the server.properties file.
-[15:58:24] [Server thread/INFO]: Preparing level "world"
-[15:58:24] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer] ----------------------------------------------
-[15:58:24] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     +===================+
-[15:58:24] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     |   SkinsRestorer   |
-[15:58:24] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     |-------------------|
-[15:58:24] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     |  Standalone Mode  |
-[15:58:24] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     +===================+
-[15:58:24] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer] ----------------------------------------------
-[15:58:24] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     Version: 15.12.5
-[15:58:24] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     Commit: 98b9488
-[15:58:24] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     This is the latest version!
-[15:58:24] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer] ----------------------------------------------
-[15:58:24] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer] Do you have issues? Read our troubleshooting guide: https://skinsrestorer.net/docs/troubleshooting
-[15:58:24] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer] Want to support SkinsRestorer or receive priority support? Become a supporter: https://skinsrestorer.net/pricing
-[15:58:26] [Server thread/INFO]: Preparing start region for dimension minecraft:overworld
-[15:58:27] [Server thread/INFO]: Time elapsed: 1283 ms
-[15:58:27] [Server thread/INFO]: Preparing start region for dimension minecraft:the_nether
-[15:58:27] [Server thread/INFO]: Time elapsed: 232 ms
-[15:58:27] [Server thread/INFO]: Preparing start region for dimension minecraft:the_end
-[15:58:27] [Server thread/INFO]: Time elapsed: 112 ms
-[15:58:27] [Server thread/INFO]: [ViaVersion] Enabling ViaVersion v5.11.0
-[15:58:27] [Server thread/INFO]: [ViaVersion] ViaVersion detected server version: 1.21-1.21.1 (767)
-[15:58:27] [Server thread/INFO]: [TAB] Enabling TAB v5.2.0
-[15:58:28] [Server thread/INFO]: [TAB] Loaded NMS hook in 53ms
-[15:58:28] [Server thread/INFO]: [TAB] Enabled in 378ms
-[15:58:28] [Server thread/INFO]: [Skript] Enabling Skript v2.15.4
-[15:58:28] [Server thread/INFO]: [Skript] The updater is disabled, so a check for the latest version of Skript was not performed.
-[15:58:31] [Server thread/INFO]: [Skript]  ~ created by & © Peter Güttinger aka Njol ~
-[15:58:31] [Server thread/INFO]: [ViaBackwards] Enabling ViaBackwards v5.11.0
-[15:58:31] [Server thread/INFO]: [BlueMap] Enabling BlueMap v5.16
-[15:58:31] [Server thread/INFO]: [BlueMap] Saving all worlds once, to make sure the level.dat is present...
-[15:58:31] [Server thread/WARN]: A manual (plugin-induced) save has been detected while server is configured to auto-save. This may affect performance.
-[15:58:32] [Server thread/INFO]: [PolitariaIdentity] Enabling PolitariaIdentity v1.5.4
-[15:58:32] [Server thread/INFO]: [PolitariaIdentity] Персональные имена игроков включены.
-[15:58:32] [Server thread/INFO]: [AntiXray] Enabling AntiXray v2.0
-[15:58:32] [Server thread/INFO]: [AntiXray] AntiXray plugin enabled!
-[15:58:32] [Server thread/INFO]: [AntiXray] Engine Mode: 1
-[15:58:32] [Server thread/INFO]: [AntiXray] Hidden blocks: 19
-[15:58:32] [Server thread/INFO]: [voicechat] Enabling voicechat v2.6.21
-[15:58:32] [Server thread/INFO]: [voicechat] Initializing compatibility for version 1.21.1-R0.1
-[15:58:32] [Server thread/INFO]: [voicechat] Compatibility version 20
-[15:58:32] [Server thread/INFO]: [voicechat] Successfully initialized commodore command completion
-[15:58:32] [Server thread/INFO]: [voicechat] Successfully added ViaVersion mappings
-[15:58:32] [Server thread/INFO]: [PolitariaMapBridge] Enabling PolitariaMapBridge v1.0.0
-[15:58:32] [Server thread/INFO]: [PolitariaMapBridge] Динамические территории стран для BlueMap включены.
-[15:58:32] [Server thread/INFO]: [fast-leaf-decay] Enabling fast-leaf-decay v2.0.1
-[15:58:32] [Server thread/INFO]: [spark] Starting background profiler...
-[15:58:33] [Server thread/INFO]: Done preparing level "world" (8.624s)
-[15:58:33] [Server thread/INFO]: Starting GS4 status listener
-[15:58:33] [Server thread/INFO]: Thread Query Listener started
-[15:58:33] [Query Listener #1/INFO]: Query running on 0.0.0.0:26088
-[15:58:33] [Server thread/INFO]: Running delayed init tasks
-[15:58:33] [Craft Scheduler Thread - 1 - BlueMap/INFO]: [BlueMap] Loading...
-[15:58:33] [Craft Scheduler Thread - 2 - ViaVersion/INFO]: [ViaVersion] Finished mapping loading, shutting down loader executor.
-[15:58:34] [Craft Scheduler Thread - 1 - BlueMap/INFO]: [BlueMap] Loading resources...
-[15:58:35] [ForkJoinPool.commonPool-worker-1/INFO]: [Skript] Loaded 5330 aliases in 3916ms
-[15:58:35] [Server thread/INFO]: [Skript] Loading variables...
-[15:58:35] [Server thread/INFO]: [Skript] Loaded 424 variables in 0.1 seconds
-[15:58:38] [Craft Scheduler Thread - 1 - BlueMap/INFO]: [BlueMap] Resources loaded.
-[15:58:38] [Craft Scheduler Thread - 1 - BlueMap/INFO]: [BlueMap] Initializing Storage: 'file' (Type: 'bluemap:file')
-[15:58:38] [Craft Scheduler Thread - 1 - BlueMap/INFO]: [BlueMap] Loading map 'world'...
-[15:58:39] [Craft Scheduler Thread - 1 - BlueMap/INFO]: [BlueMap] Loading map 'world_the_end'...
-[15:58:39] [Craft Scheduler Thread - 1 - BlueMap/INFO]: [BlueMap] Loading map 'world_nether'...
-[15:58:39] [Craft Scheduler Thread - 1 - BlueMap/INFO]: [BlueMap] WebServer bound to all network interfaces on port 26306
-[15:58:39] [BlueMap-Webserver/INFO]: [BlueMap] WebServer started.
-[15:58:39] [Craft Scheduler Thread - 1 - BlueMap/INFO]: [BlueMap] Loaded!
-[15:58:46] [Server thread/INFO]: [Skript] All scripts loaded without errors.
-[15:58:46] [Server thread/INFO]: [Skript] Loaded 9 scripts with a total of 179 structures in 10.75 seconds
-[15:58:46] [Server thread/INFO]: [Skript] Finished loading.
-[15:58:46] [Server thread/INFO]: [PolitariaIdentity] Плейсхолдеры TAB для страны и баланса включены.
-[15:58:46] [Server thread/INFO]: Done (43.074s)! For help, type "help"
-[15:58:46] [Server thread/WARN]: Can't keep up! Is the server overloaded? Running 13152ms or 263 ticks behind
-[15:58:46] [Server thread/INFO]: [voicechat] Loading plugins
-[15:58:46] [Server thread/INFO]: [voicechat] Loaded 0 plugin(s)
-[15:58:46] [Server thread/INFO]: [voicechat] Initializing plugins
-[15:58:46] [Server thread/INFO]: [voicechat] Initialized 0 plugin(s)
-[15:58:46] [Server thread/WARN]: [voicechat] Running in offline mode - Voice chat encryption is not secure!
-[15:58:46] [VoiceChatServerThread/INFO]: [voicechat] Voice host is 'play4.eternalzero.cloud:26037'
-[15:58:46] [VoiceChatServerThread/INFO]: [voicechat] Voice chat server started at port 26037
-[15:59:42] [User Authenticator #0/INFO]: UUID of player washapso is 30117ceb-db68-3c7e-8ee3-5b696de4040d
-[15:59:43] [Server thread/INFO]: washapso joined the game
-[15:59:43] [Server thread/INFO]: washapso[/91.236.210.70:56194] logged in with entity id 90 at ([world]7.75262881426394, 69.0, 514.1920148491587)
-[15:59:43] [Server thread/INFO]: [voicechat] Received secret request of washapso (20)
-[15:59:43] [Server thread/INFO]: [voicechat] Sent secret to washapso
-[15:59:43] [VoiceChatPacketProcessingThread/INFO]: [voicechat] Successfully authenticated player 30117ceb-db68-3c7e-8ee3-5b696de4040d
-[15:59:44] [VoiceChatPacketProcessingThread/INFO]: [voicechat] Successfully validated connection of player 30117ceb-db68-3c7e-8ee3-5b696de4040d
-[15:59:44] [VoiceChatPacketProcessingThread/INFO]: [voicechat] Player washapso (30117ceb-db68-3c7e-8ee3-5b696de4040d) successfully connected to voice chat
-[16:00:01] [User Authenticator #0/INFO]: UUID of player Danilcxz is 8888f8b8-222a-3467-89bb-29f1aa0bce88
-[16:00:02] [Server thread/INFO]: Danilcxz joined the game
-[16:00:02] [Server thread/INFO]: Danilcxz[/83.246.166.41:62337] logged in with entity id 641 at ([world]14.603339049280912, 78.12752727981709, 516.7013443340998)
-[16:00:35] [Server thread/INFO]: washapso issued server command: /gamemode spectator
-[16:00:35] [Server thread/INFO]: [washapso: Set own game mode to Spectator Mode]
-[16:00:39] [Server thread/INFO]: washapso issued server command: /gamemode creative
-[16:00:39] [Server thread/INFO]: [washapso: Set own game mode to Creative Mode]
-[16:00:45] [Server thread/INFO]: Danilcxz issued server command: /chat
-[16:00:51] [Server thread/INFO]: [Глобальный] Danilcxz: ЛЕША НЕНАДО
-[16:01:36] [Server thread/INFO]: [Глобальный] Danilcxz: 100 максимум
-[16:01:39] [Server thread/INFO]: [Глобальный] Danilcxz: ну 150
-[16:01:45] [Server thread/WARN]: washapso moved too quickly! 3.7883743322367422,0.0,132.5101201325491
-[16:02:18] [Server thread/INFO]: washapso issued server command: /tp Danilcxz
-[16:02:18] [Server thread/INFO]: [washapso: Teleported washapso to Danilcxz]
-[16:02:18] [Server thread/WARN]: washapso moved too quickly! 37.22959478629884,-41.54670091704993,-234.482922530716
-[16:02:32] [Server thread/INFO]: washapso issued server command: /gamemode spectator
-[16:02:32] [Server thread/INFO]: [washapso: Set own game mode to Spectator Mode]
-[16:02:39] [Server thread/INFO]: washapso issued server command: /tp Danilcxz
-[16:02:39] [Server thread/INFO]: [washapso: Teleported washapso to Danilcxz]
-[16:02:42] [Server thread/INFO]: washapso issued server command: /gamemode creative
-[16:02:42] [Server thread/INFO]: [washapso: Set own game mode to Creative Mode]
-[16:02:45] [Server thread/INFO]: [Глобальный] Danilcxz: 200
-[16:02:50] [Server thread/INFO]: [Глобальный] Danilcxz: 100
-[16:02:53] [Server thread/INFO]: [Глобальный] Danilcxz: 88
-[16:02:57] [Server thread/INFO]: [Глобальный] Danilcxz: 39
-[16:04:00] [Server thread/INFO]: washapso issued server command: /gamemode spectator
-[16:04:00] [Server thread/INFO]: [washapso: Set own game mode to Spectator Mode]
-[16:04:24] [Server thread/INFO]: washapso issued server command: /tp d
-[16:04:25] [Server thread/INFO]: washapso issued server command: /tp Danilcxz
-[16:04:25] [Server thread/INFO]: [washapso: Teleported washapso to Danilcxz]
-[16:04:28] [Server thread/INFO]: washapso issued server command: /gamemode creative
-[16:04:28] [Server thread/INFO]: [washapso: Set own game mode to Creative Mode]
+[14:37:47] [ServerMain/INFO]: [bootstrap] Running Java 21 (OpenJDK 64-Bit Server VM 21.0.12.1+1-LTS; Eclipse Adoptium Temurin-21.0.12.1+1) on Windows 11 10.0 (amd64)
+[14:37:47] [ServerMain/INFO]: [bootstrap] Loading Purpur 1.21.11-2568-HEAD@f57bd86 (2026-04-04T22:25:54Z) for Minecraft 1.21.11
+[14:37:48] [ServerMain/INFO]: [PluginInitializerManager] Initializing plugins...
+[14:37:49] [Paper Plugin Remapper Thread - 0/INFO]: [ReobfServer] Remapping server...
+[14:37:53] [Paper Plugin Remapper Thread - 0/INFO]: [ReobfServer] Done remapping server in 4368ms.
+[14:37:53] [Paper Plugin Remapper Thread - 2/INFO]: [PluginRemapper] Remapping plugin 'plugins\worldedit-bukkit-7.3.9.jar'...
+[14:37:53] [Paper Plugin Remapper Thread - 3/INFO]: [PluginRemapper] Remapping plugin 'plugins\voicechat-bukkit-2.6.21.jar'...
+[14:37:53] [Paper Plugin Remapper Thread - 0/INFO]: [PluginRemapper] Remapping plugin 'plugins\skript-reflect-2.6.3.jar'...
+[14:37:53] [Paper Plugin Remapper Thread - 4/INFO]: [PluginRemapper] Remapping plugin 'plugins\TAB.jar'...
+[14:37:53] [Paper Plugin Remapper Thread - 0/INFO]: [PluginRemapper] Done remapping plugin 'plugins\skript-reflect-2.6.3.jar' in 183ms.
+[14:37:53] [Paper Plugin Remapper Thread - 0/INFO]: [PluginRemapper] Remapping plugin 'plugins\Skript-2.15.4.jar'...
+[14:37:53] [Paper Plugin Remapper Thread - 3/INFO]: [PluginRemapper] Done remapping plugin 'plugins\voicechat-bukkit-2.6.21.jar' in 306ms.
+[14:37:53] [Paper Plugin Remapper Thread - 3/INFO]: [PluginRemapper] Remapping plugin 'plugins\SkinsRestorer.jar'...
+[14:37:54] [Paper Plugin Remapper Thread - 4/INFO]: [PluginRemapper] Done remapping plugin 'plugins\TAB.jar' in 830ms.
+[14:37:54] [Paper Plugin Remapper Thread - 4/INFO]: [PluginRemapper] Remapping plugin 'plugins\ProAntiTab-2.4.3.jar'...
+[14:37:54] [Paper Plugin Remapper Thread - 0/INFO]: [PluginRemapper] Done remapping plugin 'plugins\Skript-2.15.4.jar' in 909ms.
+[14:37:54] [Paper Plugin Remapper Thread - 0/INFO]: [PluginRemapper] Remapping plugin 'plugins\PolitariaTags.jar'...
+[14:37:54] [Paper Plugin Remapper Thread - 0/INFO]: [PluginRemapper] Done remapping plugin 'plugins\PolitariaTags.jar' in 37ms.
+[14:37:54] [Paper Plugin Remapper Thread - 0/INFO]: [PluginRemapper] Remapping plugin 'plugins\PolitariaSpawnProtection.jar'...
+[14:37:54] [Paper Plugin Remapper Thread - 0/INFO]: [PluginRemapper] Done remapping plugin 'plugins\PolitariaSpawnProtection.jar' in 37ms.
+[14:37:54] [Paper Plugin Remapper Thread - 0/INFO]: [PluginRemapper] Remapping plugin 'plugins\PolitariaMapBridge.jar'...
+[14:37:54] [Paper Plugin Remapper Thread - 4/INFO]: [PluginRemapper] Done remapping plugin 'plugins\ProAntiTab-2.4.3.jar' in 376ms.
+[14:37:54] [Paper Plugin Remapper Thread - 4/INFO]: [PluginRemapper] Remapping plugin 'plugins\PolitariaIdentity.jar'...
+[14:37:54] [Paper Plugin Remapper Thread - 0/INFO]: [PluginRemapper] Done remapping plugin 'plugins\PolitariaMapBridge.jar' in 41ms.
+[14:37:54] [Paper Plugin Remapper Thread - 0/INFO]: [PluginRemapper] Remapping plugin 'plugins\PolitariaApartments.jar'...
+[14:37:54] [Paper Plugin Remapper Thread - 2/INFO]: [PluginRemapper] Done remapping plugin 'plugins\worldedit-bukkit-7.3.9.jar' in 1249ms.
+[14:37:54] [Paper Plugin Remapper Thread - 2/INFO]: [PluginRemapper] Remapping plugin 'plugins\fast-leaf-decay-2.0.1.jar'...
+[14:37:54] [Paper Plugin Remapper Thread - 4/INFO]: [PluginRemapper] Done remapping plugin 'plugins\PolitariaIdentity.jar' in 49ms.
+[14:37:54] [Paper Plugin Remapper Thread - 4/INFO]: [PluginRemapper] Remapping plugin 'plugins\DisableJoinMessage-1.1.jar'...
+[14:37:54] [Paper Plugin Remapper Thread - 0/INFO]: [PluginRemapper] Done remapping plugin 'plugins\PolitariaApartments.jar' in 49ms.
+[14:37:54] [Paper Plugin Remapper Thread - 0/INFO]: [PluginRemapper] Remapping plugin 'plugins\Citizens-2.0.35-b3598.jar'...
+[14:37:54] [Paper Plugin Remapper Thread - 4/INFO]: [PluginRemapper] Done remapping plugin 'plugins\DisableJoinMessage-1.1.jar' in 42ms.
+[14:37:54] [Paper Plugin Remapper Thread - 4/INFO]: [PluginRemapper] Remapping plugin 'plugins\bluemap-5.16-spigot.jar'...
+[14:37:54] [Paper Plugin Remapper Thread - 2/INFO]: [PluginRemapper] Done remapping plugin 'plugins\fast-leaf-decay-2.0.1.jar' in 48ms.
+[14:37:54] [Paper Plugin Remapper Thread - 2/INFO]: [PluginRemapper] Remapping plugin 'plugins\AutoBackup-1.1.jar'...
+[14:37:55] [Paper Plugin Remapper Thread - 3/INFO]: [PluginRemapper] Done remapping plugin 'plugins\SkinsRestorer.jar' in 1479ms.
+[14:37:55] [Paper Plugin Remapper Thread - 0/INFO]: [PluginRemapper] Done remapping plugin 'plugins\Citizens-2.0.35-b3598.jar' in 778ms.
+[14:37:55] [Paper Plugin Remapper Thread - 4/INFO]: [PluginRemapper] Done remapping plugin 'plugins\bluemap-5.16-spigot.jar' in 880ms.
+[14:37:56] [Paper Plugin Remapper Thread - 2/INFO]: [PluginRemapper] Done remapping plugin 'plugins\AutoBackup-1.1.jar' in 1178ms.
+[14:37:56] [ServerMain/INFO]: [PluginInitializerManager] Initialized 23 plugins
+[14:37:56] [ServerMain/INFO]: [PluginInitializerManager] Bukkit plugins (23):
+ - AutoBackup (1.1), BlueMap (5.16), Citizens (2.0.35-SNAPSHOT (build 3598)), CoreProtect (24.0), DisableJoinMessage (1.1), GrimAC (2.3.73), Orebfuscator (5.6.1), PolitariaApartments (1.0.0), PolitariaIdentity (1.6.0-tags), PolitariaMapBridge (1.0.0), PolitariaSpawnProtection (1.0.0), PolitariaTags (1.0.0), ProAntiTab (2.4.3), ProtocolLib (5.4.0), SkinsRestorer (15.12.5), Skript (2.15.4), TAB (5.2.0), ViaBackwards (5.11.0), ViaVersion (5.11.0), WorldEdit (7.3.9+6959-7adf70b), fast-leaf-decay (2.0.1), skript-reflect (2.6.3), voicechat (2.6.21)
+[14:38:00] [ServerMain/INFO]: Environment: Environment[sessionHost=https://sessionserver.mojang.com, servicesHost=https://api.minecraftservices.com, profilesHost=https://api.mojang.com, name=PROD]
+[14:38:01] [ServerMain/INFO]: Loaded 1470 recipes
+[14:38:01] [ServerMain/INFO]: Loaded 1584 advancements
+[14:38:01] [ServerMain/INFO]: [ca.spottedleaf.dataconverter.minecraft.datatypes.MCTypeRegistry] Initialising converters for DataConverter...
+[14:38:02] [ServerMain/INFO]: [ca.spottedleaf.dataconverter.minecraft.datatypes.MCTypeRegistry] Finished initialising converters for DataConverter in 273,0ms
+[14:38:02] [Server thread/INFO]: Starting minecraft server version 1.21.11
+[14:38:02] [Server thread/INFO]: Loading properties
+[14:38:02] [Server thread/INFO]: This server is running Purpur version 1.21.11-2568-HEAD@f57bd86 (2026-04-04T22:25:54Z) (Implementing API version 1.21.11-R0.1-SNAPSHOT)
+[14:38:02] [Server thread/INFO]: [spark] This server bundles the spark profiler. For more information please visit https://docs.papermc.io/paper/profiling
+[14:38:02] [Server thread/INFO]: Server Ping Player Sample Count: 12
+[14:38:02] [Server thread/INFO]: Using 4 threads for Netty based IO
+[14:38:03] [Server thread/INFO]: [MoonriseCommon] Paper is using 3 worker threads, 1 I/O threads
+[14:38:03] [Server thread/INFO]: Default game type: SURVIVAL
+[14:38:03] [Server thread/INFO]: Generating keypair
+[14:38:03] [Server thread/INFO]: Starting Minecraft server on 0.0.0.0:26088
+[14:38:03] [Server thread/INFO]: Paper: Using Java compression from Velocity.
+[14:38:03] [Server thread/INFO]: Paper: Using Java cipher from Velocity.
+[14:38:05] [Server thread/INFO]: [PolitariaSpawnProtection] Loading server plugin PolitariaSpawnProtection v1.0.0
+[14:38:05] [Server thread/INFO]: [ViaVersion] Loading server plugin ViaVersion v5.11.0
+[14:38:05] [Server thread/INFO]: [ViaVersion] ViaVersion 5.11.0 is now loaded. Registering protocol transformers and injecting...
+[14:38:05] [Server thread/INFO]: [ViaBackwards] Loading translations...
+[14:38:05] [Server thread/INFO]: [ViaBackwards] Registering protocols...
+[14:38:05] [Server thread/INFO]: [Skript] Loading server plugin Skript v2.15.4
+[14:38:05] [Server thread/INFO]: [ProtocolLib] Loading server plugin ProtocolLib v5.4.0
+[14:38:06] [Server thread/WARN]: [ProtocolLib] Version (MC: 1.21.11) has not yet been tested! Proceed with caution.
+[14:38:06] [Server thread/INFO]: [TAB] Loading server plugin TAB v5.2.0
+[14:38:06] [Server thread/INFO]: [PolitariaApartments] Loading server plugin PolitariaApartments v1.0.0
+[14:38:06] [Server thread/INFO]: [ViaBackwards] Loading server plugin ViaBackwards v5.11.0
+[14:38:06] [Server thread/INFO]: [PolitariaIdentity] Loading server plugin PolitariaIdentity v1.6.0-tags
+[14:38:06] [Server thread/INFO]: [BlueMap] Loading server plugin BlueMap v5.16
+[14:38:06] [Server thread/INFO]: [WorldEdit] Loading server plugin WorldEdit v7.3.9+6959-7adf70b
+[14:38:06] [Server thread/INFO]: Got request to register class com.sk89q.worldedit.bukkit.BukkitServerInterface with WorldEdit [com.sk89q.worldedit.extension.platform.PlatformManager@41f52b96]
+[14:38:06] [Server thread/INFO]: [voicechat] Loading server plugin voicechat v2.6.21
+[14:38:06] [Server thread/INFO]: [skript-reflect] Loading server plugin skript-reflect v2.6.3
+[14:38:06] [Server thread/INFO]: [SkinsRestorer] Loading server plugin SkinsRestorer v15.12.5
+[14:38:06] [Server thread/INFO]: [ProAntiTab] Loading server plugin ProAntiTab v2.4.3
+[14:38:06] [Server thread/INFO]: [PolitariaTags] Loading server plugin PolitariaTags v1.0.0
+[14:38:06] [Server thread/INFO]: [PolitariaMapBridge] Loading server plugin PolitariaMapBridge v1.0.0
+[14:38:06] [Server thread/INFO]: [Orebfuscator] Loading server plugin Orebfuscator v5.6.1
+[14:38:06] [Server thread/INFO]: [GrimAC] Loading server plugin GrimAC v2.3.73
+[14:38:06] [Server thread/INFO]: [GrimAC] Loading PacketEvents...
+[14:38:08] [Server thread/INFO]: [fast-leaf-decay] Loading server plugin fast-leaf-decay v2.0.1
+[14:38:08] [Server thread/INFO]: [DisableJoinMessage] Loading server plugin DisableJoinMessage v1.1
+[14:38:08] [Server thread/INFO]: [CoreProtect] Loading server plugin CoreProtect v24.0
+[14:38:08] [Server thread/INFO]: [Citizens] Loading server plugin Citizens v2.0.35-SNAPSHOT (build 3598)
+[14:38:08] [Server thread/INFO]: [AutoBackup] Loading server plugin AutoBackup v1.1
+[14:38:08] [Server thread/INFO]: Server permissions file permissions.yml is empty, ignoring it
+[14:38:08] [Server thread/INFO]: [ProtocolLib] Enabling ProtocolLib v5.4.0
+[14:38:08] [Server thread/INFO]: [WorldEdit] Enabling WorldEdit v7.3.9+6959-7adf70b
+[14:38:08] [Server thread/INFO]: Registering commands with com.sk89q.worldedit.bukkit.BukkitServerInterface
+[14:38:08] [Server thread/INFO]: WEPIF: Using the Bukkit Permissions API.
+[14:38:08] [Server thread/WARN]: 
+**********************************************
+** This WorldEdit version does not fully support your version of Bukkit.
+**
+** When working with blocks or undoing, chests will be empty, signs
+** will be blank, and so on. There will be no support for entity
+** and block property-related functions.
+**
+** Please see https://worldedit.enginehub.org/en/latest/faq/#bukkit-adapters
+**********************************************
+
+[14:38:09] [Server thread/INFO]: [SkinsRestorer] Enabling SkinsRestorer v15.12.5
+[14:38:09] [Server thread/INFO]: [SkinsRestorer] Running on Minecraft 1.21.11.
+[14:38:10] [Server thread/INFO]: [SkinsRestorer] Using paper join listener!
+[14:38:10] [Server thread/WARN]: **** SERVER IS RUNNING IN OFFLINE/INSECURE MODE!
+[14:38:10] [Server thread/WARN]: The server will make no attempt to authenticate usernames. Beware.
+[14:38:10] [Server thread/WARN]: While this makes the game possible to play without internet access, it also opens up the ability for hackers to connect with any username they choose.
+[14:38:10] [Server thread/WARN]: To change this, set "online-mode" to "true" in the server.properties file.
+[14:38:10] [Server thread/INFO]: Preparing level "world"
+[14:38:10] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer] ----------------------------------------------
+[14:38:10] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     +===================+
+[14:38:10] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     |   SkinsRestorer   |
+[14:38:10] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     |-------------------|
+[14:38:10] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     |  Standalone Mode  |
+[14:38:10] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     +===================+
+[14:38:10] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer] ----------------------------------------------
+[14:38:10] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     Version: 15.12.5
+[14:38:10] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     Commit: 98b9488
+[14:38:10] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     This is the latest version!
+[14:38:10] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer] ----------------------------------------------
+[14:38:10] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer] Do you have issues? Read our troubleshooting guide: https://skinsrestorer.net/docs/troubleshooting
+[14:38:10] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer] Want to support SkinsRestorer or receive priority support? Become a supporter: https://skinsrestorer.net/pricing
+[14:38:10] [Server thread/INFO]: Loading 0 persistent chunks for world 'minecraft:overworld'...
+[14:38:10] [Server thread/INFO]: Prepared spawn area in 1 ms
+[14:38:10] [Server thread/INFO]: Loading 0 persistent chunks for world 'minecraft:the_nether'...
+[14:38:10] [Server thread/INFO]: Prepared spawn area in 1 ms
+[14:38:10] [Server thread/INFO]: Loading 0 persistent chunks for world 'minecraft:the_end'...
+[14:38:10] [Server thread/INFO]: Prepared spawn area in 1 ms
+[14:38:10] [Server thread/INFO]: Done preparing level "world" (0.648s)
+[14:38:10] [Server thread/INFO]: [PolitariaSpawnProtection] Enabling PolitariaSpawnProtection v1.0.0
+[14:38:10] [Server thread/INFO]: [PolitariaSpawnProtection] Spawn protection: world, horizontal radius 50.0, all heights.
+[14:38:10] [Server thread/INFO]: [ViaVersion] Enabling ViaVersion v5.11.0
+[14:38:10] [Server thread/INFO]: [ViaVersion] ViaVersion detected server version: 1.21.11 (774)
+[14:38:10] [Server thread/INFO]: [Skript] Enabling Skript v2.15.4
+[14:38:10] [Server thread/INFO]: [Skript] Successfully generated the config and the example scripts.
+[14:38:11] [Server thread/INFO]: [Skript] The updater is disabled, so a check for the latest version of Skript was not performed.
+[14:38:12] [Server thread/INFO]: [Skript]  ~ created by & © Peter Güttinger aka Njol ~
+[14:38:12] [Server thread/INFO]: [TAB] Enabling TAB v5.2.0
+[14:38:12] [Server thread/INFO]: [TAB] Failed to initialize converter from TAB components to Minecraft components. This will negatively impact most features, see below.
+[14:38:12] [Server thread/INFO]: [TAB] Failed to initialize minecraft fields for Scoreboards due to a compatibility error. Using fallback solution using Paper API. This will result in: 
+[14:38:12] [Server thread/INFO]: #1: Compatibility with other plugins being reduced
+[14:38:12] [Server thread/INFO]: [TAB] Failed to initialize minecraft fields for tablist entry management due to a compatibility error. Using fallback solution using Bukkit API. This will result in: 
+[14:38:12] [Server thread/INFO]: #1: Layout feature will not work
+[14:38:12] [Server thread/INFO]: #2: Prevent-spectator-effect feature will not work
+[14:38:12] [Server thread/INFO]: #3: Ping spoof feature will not work
+[14:38:12] [Server thread/INFO]: #4: Tablist formatting missing anti-override
+[14:38:12] [Server thread/INFO]: #5: Tablist formatting not supporting relational placeholders
+[14:38:12] [Server thread/INFO]: [TAB] Please update the plugin to a version with native support for your server version for optimal experience. This plugin version was made for 1.5 - 1.21.5.
+[14:38:12] [Server thread/INFO]: [TAB] Loaded NMS hook in 20ms
+[14:38:12] [Server thread/INFO]: [TAB] Enabled in 213ms
+[14:38:12] [Server thread/INFO]: [PolitariaApartments] Enabling PolitariaApartments v1.0.0
+[14:38:13] [Server thread/INFO]: [PolitariaApartments] Loaded 0 apartments; settlement timezone Europe/Moscow.
+[14:38:13] [Server thread/INFO]: [ViaBackwards] Enabling ViaBackwards v5.11.0
+[14:38:13] [Server thread/INFO]: [PolitariaIdentity] Enabling PolitariaIdentity v1.6.0-tags
+[14:38:13] [Server thread/INFO]: [PolitariaIdentity] Персональные имена игроков и теги включены.
+[14:38:13] [Server thread/INFO]: [BlueMap] Enabling BlueMap v5.16
+[14:38:13] [Server thread/INFO]: [BlueMap] Saving all worlds once, to make sure the level.dat is present...
+[14:38:13] [Server thread/WARN]: A manual (plugin-induced) save has been detected while server is configured to auto-save. This may affect performance.
+[14:38:13] [Server thread/INFO]: [voicechat] Enabling voicechat v2.6.21
+[14:38:13] [Server thread/INFO]: [voicechat] Initializing compatibility for version 1.21.11-R0.1
+[14:38:13] [Server thread/INFO]: [voicechat] Compatibility version 20
+[14:38:13] [Server thread/INFO]: [voicechat] Successfully initialized commodore command completion
+[14:38:13] [Server thread/INFO]: [voicechat] Successfully added ViaVersion mappings
+[14:38:13] [Server thread/INFO]: [skript-reflect] Enabling skript-reflect v2.6.3
+[14:38:13] [Server thread/INFO]: [ProAntiTab] Enabling ProAntiTab v2.4.3
+[14:38:13] [ForkJoinPool.commonPool-worker-1/INFO]: [Skript] Loaded 5684 aliases in 762ms
+[14:38:13] [Server thread/WARN]: [ProAntiTab] No known permissions plugin found, so some features may be disabled.
+[14:38:13] [Server thread/WARN]: [ProAntiTab] Read more about it here: https://rayzs.de/products/proantitab/nkppf
+[14:38:13] [Server thread/WARN]: Plugin PolitariaTags v1.0.0 tried to register permission 'politaria.tags.manage' but it's already registered
+[14:38:13] [Server thread/INFO]: [PolitariaTags] Enabling PolitariaTags v1.0.0
+[14:38:13] [Server thread/INFO]: [PolitariaTags] PolitariaTags enabled.
+[14:38:13] [Server thread/INFO]: [PolitariaMapBridge] Enabling PolitariaMapBridge v1.0.0
+[14:38:13] [Server thread/INFO]: [PolitariaMapBridge] Динамические территории стран для BlueMap включены.
+[14:38:13] [Server thread/INFO]: [Orebfuscator] Enabling Orebfuscator v5.6.1
+[14:38:13] [Server thread/INFO]: [Orebfuscator] Searching NMS adapter for version="1.21.11", nms="v1_21_R7_mojang"!
+[14:38:13] [Server thread/INFO]: [Orebfuscator] NMS adapter for server version "v1_21_R7_mojang" found!
+[14:38:13] [Server thread/INFO]: [Orebfuscator] No config found, creating default config for version 1.21.9 and above
+[14:38:14] [Server thread/INFO]: [GrimAC] Enabling GrimAC v2.3.73
+[14:38:14] [Server thread/INFO]: [GrimAC] Registering packets...
+[14:38:14] [Server thread/INFO]: [GrimAC] Registering tick schedulers...
+[14:38:14] [Server thread/INFO]: Grim Version: 2.3.73
+[14:38:14] [Server thread/WARN]: [GrimAC] GrimAC has detected that you have installed ViaBackwards on a 1.21.2+ server.
+[14:38:14] [Server thread/WARN]: [GrimAC] This setup is currently unsupported and you will experience issues with older clients using vehicles.
+[14:38:14] [Server thread/INFO]: [GrimAC] Registering singular bukkit event... (PistonEvent)
+[14:38:14] [Server thread/INFO]: [fast-leaf-decay] Enabling fast-leaf-decay v2.0.1
+[14:38:14] [Server thread/INFO]: [DisableJoinMessage] Enabling DisableJoinMessage v1.1
+[14:38:14] [Server thread/INFO]: [DisableJoinMessage] DisableJoinMessage activado correctamente!
+[14:38:14] [Server thread/INFO]: [DisableJoinMessage] Los mensajes vainilla de entrada y salida de jugadores han sido desactivados.
+[14:38:14] [Server thread/INFO]: [CoreProtect] Enabling CoreProtect v24.0
+[14:38:15] [Server thread/INFO]: [CoreProtect] CoreProtect Community Edition has been successfully enabled! 
+[14:38:15] [Server thread/INFO]: [CoreProtect] Using SQLite for data storage.
+[14:38:15] [Server thread/INFO]: --------------------
+[14:38:15] [Server thread/INFO]: [CoreProtect] Enjoy CoreProtect? Join our Discord!
+[14:38:15] [Server thread/INFO]: [CoreProtect] Discord: www.coreprotect.net/discord/
+[14:38:15] [Server thread/INFO]: --------------------
+[14:38:15] [Server thread/INFO]: [Citizens] Enabling Citizens v2.0.35-SNAPSHOT (build 3598)
+[14:38:15] [Server thread/INFO]: [Citizens] Loading external libraries
+[14:38:22] [Server thread/INFO]: [Citizens] Unable to load Adventure, chat components will not work
+[14:38:22] [Server thread/INFO]: [Citizens] Detected system language [[ru]]. If youd like you can contribute to Citizens translations via our Discord! https://discord.gg/Q6pZGSR
+[14:38:22] [Server thread/INFO]: [Citizens] Using mojmapped server, avoiding server package checks
+[14:38:22] [Server thread/ERROR]: [Citizens] Could not fetch NMS field cn: [[cn.
+[14:38:22] [Server thread/ERROR]: [Citizens] Could not fetch NMS field cn: [[null.
+[14:38:22] [Server thread/ERROR]: Error occurred while enabling Citizens v2.0.35-SNAPSHOT (build 3598) (Is it up to date?)
+java.lang.NoClassDefFoundError: org/bukkit/craftbukkit/v1_21_R1/boss/CraftBossBar
+	at Citizens-2.0.35-b3598.jar//net.citizensnpcs.nms.v1_21_R1.util.NMSImpl.<clinit>(NMSImpl.java:2667) ~[?:?]
+	at java.base/java.lang.Class.forName0(Native Method) ~[?:?]
+	at java.base/java.lang.Class.forName(Class.java:536) ~[?:?]
+	at java.base/java.lang.Class.forName(Class.java:515) ~[?:?]
+	at io.papermc.reflectionrewriter.runtime.AbstractDefaultRulesReflectionProxy.forName(AbstractDefaultRulesReflectionProxy.java:68) ~[reflection-rewriter-runtime-0.0.3.jar:?]
+	at io.papermc.paper.pluginremap.reflect.PaperReflectionHolder.forName(Unknown Source) ~[purpur-1.21.11.jar:1.21.11-2568-f57bd86]
+	at Citizens-2.0.35-b3598.jar//net.citizensnpcs.api.util.SpigotUtil.lambda$getMinecraftPackage$1(SpigotUtil.java:171) ~[?:?]
+	at Citizens-2.0.35-b3598.jar//net.citizensnpcs.api.util.SpigotUtil.getMinecraftPackage(SpigotUtil.java:176) ~[?:?]
+	at Citizens-2.0.35-b3598.jar//net.citizensnpcs.Citizens.onEnable(Citizens.java:373) ~[?:?]
+	at org.bukkit.plugin.java.JavaPlugin.setEnabled(JavaPlugin.java:279) ~[purpur-api-1.21.11-R0.1-SNAPSHOT.jar:?]
+	at io.papermc.paper.plugin.manager.PaperPluginInstanceManager.enablePlugin(PaperPluginInstanceManager.java:207) ~[purpur-1.21.11.jar:1.21.11-2568-f57bd86]
+	at io.papermc.paper.plugin.manager.PaperPluginManagerImpl.enablePlugin(PaperPluginManagerImpl.java:109) ~[purpur-1.21.11.jar:1.21.11-2568-f57bd86]
+	at org.bukkit.plugin.SimplePluginManager.enablePlugin(SimplePluginManager.java:520) ~[purpur-api-1.21.11-R0.1-SNAPSHOT.jar:?]
+	at org.bukkit.craftbukkit.CraftServer.enablePlugin(CraftServer.java:653) ~[purpur-1.21.11.jar:1.21.11-2568-f57bd86]
+	at org.bukkit.craftbukkit.CraftServer.enablePlugins(CraftServer.java:610) ~[purpur-1.21.11.jar:1.21.11-2568-f57bd86]
+	at net.minecraft.server.MinecraftServer.initPostWorld(MinecraftServer.java:640) ~[purpur-1.21.11.jar:1.21.11-2568-f57bd86]
+	at net.minecraft.server.dedicated.DedicatedServer.initServer(DedicatedServer.java:408) ~[purpur-1.21.11.jar:1.21.11-2568-f57bd86]
+	at net.minecraft.server.MinecraftServer.runServer(MinecraftServer.java:1268) ~[purpur-1.21.11.jar:1.21.11-2568-f57bd86]
+	at net.minecraft.server.MinecraftServer.lambda$spin$2(MinecraftServer.java:392) ~[purpur-1.21.11.jar:1.21.11-2568-f57bd86]
+	at java.base/java.lang.Thread.run(Thread.java:1583) ~[?:?]
+Caused by: java.lang.ClassNotFoundException: org.bukkit.craftbukkit.v1_21_R1.boss.CraftBossBar
+	at org.bukkit.plugin.java.PluginClassLoader.loadClass0(PluginClassLoader.java:208) ~[purpur-api-1.21.11-R0.1-SNAPSHOT.jar:?]
+	at org.bukkit.plugin.java.PluginClassLoader.loadClass(PluginClassLoader.java:175) ~[purpur-api-1.21.11-R0.1-SNAPSHOT.jar:?]
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:526) ~[?:?]
+	... 20 more
+[14:38:22] [Server thread/INFO]: [Citizens] Disabling Citizens v2.0.35-SNAPSHOT (build 3598)
+[14:38:22] [Server thread/INFO]: [AutoBackup] Enabling AutoBackup v1.1
+[14:38:22] [Server thread/INFO]: [AutoBackup] Backup directory created at: C:\Users\washapso\Desktop\Servers\Politaria\server\backups
+[14:38:22] [Server thread/INFO]: [AutoBackup] AutoBackup plugin enabled! Backing up every 10800 seconds.
+[14:38:22] [Server thread/INFO]: [spark] Starting background profiler...
+[14:38:22] [Server thread/INFO]: [spark] The async-profiler engine is not supported for your os/arch (windows11/amd64), so the built-in Java engine will be used instead.
+[14:38:23] [Server thread/INFO]: Starting GS4 status listener
+[14:38:23] [Server thread/INFO]: Thread Query Listener started
+[14:38:23] [Query Listener #1/INFO]: Query running on 0.0.0.0:26088
+[14:38:23] [Server thread/INFO]: Running delayed init tasks
+[14:38:23] [Craft Scheduler Thread - 3 - BlueMap/INFO]: [BlueMap] Loading...
+[14:38:23] [Craft Scheduler Thread - 6 - AutoBackup/INFO]: [AutoBackup] Starting backup process...
+[14:38:23] [Craft Scheduler Thread - 1 - ViaVersion/INFO]: [ViaVersion] Finished mapping loading, shutting down loader executor.
+[14:38:23] [Server thread/INFO]: [Skript] Loading variables...
+[14:38:23] [Craft Scheduler Thread - 5 - GrimAC/INFO]: New GrimAC version found! Version 2.3.74-8eb5f28 is available to be downloaded here: https://modrinth.com/plugin/grimac
+[14:38:23] [Craft Scheduler Thread - 3 - BlueMap/INFO]: [BlueMap] Downloading 'https://piston-data.mojang.com/v1/objects/ba2df812c2d12e0219c489c4cd9a5e1f0760f5bd/client.jar' to 'bluemap\minecraft-client-1.21.11.jar'...
+[14:38:24] [Thread-22/INFO]: [Skript] Loaded 2953 variables so far...
+[14:38:25] [Thread-22/INFO]: [Skript] Loaded 2953 variables so far...
+[14:38:26] [Thread-22/INFO]: [Skript] Loaded 2953 variables so far...
+[14:38:27] [Thread-22/INFO]: [Skript] Loaded 2953 variables so far...
+[14:38:28] [Craft Scheduler Thread - 3 - BlueMap/INFO]: [BlueMap] Loading resources...
+[14:38:28] [Server thread/INFO]: [Skript] Loaded 2953 variables in 5.0 seconds
+[14:38:28] [Craft Scheduler Thread - 6 - AutoBackup/INFO]: [AutoBackup] Backed up world: world to backups/world_2026-09-11_14-38-23.zip
+[14:38:29] [Craft Scheduler Thread - 6 - AutoBackup/INFO]: [AutoBackup] Backed up world: world_nether to backups/world_nether_2026-09-11_14-38-28.zip
+[14:38:29] [Craft Scheduler Thread - 6 - AutoBackup/INFO]: [AutoBackup] Backed up world: world_the_end to backups/world_the_end_2026-09-11_14-38-29.zip
+[14:38:29] [Craft Scheduler Thread - 6 - AutoBackup/INFO]: [AutoBackup] Backup process completed.
+[14:38:31] [Server thread/INFO]: [Skript] Line 220: (justice.sk)
+[14:38:31] [Server thread/INFO]:     a slot can't be set to 'chain named "<aqua><bold>%name of {_target}%" with lore "<gray>Режим: <white>%{_mode}%"' because the latter is neither an item type nor an item stack
+[14:38:31] [Server thread/INFO]:     Line: set slot 4 of {_menu} to chain named "<aqua><bold>%name of {_target}%" with lore "<gray>Режим: <white>%{_mode}%"
+[14:38:31] [Server thread/INFO]:  
+[14:38:31] [Server thread/INFO]: [Skript] Line 374: (justice.sk)
+[14:38:31] [Server thread/INFO]:     Can't understand this condition/effect: set slot 29 of current inventory of {_p} to chain named "<aqua><bold>НАРУЧНИКИ" with lore "<green>Игрок задержан вами" and "<yellow>Нажмите для управления"
+[14:38:31] [Server thread/INFO]:     Line: set slot 29 of current inventory of {_p} to chain named "<aqua><bold>НАРУЧНИКИ" with lore "<green>Игрок задержан вами" and "<yellow>Нажмите для управления"
+[14:38:31] [Server thread/INFO]:  
+[14:38:31] [Server thread/INFO]: [Skript] Line 382: (justice.sk)
+[14:38:31] [Server thread/INFO]:     Can't understand this condition/effect: set slot 29 of current inventory of {_p} to chain named "<aqua><bold>ЗАДЕРЖАТЬ" with lore "<gray>Надеть наручники" and "<yellow>Нажмите, чтобы задержать"
+[14:38:31] [Server thread/INFO]:     Line: set slot 29 of current inventory of {_p} to chain named "<aqua><bold>ЗАДЕРЖАТЬ" with lore "<gray>Надеть наручники" and "<yellow>Нажмите, чтобы задержать"
+[14:38:31] [Server thread/INFO]:  
+[14:38:33] [Craft Scheduler Thread - 3 - BlueMap/INFO]: [BlueMap] Resources loaded.
+[14:38:33] [Craft Scheduler Thread - 3 - BlueMap/INFO]: [BlueMap] Initializing Storage: 'file' (Type: 'bluemap:file')
+[14:38:33] [Craft Scheduler Thread - 3 - BlueMap/INFO]: [BlueMap] Loading map 'world'...
+[14:38:33] [Craft Scheduler Thread - 3 - BlueMap/INFO]: [BlueMap] Loading map 'world_the_end'...
+[14:38:33] [Craft Scheduler Thread - 3 - BlueMap/INFO]: [BlueMap] Loading map 'world_nether'...
+[14:38:33] [Craft Scheduler Thread - 3 - BlueMap/INFO]: [BlueMap] WebServer bound to all network interfaces on port 12321
+[14:38:33] [BlueMap-Webserver/INFO]: [BlueMap] WebServer started.
+[14:38:34] [Craft Scheduler Thread - 3 - BlueMap/INFO]: [BlueMap] Loaded!
+[14:38:36] [Server thread/INFO]: 
+[14:38:36] [Server thread/INFO]: СКУПКА ОБНОВЛЕНА!
+[14:38:36] [Server thread/INFO]: Появились 10 новых случайных товаров.
+[14:38:36] [Server thread/INFO]: Откройте /shop чтобы посмотреть ассортимент.
+[14:38:36] [Server thread/INFO]: 
+[14:38:36] [Server thread/INFO]: [Skript] Loaded 19 scripts with a total of 487 structures in 7.88 seconds
+[14:38:36] [Server thread/INFO]: [Skript] Finished loading.
+[14:38:36] [Server thread/INFO]: [CoreProtect] WorldEdit logging successfully initialized.
+[14:38:36] [Server thread/INFO]: [PolitariaIdentity] Плейсхолдеры TAB включены.
+[14:38:36] [Server thread/INFO]: Done (49.033s)! For help, type "help"
+[14:38:36] [Server thread/INFO]: [voicechat] Loading plugins
+[14:38:36] [Server thread/INFO]: [voicechat] Loaded 0 plugin(s)
+[14:38:36] [Server thread/INFO]: [voicechat] Initializing plugins
+[14:38:36] [Server thread/INFO]: [voicechat] Initialized 0 plugin(s)
+[14:38:36] [Server thread/WARN]: [voicechat] Running in offline mode - Voice chat encryption is not secure!
+[14:38:36] [VoiceChatServerThread/INFO]: [voicechat] Voice host is '163.5.201.8:12321'
+[14:38:36] [VoiceChatServerThread/INFO]: [voicechat] Voice chat server started at port 12321
+[14:38:36] [Craft Scheduler Thread - 1 - ProAntiTab/INFO]: [PAT | Bukkit] You are using the newest version! ^^
+[14:41:13] [Server thread/INFO]: Stopping server
+[14:41:13] [Server thread/INFO]: [AutoBackup] Disabling AutoBackup v1.1
+[14:41:13] [Server thread/INFO]: [AutoBackup] AutoBackup plugin disabled!
+[14:41:13] [Server thread/INFO]: [CoreProtect] Disabling CoreProtect v24.0
+[14:41:13] [Server thread/INFO]: [CoreProtect] Finishing up data logging. Please wait...
+[14:41:14] [Server thread/INFO]: [CoreProtect] Success! Disabled CoreProtect v24.0
+[14:41:14] [Server thread/INFO]: [DisableJoinMessage] Disabling DisableJoinMessage v1.1
+[14:41:14] [Server thread/INFO]: [DisableJoinMessage] DisableJoinMessage desactivado correctamente!
+[14:41:14] [Server thread/INFO]: [fast-leaf-decay] Disabling fast-leaf-decay v2.0.1
+[14:41:14] [Server thread/INFO]: [GrimAC] Disabling GrimAC v2.3.73
+[14:41:14] [Server thread/INFO]: [GrimAC] Terminating PacketEvents...
+[14:41:14] [Server thread/INFO]: [Orebfuscator] Disabling Orebfuscator v5.6.1
+[14:41:14] [Server thread/INFO]: [PolitariaMapBridge] Disabling PolitariaMapBridge v1.0.0
+[14:41:14] [Server thread/INFO]: [PolitariaTags] Disabling PolitariaTags v1.0.0
+[14:41:14] [Server thread/INFO]: [ProAntiTab] Disabling ProAntiTab v2.4.3
+[14:41:14] [Server thread/INFO]: [SkinsRestorer] Disabling SkinsRestorer v15.12.5
+[14:41:14] [Server thread/INFO]: [skript-reflect] Disabling skript-reflect v2.6.3
+[14:41:14] [Server thread/INFO]: [voicechat] Disabling voicechat v2.6.21
+[14:41:14] [Server thread/INFO]: [WorldEdit] Disabling WorldEdit v7.3.9+6959-7adf70b
+[14:41:14] [Server thread/INFO]: Unregistering com.sk89q.worldedit.bukkit.BukkitServerInterface from WorldEdit
+[14:41:14] [Server thread/INFO]: [BlueMap] Disabling BlueMap v5.16
+[14:41:14] [Server thread/INFO]: [BlueMap] Stopping...
+[14:41:14] [Server thread/INFO]: [BlueMap] Saved and stopped!
+[14:41:14] [Server thread/INFO]: [PolitariaIdentity] Disabling PolitariaIdentity v1.6.0-tags
+[14:41:14] [Server thread/INFO]: [ViaBackwards] Disabling ViaBackwards v5.11.0
+[14:41:14] [Server thread/INFO]: [PolitariaApartments] Disabling PolitariaApartments v1.0.0
+[14:41:14] [Server thread/INFO]: [TAB] Disabling TAB v5.2.0
+[14:41:14] [Server thread/INFO]: [TAB] Disabled in 0ms
+[14:41:14] [Server thread/INFO]: [ProtocolLib] Disabling ProtocolLib v5.4.0
+[14:41:14] [Server thread/INFO]: [Skript] Disabling Skript v2.15.4
+[14:41:14] [Server thread/INFO]: [ViaVersion] Disabling ViaVersion v5.11.0
+[14:41:14] [Server thread/INFO]: [ViaVersion] ViaVersion has been disabled; uninjected the platform and shut down the scheduler.
+[14:41:14] [Server thread/INFO]: [PolitariaSpawnProtection] Disabling PolitariaSpawnProtection v1.0.0
+[14:41:14] [Server thread/INFO]: Saving players
+[14:41:14] [Server thread/INFO]: Saving worlds
+[14:41:14] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[14:41:14] [Server thread/INFO]: [ChunkHolderManager] Waiting 60s for chunk system to halt for world 'world'
+[14:41:14] [Server thread/INFO]: [ChunkHolderManager] Halted chunk system for world 'world'
+[14:41:14] [Server thread/INFO]: [ChunkHolderManager] Saving all chunkholders for world 'world'
+[14:41:14] [Server thread/INFO]: [ChunkHolderManager] Saved 0 block chunks, 0 entity chunks, 0 poi chunks in world 'world' in 0,00s
+[14:41:14] [Server thread/INFO]: [ChunkHolderManager] Waiting 60s for chunk I/O to halt for world 'world'
+[14:41:14] [Server thread/INFO]: [ChunkHolderManager] Halted I/O scheduler for world 'world'
+[14:41:14] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world_nether]'/minecraft:the_nether
+[14:41:14] [Server thread/INFO]: [ChunkHolderManager] Waiting 60s for chunk system to halt for world 'world_nether'
+[14:41:14] [Server thread/INFO]: [ChunkHolderManager] Halted chunk system for world 'world_nether'
+[14:41:14] [Server thread/INFO]: [ChunkHolderManager] Saving all chunkholders for world 'world_nether'
+[14:41:14] [Server thread/INFO]: [ChunkHolderManager] Saved 0 block chunks, 0 entity chunks, 0 poi chunks in world 'world_nether' in 0,00s
+[14:41:14] [Server thread/INFO]: [ChunkHolderManager] Waiting 60s for chunk I/O to halt for world 'world_nether'
+[14:41:14] [Server thread/INFO]: [ChunkHolderManager] Halted I/O scheduler for world 'world_nether'
+[14:41:14] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world_the_end]'/minecraft:the_end
+[14:41:14] [Server thread/INFO]: [ChunkHolderManager] Waiting 60s for chunk system to halt for world 'world_the_end'
+[14:41:14] [Server thread/INFO]: [ChunkHolderManager] Halted chunk system for world 'world_the_end'
+[14:41:14] [Server thread/INFO]: [ChunkHolderManager] Saving all chunkholders for world 'world_the_end'
+[14:41:14] [Server thread/INFO]: [ChunkHolderManager] Saved 0 block chunks, 0 entity chunks, 0 poi chunks in world 'world_the_end' in 0,00s
+[14:41:14] [Server thread/INFO]: [ChunkHolderManager] Waiting 60s for chunk I/O to halt for world 'world_the_end'
+[14:41:14] [Server thread/INFO]: [ChunkHolderManager] Halted I/O scheduler for world 'world_the_end'
+[14:41:14] [Server thread/INFO]: ThreadedAnvilChunkStorage (world): All chunks are saved
+[14:41:14] [Server thread/INFO]: ThreadedAnvilChunkStorage (DIM-1): All chunks are saved
+[14:41:14] [Server thread/INFO]: ThreadedAnvilChunkStorage (DIM1): All chunks are saved
+[14:41:14] [Server thread/INFO]: ThreadedAnvilChunkStorage: All dimensions are saved
+[14:41:14] [Server thread/INFO]: Waiting for all RegionFile I/O tasks to complete...
+[14:41:14] [Server thread/INFO]: All RegionFile I/O tasks to complete
+[14:41:14] [Server thread/INFO]: [MoonriseCommon] Awaiting termination of worker pool for up to 60s...
+[14:41:14] [Server thread/INFO]: [MoonriseCommon] Awaiting termination of I/O pool for up to 60s...

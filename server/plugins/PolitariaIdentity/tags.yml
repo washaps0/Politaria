@@ -1,0 +1,34 @@
+definitions:
+  creator:
+    display: Creator
+    color: <light_purple>
+    tab-color: '&d'
+    automatic-op: false
+    assignable: true
+    permissions: []
+  dev:
+    display: Dev
+    color: <aqua>
+    tab-color: '&b'
+    automatic-op: false
+    assignable: true
+    permissions: []
+  admin:
+    display: Admin
+    color: <red>
+    tab-color: '&c'
+    automatic-op: true
+    assignable: false
+    permissions: []
+  media:
+    display: Media
+    color: <gold>
+    tab-color: '&6'
+    automatic-op: false
+    assignable: true
+    permissions:
+    - minecraft.command.teleport
+    - minecraft.command.give
+    - minecraft.command.gamemode
+    - minecraft.command.time
+    - minecraft.command.weather
