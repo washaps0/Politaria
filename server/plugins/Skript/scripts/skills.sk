@@ -8,7 +8,7 @@ options:
     skills-prefix: &b&lPOLITARIA&r &8»
 
 # =========================================================
-# LEVELS
+# COMMON
 # =========================================================
 
 function skillLevelFromXP(xp: number) :: number:
@@ -58,6 +58,12 @@ function skillNextXP(level: number) :: number:
         return 1125
     return skillXPForLevel({_level} + 1)
 
+# Не вызываем jobsCurrent(), чтобы skills.sk не зависел от порядка загрузки jobs.sk.
+function skillsCurrentJob(p: player) :: text:
+    if {jobs.current::%uuid of {_p}%} is not set:
+        return ""
+    return lowercase "%{jobs.current::%uuid of {_p}%}%"
+
 # =========================================================
 # MINING
 # =========================================================
@@ -74,7 +80,6 @@ function miningChance(p: player) :: number:
     return miningLevel({_p}) * 2
 
 function miningOreXP(name: text) :: number:
-    # Overworld ores
     if {_name} is "coal ore":
         return 1
     if {_name} is "deepslate coal ore":
@@ -107,15 +112,12 @@ function miningOreXP(name: text) :: number:
         return 6
     if {_name} is "deepslate emerald ore":
         return 7
-
-    # Nether ores
     if {_name} is "nether quartz ore":
         return 1
     if {_name} is "nether gold ore":
         return 2
     if {_name} is "ancient debris":
         return 8
-
     return 0
 
 function miningBonus(name: text) :: text:
@@ -166,15 +168,24 @@ function miningAddXP(p: player, amount: number):
     add {_amount} to {skills.mining.xp::%uuid of {_p}%}
     set {_new-level} to miningLevel({_p})
     set {_xp} to miningXP({_p})
+    set {_working} to false
+    if skillsCurrentJob({_p}) is "miner":
+        set {_working} to true
+
     if {_new-level} > {_old-level}:
         send "{@skills-prefix} &fНавык &bШахтёрство &fповышен до &b%{_new-level}% уровня&f!" to {_p}
-        send action bar formatted "<aqua><bold>⛏ ШАХТЁРСТВО</bold> <dark_gray>» <green><bold>УРОВЕНЬ %{_new-level}%!" to {_p}
+        if {_working} is false:
+            send action bar formatted "<aqua><bold>⛏ ШАХТЁРСТВО</bold> <dark_gray>» <green><bold>УРОВЕНЬ %{_new-level}%!" to {_p}
         if {_old-level} < 4:
             if {_new-level} >= 4:
                 send "{@skills-prefix} &fОткрыт навык: &bАвтоподбор&f." to {_p}
         if {_new-level} >= 10:
             send "{@skills-prefix} &6Шахтёрство достигло максимального уровня!" to {_p}
         stop
+
+    if {_working} is true:
+        stop
+
     set {_needed} to skillNextXP({_new-level})
     send action bar formatted "<aqua>⛏ Шахтёрство <dark_gray>• <white>%{_xp}%<gray>/%{_needed}% XP <dark_gray>• <green>+%{_amount}% XP" to {_p}
 
@@ -188,18 +199,32 @@ on break with priority monitor:
     if {skills.mining.placed::%location of event-block%} is set:
         delete {skills.mining.placed::%location of event-block%}
         stop
-    set {_drops::*} to drops of event-block using player's tool as player
+
+    set {_working} to false
+    if skillsCurrentJob(player) is "miner":
+        set {_working} to true
+
     set {_level} to miningLevel(player)
-    if {_level} >= 4:
-        clear drops
-        loop {_drops::*}:
-            if player can hold loop-value:
-                give loop-value to player
-            else:
-                drop loop-value at location of player
+
+    if {_working} is false:
+        set {_drops::*} to drops of event-block using player's tool as player
+        if {_level} >= 4:
+            clear drops
+            loop {_drops::*}:
+                if player can hold loop-value:
+                    give loop-value to player
+                else:
+                    drop loop-value at location of player
+
     miningAddXP(player, {_earned-xp})
+
+    # Во время работы шахтёром jobs.sk полностью управляет дропом.
+    if {_working} is true:
+        stop
+
     if player's tool is enchanted with silk touch:
         stop
+
     set {_chance} to miningChance(player)
     chance of {_chance}%:
         set {_bonus-name} to miningBonus({_name})
@@ -243,6 +268,7 @@ function craftingItemXP(kind: item type) :: number:
         return 0
     if {_kind} is wooden hoe:
         return 0
+
     if {_kind} is stone sword:
         return 1
     if {_kind} is stone pickaxe:
@@ -253,6 +279,7 @@ function craftingItemXP(kind: item type) :: number:
         return 1
     if {_kind} is stone hoe:
         return 1
+
     if {_kind} is golden sword:
         return 3
     if {_kind} is golden pickaxe:
@@ -263,6 +290,7 @@ function craftingItemXP(kind: item type) :: number:
         return 2
     if {_kind} is golden hoe:
         return 3
+
     if {_kind} is iron sword:
         return 4
     if {_kind} is iron pickaxe:
@@ -273,6 +301,7 @@ function craftingItemXP(kind: item type) :: number:
         return 3
     if {_kind} is iron hoe:
         return 4
+
     if {_kind} is diamond sword:
         return 10
     if {_kind} is diamond pickaxe:
@@ -283,6 +312,7 @@ function craftingItemXP(kind: item type) :: number:
         return 8
     if {_kind} is diamond hoe:
         return 10
+
     if {_kind} is leather helmet:
         return 1
     if {_kind} is leather chestplate:
@@ -291,6 +321,7 @@ function craftingItemXP(kind: item type) :: number:
         return 2
     if {_kind} is leather boots:
         return 1
+
     if {_kind} is golden helmet:
         return 5
     if {_kind} is golden chestplate:
@@ -299,6 +330,7 @@ function craftingItemXP(kind: item type) :: number:
         return 7
     if {_kind} is golden boots:
         return 4
+
     if {_kind} is iron helmet:
         return 6
     if {_kind} is iron chestplate:
@@ -307,6 +339,7 @@ function craftingItemXP(kind: item type) :: number:
         return 9
     if {_kind} is iron boots:
         return 5
+
     if {_kind} is diamond helmet:
         return 15
     if {_kind} is diamond chestplate:
@@ -315,6 +348,7 @@ function craftingItemXP(kind: item type) :: number:
         return 21
     if {_kind} is diamond boots:
         return 12
+
     return 0
 
 function craftingUpgrade(kind: item type) :: text:
@@ -328,6 +362,7 @@ function craftingUpgrade(kind: item type) :: text:
         return "stone shovel"
     if {_kind} is wooden hoe:
         return "stone hoe"
+
     if {_kind} is stone sword:
         return "iron sword"
     if {_kind} is stone pickaxe:
@@ -338,6 +373,7 @@ function craftingUpgrade(kind: item type) :: text:
         return "iron shovel"
     if {_kind} is stone hoe:
         return "iron hoe"
+
     if {_kind} is iron sword:
         return "diamond sword"
     if {_kind} is iron pickaxe:
@@ -348,6 +384,7 @@ function craftingUpgrade(kind: item type) :: text:
         return "diamond shovel"
     if {_kind} is iron hoe:
         return "diamond hoe"
+
     if {_kind} is leather helmet:
         return "iron helmet"
     if {_kind} is leather chestplate:
@@ -356,6 +393,7 @@ function craftingUpgrade(kind: item type) :: text:
         return "iron leggings"
     if {_kind} is leather boots:
         return "iron boots"
+
     if {_kind} is iron helmet:
         return "diamond helmet"
     if {_kind} is iron chestplate:
@@ -364,6 +402,7 @@ function craftingUpgrade(kind: item type) :: text:
         return "diamond leggings"
     if {_kind} is iron boots:
         return "diamond boots"
+
     return ""
 
 function craftingAddXP(p: player, amount: number):
@@ -373,12 +412,14 @@ function craftingAddXP(p: player, amount: number):
     add {_amount} to {skills.crafting.xp::%uuid of {_p}%}
     set {_new-level} to craftingLevel({_p})
     set {_xp} to craftingXP({_p})
+
     if {_new-level} > {_old-level}:
         send "{@skills-prefix} &fНавык &eКрафт &fповышен до &b%{_new-level}% уровня&f!" to {_p}
         send action bar formatted "<yellow><bold>⚒ КРАФТ</bold> <dark_gray>» <green><bold>УРОВЕНЬ %{_new-level}%!" to {_p}
         if {_new-level} >= 10:
             send "{@skills-prefix} &6Крафт достиг максимального уровня!" to {_p}
         stop
+
     set {_needed} to skillNextXP({_new-level})
     send action bar formatted "<yellow>⚒ Крафт <dark_gray>• <white>%{_xp}%<gray>/%{_needed}% XP <dark_gray>• <green>+%{_amount}% XP" to {_p}
 
@@ -386,34 +427,46 @@ on craft:
     set {_crafted} to event-item
     if {_crafted} is not set:
         stop
+
     set {_kind} to type of {_crafted}
     set {_base-xp} to craftingItemXP({_kind})
     if {_base-xp} <= 0:
         stop
+
     set {_before} to amount of {_kind} in player's inventory
     set {_crafted-per-recipe} to amount of {_crafted}
+
     wait 1 tick
+
     set {_after} to amount of {_kind} in player's inventory
     set {_difference} to {_after} - {_before}
+
     if {_difference} <= 0:
         set {_cursor} to cursor slot of player
         if {_cursor} is set:
             if type of {_cursor} is {_kind}:
                 set {_difference} to amount of {_cursor}
+
     if {_difference} <= 0:
         set {_difference} to {_crafted-per-recipe}
+
     set {_craft-count} to floor({_difference} / {_crafted-per-recipe})
     if {_craft-count} < 1:
         set {_craft-count} to 1
+
     set {_earned-xp} to {_base-xp} * {_craft-count}
     craftingAddXP(player, {_earned-xp})
+
     set {_upgrade-name} to craftingUpgrade({_kind})
     if {_upgrade-name} is "":
         stop
+
     set {_upgrade} to {_upgrade-name} parsed as item type
     if {_upgrade} is not set:
         stop
+
     set {_chance} to craftingChance(player)
+
     loop {_craft-count} times:
         chance of {_chance}%:
             set {_cursor} to cursor slot of player
@@ -424,6 +477,7 @@ on craft:
                     send "{@skills-prefix} &aУдачный крафт! &fПредмет улучшился: &b%{_kind}% &8→ &b%{_upgrade}%&f." to player
                     send action bar formatted "<yellow>⚒ <green><bold>УДАЧНЫЙ КРАФТ!</bold> <white>%{_upgrade}%" to player
                     stop
+
             if player has {_crafted-per-recipe} of {_kind}:
                 remove {_crafted-per-recipe} of {_kind} from player
                 give {_crafted-per-recipe} of {_upgrade} to player
@@ -446,7 +500,6 @@ function farmingChance(p: player) :: number:
     return farmingLevel({_p}) * 2
 
 function farmingCropXP(name: text) :: number:
-    # Classic crops
     if {_name} is "wheat":
         return 1
     if {_name} is "carrots":
@@ -460,7 +513,6 @@ function farmingCropXP(name: text) :: number:
     if {_name} is "cocoa":
         return 2
 
-    # Fruit / field farms
     if {_name} is "melon":
         return 2
     if {_name} is "pumpkin":
@@ -474,7 +526,6 @@ function farmingCropXP(name: text) :: number:
     if {_name} is "sweet berry bush":
         return 1
 
-    # Aquatic / End farms
     if {_name} is "kelp":
         return 1
     if {_name} is "kelp plant":
@@ -484,7 +535,6 @@ function farmingCropXP(name: text) :: number:
     if {_name} is "chorus flower":
         return 2
 
-    # Sniffer crops
     if {_name} is "torchflower crop":
         return 2
     if {_name} is "pitcher crop":
@@ -598,6 +648,7 @@ function farmingAddXP(p: player, amount: number):
     add {_amount} to {skills.farming.xp::%uuid of {_p}%}
     set {_new-level} to farmingLevel({_p})
     set {_xp} to farmingXP({_p})
+
     if {_new-level} > {_old-level}:
         send "{@skills-prefix} &fНавык &aФермерство &fповышен до &a%{_new-level}% уровня&f!" to {_p}
         send action bar formatted "<green><bold>🌾 ФЕРМЕРСТВО</bold> <dark_gray>» <green><bold>УРОВЕНЬ %{_new-level}%!" to {_p}
@@ -610,12 +661,14 @@ function farmingAddXP(p: player, amount: number):
         if {_new-level} >= 10:
             send "{@skills-prefix} &6Фермерство достигло максимального уровня!" to {_p}
         stop
+
     set {_needed} to skillNextXP({_new-level})
     send action bar formatted "<green>🌾 Фермерство <dark_gray>• <white>%{_xp}%<gray>/%{_needed}% XP <dark_gray>• <green>+%{_amount}% XP" to {_p}
 
 on break with priority monitor:
     if event is cancelled:
         stop
+
     set {_name} to lowercase "%type of event-block%"
     set {_earned-xp} to farmingCropXP({_name})
     if {_earned-xp} <= 0:
@@ -659,13 +712,15 @@ on break with priority monitor:
                     drop 1 of {_bonus} at {_loc}
                 send action bar formatted "<green>🌾 <green><bold>БОГАТЫЙ УРОЖАЙ!</bold> <white>Получен дополнительный ресурс." to player
 
-    # Auto replant only where replanting is actually needed.
     if {_level} < 6:
         stop
+
     set {_replant-name} to {_name}
     wait 1 tick
+
     if block at {_loc} is not air:
         stop
+
     if {_replant-name} is "wheat":
         set block at {_loc} to wheat
         set age of block at {_loc} to 0
@@ -705,7 +760,7 @@ function hunterChance(p: player) :: number:
 function hunterMobXP(kind: entity type) :: number:
     set {_name} to lowercase "%{_kind}%"
 
-    # Peaceful/passive mobs - 1 XP
+    # Peaceful/passive mobs
     if {_name} is "allay":
         return 1
     if {_name} is "armadillo":
@@ -771,7 +826,7 @@ function hunterMobXP(kind: entity type) :: number:
     if {_name} is "wandering trader":
         return 1
 
-    # Neutral mobs - 2 XP
+    # Neutral mobs
     if {_name} is "bee":
         return 2
     if {_name} is "dolphin":
@@ -797,7 +852,7 @@ function hunterMobXP(kind: entity type) :: number:
     if {_name} is "enderman":
         return 2
 
-    # Common hostile mobs - 2 XP
+    # Common hostile mobs
     if {_name} is "zombie":
         return 2
     if {_name} is "zombie villager":
@@ -827,7 +882,7 @@ function hunterMobXP(kind: entity type) :: number:
     if {_name} is "magma cube":
         return 2
 
-    # Medium hostile mobs - 3 XP
+    # Medium hostile mobs
     if {_name} is "blaze":
         return 3
     if {_name} is "breeze":
@@ -855,7 +910,6 @@ function hunterMobXP(kind: entity type) :: number:
     if {_name} is "zoglin":
         return 3
 
-    # Strong hostile mobs
     if {_name} is "evoker":
         return 4
     if {_name} is "piglin brute":
@@ -865,7 +919,6 @@ function hunterMobXP(kind: entity type) :: number:
     if {_name} is "elder guardian":
         return 6
 
-    # Extreme mobs / bosses
     if {_name} is "warden":
         return 15
     if {_name} is "wither":
@@ -878,7 +931,6 @@ function hunterMobXP(kind: entity type) :: number:
 function hunterBonus(kind: entity type) :: text:
     set {_name} to lowercase "%{_kind}%"
 
-    # Peaceful / neutral drops
     if {_name} is "armadillo":
         return "armadillo scute"
     if {_name} is "chicken":
@@ -920,7 +972,6 @@ function hunterBonus(kind: entity type) :: text:
     if {_name} is "polar bear":
         return "cod"
 
-    # Hostile drops
     if {_name} is "zombie":
         return "rotten flesh"
     if {_name} is "zombie villager":
@@ -981,6 +1032,7 @@ function hunterBonus(kind: entity type) :: text:
         return "leather"
     if {_name} is "warden":
         return "sculk catalyst"
+
     return ""
 
 function hunterAddXP(p: player, amount: number):
@@ -990,15 +1042,24 @@ function hunterAddXP(p: player, amount: number):
     add {_amount} to {skills.hunter.xp::%uuid of {_p}%}
     set {_new-level} to hunterLevel({_p})
     set {_xp} to hunterXP({_p})
+    set {_working} to false
+    if skillsCurrentJob({_p}) is "hunter":
+        set {_working} to true
+
     if {_new-level} > {_old-level}:
         send "{@skills-prefix} &fНавык &cОхотник &fповышен до &c%{_new-level}% уровня&f!" to {_p}
-        send action bar formatted "<red><bold>⚔ ОХОТНИК</bold> <dark_gray>» <green><bold>УРОВЕНЬ %{_new-level}%!" to {_p}
+        if {_working} is false:
+            send action bar formatted "<red><bold>⚔ ОХОТНИК</bold> <dark_gray>» <green><bold>УРОВЕНЬ %{_new-level}%!" to {_p}
         if {_old-level} < 4:
             if {_new-level} >= 4:
                 send "{@skills-prefix} &fОткрыт навык охотника: &cАвтоподбор добычи&f." to {_p}
         if {_new-level} >= 10:
             send "{@skills-prefix} &6Охотник достиг максимального уровня!" to {_p}
         stop
+
+    if {_working} is true:
+        stop
+
     set {_needed} to skillNextXP({_new-level})
     send action bar formatted "<red>⚔ Охотник <dark_gray>• <white>%{_xp}%<gray>/%{_needed}% XP <dark_gray>• <green>+%{_amount}% XP" to {_p}
 
@@ -1010,22 +1071,36 @@ on death:
         set {_killer} to shooter of {_killer}
     if {_killer} is not a player:
         stop
+
     set {_p} to {_killer}
     set {_kind} to type of victim
     set {_earned-xp} to hunterMobXP({_kind})
     if {_earned-xp} <= 0:
         stop
+
+    set {_working} to false
+    if skillsCurrentJob({_p}) is "hunter":
+        set {_working} to true
+
     set {_level} to hunterLevel({_p})
     set {_loc} to location of victim
-    if {_level} >= 4:
-        set {_drops::*} to drops
-        clear drops
-        loop {_drops::*}:
-            if {_p} can hold loop-value:
-                give loop-value to {_p}
-            else:
-                drop loop-value at {_loc}
+
+    if {_working} is false:
+        if {_level} >= 4:
+            set {_drops::*} to drops
+            clear drops
+            loop {_drops::*}:
+                if {_p} can hold loop-value:
+                    give loop-value to {_p}
+                else:
+                    drop loop-value at {_loc}
+
     hunterAddXP({_p}, {_earned-xp})
+
+    # Во время работы охотником jobs.sk полностью управляет дропом.
+    if {_working} is true:
+        stop
+
     set {_chance} to hunterChance({_p})
     chance of {_chance}%:
         set {_bonus-name} to hunterBonus({_kind})
@@ -1059,7 +1134,6 @@ function lumberjackChance(p: player) :: number:
     return lumberjackLevel({_p}) * 2
 
 function lumberjackLogXP(name: text) :: number:
-    # All Overworld tree types in 1.21.1
     if {_name} is "oak log":
         return 1
     if {_name} is "stripped oak log":
@@ -1092,8 +1166,6 @@ function lumberjackLogXP(name: text) :: number:
         return 1
     if {_name} is "stripped cherry log":
         return 1
-
-    # Nether wood types
     if {_name} is "crimson stem":
         return 2
     if {_name} is "stripped crimson stem":
@@ -1102,7 +1174,6 @@ function lumberjackLogXP(name: text) :: number:
         return 2
     if {_name} is "stripped warped stem":
         return 2
-
     return 0
 
 function lumberjackAddXP(p: player, amount: number):
@@ -1112,40 +1183,64 @@ function lumberjackAddXP(p: player, amount: number):
     add {_amount} to {skills.lumberjack.xp::%uuid of {_p}%}
     set {_new-level} to lumberjackLevel({_p})
     set {_xp} to lumberjackXP({_p})
+    set {_working} to false
+    if skillsCurrentJob({_p}) is "lumberjack":
+        set {_working} to true
+
     if {_new-level} > {_old-level}:
         send "{@skills-prefix} &fНавык &6Лесоруб &fповышен до &6%{_new-level}% уровня&f!" to {_p}
-        send action bar formatted "<gold><bold>🪓 ЛЕСОРУБ</bold> <dark_gray>» <green><bold>УРОВЕНЬ %{_new-level}%!" to {_p}
+        if {_working} is false:
+            send action bar formatted "<gold><bold>🪓 ЛЕСОРУБ</bold> <dark_gray>» <green><bold>УРОВЕНЬ %{_new-level}%!" to {_p}
         if {_old-level} < 4:
             if {_new-level} >= 4:
                 send "{@skills-prefix} &fОткрыт навык лесоруба: &6Автоподбор&f." to {_p}
         if {_new-level} >= 10:
             send "{@skills-prefix} &6Лесоруб достиг максимального уровня!" to {_p}
         stop
+
+    if {_working} is true:
+        stop
+
     set {_needed} to skillNextXP({_new-level})
     send action bar formatted "<gold>🪓 Лесоруб <dark_gray>• <white>%{_xp}%<gray>/%{_needed}% XP <dark_gray>• <green>+%{_amount}% XP" to {_p}
 
 on break with priority monitor:
     if event is cancelled:
         stop
+
     set {_name} to lowercase "%type of event-block%"
     set {_earned-xp} to lumberjackLogXP({_name})
     if {_earned-xp} <= 0:
         stop
+
     if {skills.lumberjack.placed::%location of event-block%} is set:
         delete {skills.lumberjack.placed::%location of event-block%}
         stop
+
+    set {_working} to false
+    if skillsCurrentJob(player) is "lumberjack":
+        set {_working} to true
+
     set {_kind} to type of event-block
-    set {_drops::*} to drops of event-block using player's tool as player
     set {_level} to lumberjackLevel(player)
     set {_loc} to location of event-block
-    if {_level} >= 4:
-        clear drops
-        loop {_drops::*}:
-            if player can hold loop-value:
-                give loop-value to player
-            else:
-                drop loop-value at {_loc}
+
+    if {_working} is false:
+        set {_drops::*} to drops of event-block using player's tool as player
+        if {_level} >= 4:
+            clear drops
+            loop {_drops::*}:
+                if player can hold loop-value:
+                    give loop-value to player
+                else:
+                    drop loop-value at {_loc}
+
     lumberjackAddXP(player, {_earned-xp})
+
+    # Во время работы лесорубом jobs.sk полностью управляет дропом.
+    if {_working} is true:
+        stop
+
     set {_chance} to lumberjackChance(player)
     chance of {_chance}%:
         if player can hold 1 of {_kind}:
@@ -1275,8 +1370,10 @@ command /skillset <text> <number>:
         if arg-2 > 10:
             send "{@skills-prefix} &cМаксимальный уровень: 10"
             stop
+
         set {_skill} to lowercase arg-1
         set {_xp} to skillXPForLevel(arg-2)
+
         if {_skill} is "mining":
             set {skills.mining.xp::%uuid of player%} to {_xp}
             send "{@skills-prefix} &fШахтёрство установлено на уровень &b%arg-2%&f."
@@ -1297,6 +1394,7 @@ command /skillset <text> <number>:
             set {skills.lumberjack.xp::%uuid of player%} to {_xp}
             send "{@skills-prefix} &fЛесоруб установлен на уровень &6%arg-2%&f."
             stop
+
         send "{@skills-prefix} &7Использование: &f/skillset <mining/crafting/farming/hunter/lumberjack> <1-10>"
 
 # =========================================================
@@ -1323,4 +1421,5 @@ command /skilldebug:
         send ""
         send "&7Lumberjack XP: &f%lumberjackXP(player)%"
         send "&7Lumberjack level: &f%lumberjackLevel(player)%"
+        send "&7Current job: &f%skillsCurrentJob(player)%"
         send ""
