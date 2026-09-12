@@ -15,14 +15,14 @@
 # This file contains Skript's general options. To write scripts, create a new .sk file in the scripts folder or edit any existing one.
 #
 # Script files prefixed with a hyphen (-) will not be loaded, e.g. renaming 'plant with hoe.sk' to '-plant with hoe.sk' will disable the whole file.
-# This can e.g. be used to temporarily disable scripts and is also used to temporarily disable scripts.
+# This can e.g. be used to temporarily disable scripts and is also used for Skript's example scripts.
 # You can also use the command '/skript enable/disable <script>' to enable/disable a script which will automatically rename it.
 #
 # === !!! PLEASE NOTE !!! ===
 # This file, all scripts and other files ending in .sk are NOT .yml/YAML files, but very similar!
 # Please remember the following when editing files:
 # - To indent sections you can use spaces like in YAML, but tabs are also allowed. Just remember to stick to the one or the other for a section/trigger.
-# - '#' starts a comment in YAML. If you don't want it to start a comment simply double it: '##' (You do NOT have to double these in "quoted text")
+# - '#' starts a comment like in YAML. If you don't want it to start a comment simply double it: '##' (You do NOT have to double these in "quoted text")
 # - If you use special characters (§, äöü, éèàôç, ñ, etc.) you have to encode the file in UTF-8.
 #
 
@@ -68,7 +68,7 @@ effect command token: !
 #	!broadcast "<red>Please read the rules!" - if you want to get rid of the quotes you have to define a custom command
 #	!set time to 6:00 - sets the time in the current world
 # The command can also be abused, so only give the permission to trusted players, like owners & co-owners:
-#	!set player's balance to 999999999 - as much money as desired
+#	!set player's balance to 999999999 - when a compatible economy plugin is installed, this will give the command sender as much money as desired
 #	!create explosion of force 10000 - likely crashes the server or at least hangs it up for a long time
 #	!ban all players - as the effect implies
 
@@ -95,7 +95,7 @@ load default aliases: true
 
 player variable fix: true
 # Whether to enable the player variable fix if a player has rejoined and was residing inside a variable.
-# Player objects inside a variable are not updated to the new player object
+# Player objects inside a variable (list or normal) are not updated to the new player object
 # that a server creates whenever a player rejoins.
 # Basically the variable holds the old player object when a player has rejoined thus rendering the variable kinda broken.
 # This fix should work around that and whenever a invalid(old) player object is attempted to be get through a variable
@@ -127,10 +127,13 @@ verbosity: normal
 plugin priority: high
 # Allowed values: lowest, low, normal, high, highest
 # Change this if you encounter problems with other plugins, e.g.:
-# - cancelled events: Another plugin cancels the event => increase priority
-# - effects '(un)cancel event': Another plugin should/should not process the event => decrease priority
+# - cancelled events: The event is cancelled by another plugin, but Skript handles the event nonetheless => increase priority
+#                    (e.g. WorldGuard cancels events if a player doesn't have permission for the given region,
+#                     and you made some 'place' triggers which should not bypass WorldGuard's protection)
+# - effects '(un)cancel event': Another plugin should/should not process the event, but does/does not => decrease priority
 # - effect 'drop': Another plugin doesn't process added drops => decrease priority
-# - effects 'remove ... from drops'/'clear drops': adjust priority as necessary
+# - effects 'remove ... from drops'/'clear drops': Drops added by other plugins are not removed => increase priority
+#                                                  Skript removes drops it shouldn't => decrease priority or specify which item types to remove
 
 listen to cancelled events by default: false
 # Determines whether `on <event>` will be triggered by all events (true) or only uncancelled events (false).
@@ -185,7 +188,7 @@ soft api exceptions: false
 
 enable timings: false
 # When enabled, triggers in scripts will be present in timings reports.
-# Note that this requires Paper to work; on Bukkit/Spigot this option has no effect.
+# Note that this requires Paper (https://papermc.io/downloads/paper) to work; on Bukkit/Spigot this option has no effect.
 # Warning: Paper no longer supports Timings as of 1.19.4. This option has no effect on versions 1.19.4 and above.
 # When false, timings are not enabled for scripts even if you're running Paper.
 
@@ -246,7 +249,7 @@ long parse time warning threshold: 0 seconds
 #   stating that the statement has taken a long time to parse.
 # A value of 0 seconds means that this warning should be disabled.
 
-variable changes until save: 1
+variable changes until save: 1000
 # This setting controls the total number of times that global variables need to be changed
 #   until saving variables to 'variables.csv'.
 # 'set {a} to 1' is one change, 'set {b} to 2' now makes it two.
@@ -277,7 +280,7 @@ runtime errors:
 	error spam timeout limit: 4
 	# If a line prints more than this many errors in a single frame, it will be put in timeout. This means
 	# any additional errors it creates during the timeout duration will be hidden, rather than printed.
-	# It's also a defense against a syntax in a loop spamming console with errors.
+	# This is also a defense against a syntax in a loop spamming console with errors.
 
 	error timeout length: 10
 	# This is the number of frames before a line in timeout can print errors again.

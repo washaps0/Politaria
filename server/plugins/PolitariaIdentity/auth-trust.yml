@@ -11,15 +11,9 @@ players:
   85526c51-87f3-30a3-8664-ccb99fdce0a6:
     fingerprint: ca7a526b0756494fad5e40eb8f3f8f6d986a6db2d9d127911ecd3b3a27640a60
     trusted-until: 1788771672057
-  30117ceb-db68-3c7e-8ee3-5b696de4040d:
-    fingerprint: cd0fee366910006f61b2eaeaa30880363bac8cf0773ee3099f66e0d0f1f2f903
-    trusted-until: 1788731161030
   f4a491e3-5d9d-37e0-bfe6-a1f4176c0b0d:
     fingerprint: b55ba802494b06a3d239f2309438ef90c2c2cc91a3bc18c46df771ed28edf796
     trusted-until: 1788700685611
-  e06993dd-33c0-347d-afe6-b423e6651b4b:
-    fingerprint: 23b1cf73cbd9326053b8b2a42b0083cde761847ae02286767b3ca7db8a489826
-    trusted-until: 1788736011454
   8888f8b8-222a-3467-89bb-29f1aa0bce88:
     fingerprint: 576cebaba0a40e5b09a93a1ee55799e06a9ec60793e616f9d9e57172210532d3
     trusted-until: 1788707604937
@@ -29,3 +23,9 @@ players:
   e0d26be5-011f-3438-8d20-e4ab70c5a889:
     fingerprint: 783bfe5affcda07ac57d0c0223a25df0e3419717bef5b7ccdacd2a9ee544f815
     trusted-until: 1788738545544
+  30117ceb-db68-3c7e-8ee3-5b696de4040d:
+    fingerprint: 573f8bab0085b065fedefa337dab8ce7d884dde527a48f7a5e46b025fbe07073
+    trusted-until: 1789592852823
+  e06993dd-33c0-347d-afe6-b423e6651b4b:
+    fingerprint: b55ba802494b06a3d239f2309438ef90c2c2cc91a3bc18c46df771ed28edf796
+    trusted-until: 1789593511423

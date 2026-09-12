@@ -15,7 +15,6 @@ import org.bukkit.event.*;
 import org.bukkit.event.block.*;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.inventory.*;
 import org.bukkit.event.player.*;
 import org.bukkit.event.server.ServerLoadEvent;
@@ -38,7 +37,6 @@ public final class ApartmentPlugin extends JavaPlugin implements Listener, Comma
     private final Map<UUID,Prompt> prompts=new ConcurrentHashMap<>();
     private final Map<String,UUID> apartmentLabels=new HashMap<>();
     private BukkitTask midnightTask;
-    private final Map<UUID,BukkitTask> homeTeleportTasks=new HashMap<>();
 
     @Override public void onEnable(){
         saveDefaultConfig(); zone=ZoneId.of(getConfig().getString("timezone","Europe/Moscow"));
@@ -51,7 +49,7 @@ public final class ApartmentPlugin extends JavaPlugin implements Listener, Comma
         Bukkit.getScheduler().runTask(this,this::refreshAllApartmentLabels);
         getLogger().info("Loaded "+store.all.size()+" apartments; settlement timezone "+zone+".");
     }
-    @Override public void onDisable(){if(midnightTask!=null)midnightTask.cancel();for(BukkitTask task:homeTeleportTasks.values())task.cancel();homeTeleportTasks.clear();removeAllApartmentLabels();store.save();selections.clear();prompts.clear();}
+    @Override public void onDisable(){if(midnightTask!=null)midnightTask.cancel();removeAllApartmentLabels();store.save();selections.clear();prompts.clear();}
 
     @EventHandler public void serverLoaded(ServerLoadEvent event){
         // Skript loads its variables and scripts during delayed server initialization.
@@ -128,37 +126,9 @@ public final class ApartmentPlugin extends JavaPlugin implements Listener, Comma
     private void home(Player p){
         Apartment a=store.owned(p.getUniqueId());if(a==null){p.sendMessage("§cУ вас нет квартиры.");return;}
         if(a.spawn==null||!a.contains(a.spawn)){p.sendMessage("§cВ квартире ещё не установлена точка телепортации.");return;}
-        UUID playerId=p.getUniqueId();
-        if(homeTeleportTasks.containsKey(playerId)){p.sendMessage("§eТелепортация в квартиру уже ожидается.");return;}
-
-        p.sendMessage("§eТелепортация в квартиру «"+a.name+"» через §f5 секунд§e. Урон отменит телепортацию.");
-        final int[] seconds={5};
-        BukkitTask task=Bukkit.getScheduler().runTaskTimer(this,()->{
-            if(!p.isOnline()){
-                BukkitTask pending=homeTeleportTasks.remove(playerId);if(pending!=null)pending.cancel();
-                return;
-            }
-            if(seconds[0]>0){
-                p.sendActionBar(Component.text("В квартиру через "+seconds[0]+" сек.",NamedTextColor.YELLOW));
-                p.playSound(p.getLocation(),Sound.BLOCK_NOTE_BLOCK_HAT,0.5f,1.2f);
-                seconds[0]--;
-                return;
-            }
-
-            BukkitTask pending=homeTeleportTasks.remove(playerId);if(pending!=null)pending.cancel();
-            Apartment current=store.owned(playerId);
-            if(current==null||!current.id.equals(a.id)||current.spawn==null||!current.contains(current.spawn)){
-                p.sendMessage("§cТелепортация отменена: квартира или точка телепортации больше недоступна.");
-                return;
-            }
-
-            String tpl=getConfig().getString("teleport-command");Location l=current.spawn;String world=l.getWorld().getKey().asString();
-            String cmd=tpl.replace("%world%",world).replace("%player%",p.getName()).replace("%x%",decimal(l.getX())).replace("%y%",decimal(l.getY())).replace("%z%",decimal(l.getZ())).replace("%yaw%",decimal(l.getYaw())).replace("%pitch%",decimal(l.getPitch()));
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(),cmd);
-            p.sendMessage("§aВы телепортированы в квартиру «"+current.name+"».");
-            p.playSound(p.getLocation(),Sound.ENTITY_ENDERMAN_TELEPORT,1f,1f);
-        },0L,20L);
-        homeTeleportTasks.put(playerId,task);
+        String tpl=getConfig().getString("teleport-command");Location l=a.spawn;String world=l.getWorld().getKey().asString();
+        String cmd=tpl.replace("%world%",world).replace("%player%",p.getName()).replace("%x%",decimal(l.getX())).replace("%y%",decimal(l.getY())).replace("%z%",decimal(l.getZ())).replace("%yaw%",decimal(l.getYaw())).replace("%pitch%",decimal(l.getPitch()));
+        Bukkit.dispatchCommand(Bukkit.getConsoleSender(),cmd);p.sendMessage("§aВы телепортированы в квартиру «"+a.name+"».");
     }
     private void trust(Player p,String name,boolean add){
         Apartment a=store.owned(p.getUniqueId());if(a==null){p.sendMessage("§cУ вас нет квартиры.");return;}
@@ -255,7 +225,7 @@ public final class ApartmentPlugin extends JavaPlugin implements Listener, Comma
     }
     private void openOwner(Player p,Apartment a){
         Inventory inv=menu("owner",a.id,1,4,"Моя квартира: "+a.name);fill(inv);inv.setItem(4,item(Material.LIME_BED,a.name,"Страна: "+sk.countryName(a.country),a.offer==Apartment.Offer.RENT?"Аренда: "+money(a.price)+"/день":"Квартира куплена"));
-        inv.setItem(11,item(Material.ENDER_PEARL,"Телепортироваться","Через 5 секунд","Урон отменяет телепортацию","Команда: /apartment home"));inv.setItem(13,item(Material.LODESTONE,"Установить точку телепортации","Нужно стоять внутри квартиры"));
+        inv.setItem(11,item(Material.ENDER_PEARL,"Телепортироваться","Команда: /apartment home"));inv.setItem(13,item(Material.LODESTONE,"Установить точку телепортации","Нужно стоять внутри квартиры"));
         inv.setItem(15,item(Material.PLAYER_HEAD,"Совладельцы: "+a.coowners.size(),"/apartment trust <игрок>","/apartment untrust <игрок>","Совладельцы могут строить и открывать всё"));
         inv.setItem(20,item(a.publicInteract?Material.LIME_DYE:Material.GRAY_DYE,"Все могут открывать сундуки и двери: "+yes(a.publicInteract),"По умолчанию доступ только владельцу"));
         inv.setItem(24,item(a.publicBuild?Material.LIME_DYE:Material.GRAY_DYE,"Все могут строить: "+yes(a.publicBuild),"По умолчанию доступ только владельцу"));inv.setItem(31,item(Material.ARROW,"К списку квартир"));p.openInventory(inv);
@@ -361,16 +331,5 @@ public final class ApartmentPlugin extends JavaPlugin implements Listener, Comma
     @EventHandler(priority=EventPriority.LOWEST,ignoreCancelled=true) public void entityUse(PlayerInteractEntityEvent e){Apartment a=store.at(e.getRightClicked().getLocation());if(a==null)return;if(canInteract(e.getPlayer(),a))temporaryBypass(e.getPlayer(),"politaria.apartment.event.interact");else deny(e,e.getPlayer(),"использовать сущности");}
     @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void piston(BlockPistonExtendEvent e){for(Block b:e.getBlocks()){if(store.at(b.getLocation())!=store.at(b.getRelative(e.getDirection()).getLocation())){e.setCancelled(true);return;}}}
     @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void pistonBack(BlockPistonRetractEvent e){for(Block b:e.getBlocks()){if(store.at(b.getLocation())!=store.at(b.getRelative(e.getDirection().getOppositeFace()).getLocation())){e.setCancelled(true);return;}}}
-    @EventHandler(priority=EventPriority.MONITOR,ignoreCancelled=true) public void teleportDamage(EntityDamageEvent e){
-        if(!(e.getEntity() instanceof Player p))return;
-        BukkitTask task=homeTeleportTasks.remove(p.getUniqueId());if(task==null)return;
-        task.cancel();
-        p.sendMessage("§cТелепортация в квартиру отменена — вы получили урон.");
-        p.sendActionBar(Component.text("Телепортация в квартиру отменена",NamedTextColor.RED));
-        p.playSound(p.getLocation(),Sound.BLOCK_NOTE_BLOCK_BASS,1f,0.7f);
-    }
-    @EventHandler public void quit(PlayerQuitEvent e){
-        UUID id=e.getPlayer().getUniqueId();prompts.remove(id);selections.remove(id);
-        BukkitTask task=homeTeleportTasks.remove(id);if(task!=null)task.cancel();
-    }
+    @EventHandler public void quit(PlayerQuitEvent e){prompts.remove(e.getPlayer().getUniqueId());selections.remove(e.getPlayer().getUniqueId());}
 }

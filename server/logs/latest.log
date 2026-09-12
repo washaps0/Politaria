@@ -1,175 +1,520 @@
-[15:58:04] [ServerMain/INFO]: [bootstrap] Running Java 21 (OpenJDK 64-Bit Server VM 21.0.11+10-LTS; Eclipse Adoptium Temurin-21.0.11+10) on Linux 6.8.0-100-generic (amd64)
-[15:58:04] [ServerMain/INFO]: [bootstrap] Loading Purpur 1.21.1-2329-ver/1.21.1@803bf62 (2024-10-31T20:25:04Z) for Minecraft 1.21.1
-[15:58:04] [ServerMain/INFO]: [PluginInitializerManager] Initializing plugins...
-[15:58:05] [ServerMain/INFO]: [PluginInitializerManager] Initialized 13 plugins
-[15:58:05] [ServerMain/INFO]: [PluginInitializerManager] Bukkit plugins (13):
- - AntiXray (2.0), BlueMap (5.16), PolitariaIdentity (1.5.4), PolitariaMapBridge (1.0.0), ProtocolLib (5.4.0), SkinsRestorer (15.12.5), Skript (2.15.4), TAB (5.2.0), ViaBackwards (5.11.0), ViaVersion (5.11.0), WorldEdit (7.3.9+6959-7adf70b), fast-leaf-decay (2.0.1), voicechat (2.6.21)
-[15:58:10] [ServerMain/INFO]: Environment: Environment[sessionHost=https://sessionserver.mojang.com, servicesHost=https://api.minecraftservices.com, name=PROD]
-[15:58:12] [ServerMain/INFO]: Loaded 1290 recipes
-[15:58:12] [ServerMain/INFO]: Loaded 1399 advancements
-[15:58:13] [Server thread/INFO]: Starting minecraft server version 1.21.1
-[15:58:13] [Server thread/INFO]: Loading properties
-[15:58:13] [Server thread/INFO]: This server is running Purpur version 1.21.1-2329-ver/1.21.1@803bf62 (2024-10-31T20:25:04Z) (Implementing API version 1.21.1-R0.1-SNAPSHOT)
-[15:58:14] [Server thread/INFO]: [spark] This server bundles the spark profiler. For more information please visit https://docs.papermc.io/paper/profiling
-[15:58:14] [Server thread/INFO]: Server Ping Player Sample Count: 12
-[15:58:14] [Server thread/INFO]: Using 4 threads for Netty based IO
-[15:58:15] [Server thread/INFO]: [ChunkTaskScheduler] Chunk system is using 1 I/O threads, 1 worker threads, and population gen parallelism of 1 threads
-[15:58:15] [Server thread/WARN]: [Pufferfish] SIMD operations are available for your server, but are not configured!
-[15:58:15] [Server thread/WARN]: [Pufferfish] To enable additional optimizations, add "--add-modules=jdk.incubator.vector" to your startup flags, BEFORE the "-jar".
-[15:58:15] [Server thread/WARN]: [Pufferfish] If you have already added this flag, then SIMD operations are not supported on your JVM or CPU.
-[15:58:15] [Server thread/WARN]: [Pufferfish] Debug: Java: 21.0.11, test run: true
-[15:58:15] [Server thread/INFO]: Default game type: SURVIVAL
-[15:58:15] [Server thread/INFO]: Generating keypair
-[15:58:15] [Server thread/INFO]: Starting Minecraft server on 0.0.0.0:26088
-[15:58:15] [Server thread/INFO]: Using epoll channel type
-[15:58:16] [Server thread/INFO]: Paper: Using libdeflate (Linux x86_64) compression from Velocity.
-[15:58:16] [Server thread/INFO]: Paper: Using OpenSSL 3.x.x (Linux x86_64) cipher from Velocity.
-[15:58:17] [Server thread/INFO]: [ViaVersion] Loading server plugin ViaVersion v5.11.0
-[15:58:17] [Server thread/INFO]: [ViaVersion] ViaVersion 5.11.0 is now loaded. Registering protocol transformers and injecting...
-[15:58:18] [Server thread/INFO]: [ViaBackwards] Loading translations...
-[15:58:18] [Server thread/INFO]: [ViaBackwards] Registering protocols...
-[15:58:19] [Server thread/INFO]: [ProtocolLib] Loading server plugin ProtocolLib v5.4.0
-[15:58:19] [Server thread/INFO]: [TAB] Loading server plugin TAB v5.2.0
-[15:58:19] [Server thread/INFO]: [Skript] Loading server plugin Skript v2.15.4
-[15:58:19] [Server thread/INFO]: [ViaBackwards] Loading server plugin ViaBackwards v5.11.0
-[15:58:19] [Server thread/INFO]: [BlueMap] Loading server plugin BlueMap v5.16
-[15:58:19] [Server thread/INFO]: [PolitariaIdentity] Loading server plugin PolitariaIdentity v1.5.4
-[15:58:19] [Server thread/INFO]: [WorldEdit] Loading server plugin WorldEdit v7.3.9+6959-7adf70b
-[15:58:20] [Server thread/INFO]: Got request to register class com.sk89q.worldedit.bukkit.BukkitServerInterface with WorldEdit [com.sk89q.worldedit.extension.platform.PlatformManager@4b1bdd9e]
-[15:58:20] [Server thread/INFO]: [SkinsRestorer] Loading server plugin SkinsRestorer v15.12.5
-[15:58:20] [Server thread/INFO]: [AntiXray] Loading server plugin AntiXray v2.0
-[15:58:20] [Server thread/INFO]: [voicechat] Loading server plugin voicechat v2.6.21
-[15:58:20] [Server thread/INFO]: [PolitariaMapBridge] Loading server plugin PolitariaMapBridge v1.0.0
-[15:58:20] [Server thread/INFO]: [fast-leaf-decay] Loading server plugin fast-leaf-decay v2.0.1
-[15:58:20] [Server thread/INFO]: Server permissions file permissions.yml is empty, ignoring it
-[15:58:20] [Server thread/INFO]: [ProtocolLib] Enabling ProtocolLib v5.4.0
-[15:58:20] [Server thread/INFO]: [WorldEdit] Enabling WorldEdit v7.3.9+6959-7adf70b
-[15:58:20] [Server thread/INFO]: Registering commands with com.sk89q.worldedit.bukkit.BukkitServerInterface
-[15:58:20] [Server thread/INFO]: WEPIF: Using the Bukkit Permissions API.
-[15:58:20] [Server thread/INFO]: Using com.sk89q.worldedit.bukkit.adapter.impl.v1_21.PaperweightAdapter as the Bukkit adapter
-[15:58:22] [Server thread/INFO]: [SkinsRestorer] Enabling SkinsRestorer v15.12.5
-[15:58:23] [Server thread/INFO]: [SkinsRestorer] Running on Minecraft 1.21.1.
-[15:58:24] [Server thread/INFO]: [SkinsRestorer] Using paper join listener!
-[15:58:24] [Server thread/WARN]: **** SERVER IS RUNNING IN OFFLINE/INSECURE MODE!
-[15:58:24] [Server thread/WARN]: The server will make no attempt to authenticate usernames. Beware.
-[15:58:24] [Server thread/WARN]: While this makes the game possible to play without internet access, it also opens up the ability for hackers to connect with any username they choose.
-[15:58:24] [Server thread/WARN]: To change this, set "online-mode" to "true" in the server.properties file.
-[15:58:24] [Server thread/INFO]: Preparing level "world"
-[15:58:24] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer] ----------------------------------------------
-[15:58:24] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     +===================+
-[15:58:24] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     |   SkinsRestorer   |
-[15:58:24] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     |-------------------|
-[15:58:24] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     |  Standalone Mode  |
-[15:58:24] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     +===================+
-[15:58:24] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer] ----------------------------------------------
-[15:58:24] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     Version: 15.12.5
-[15:58:24] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     Commit: 98b9488
-[15:58:24] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     This is the latest version!
-[15:58:24] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer] ----------------------------------------------
-[15:58:24] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer] Do you have issues? Read our troubleshooting guide: https://skinsrestorer.net/docs/troubleshooting
-[15:58:24] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer] Want to support SkinsRestorer or receive priority support? Become a supporter: https://skinsrestorer.net/pricing
-[15:58:26] [Server thread/INFO]: Preparing start region for dimension minecraft:overworld
-[15:58:27] [Server thread/INFO]: Time elapsed: 1283 ms
-[15:58:27] [Server thread/INFO]: Preparing start region for dimension minecraft:the_nether
-[15:58:27] [Server thread/INFO]: Time elapsed: 232 ms
-[15:58:27] [Server thread/INFO]: Preparing start region for dimension minecraft:the_end
-[15:58:27] [Server thread/INFO]: Time elapsed: 112 ms
-[15:58:27] [Server thread/INFO]: [ViaVersion] Enabling ViaVersion v5.11.0
-[15:58:27] [Server thread/INFO]: [ViaVersion] ViaVersion detected server version: 1.21-1.21.1 (767)
-[15:58:27] [Server thread/INFO]: [TAB] Enabling TAB v5.2.0
-[15:58:28] [Server thread/INFO]: [TAB] Loaded NMS hook in 53ms
-[15:58:28] [Server thread/INFO]: [TAB] Enabled in 378ms
-[15:58:28] [Server thread/INFO]: [Skript] Enabling Skript v2.15.4
-[15:58:28] [Server thread/INFO]: [Skript] The updater is disabled, so a check for the latest version of Skript was not performed.
-[15:58:31] [Server thread/INFO]: [Skript]  ~ created by & © Peter Güttinger aka Njol ~
-[15:58:31] [Server thread/INFO]: [ViaBackwards] Enabling ViaBackwards v5.11.0
-[15:58:31] [Server thread/INFO]: [BlueMap] Enabling BlueMap v5.16
-[15:58:31] [Server thread/INFO]: [BlueMap] Saving all worlds once, to make sure the level.dat is present...
-[15:58:31] [Server thread/WARN]: A manual (plugin-induced) save has been detected while server is configured to auto-save. This may affect performance.
-[15:58:32] [Server thread/INFO]: [PolitariaIdentity] Enabling PolitariaIdentity v1.5.4
-[15:58:32] [Server thread/INFO]: [PolitariaIdentity] Персональные имена игроков включены.
-[15:58:32] [Server thread/INFO]: [AntiXray] Enabling AntiXray v2.0
-[15:58:32] [Server thread/INFO]: [AntiXray] AntiXray plugin enabled!
-[15:58:32] [Server thread/INFO]: [AntiXray] Engine Mode: 1
-[15:58:32] [Server thread/INFO]: [AntiXray] Hidden blocks: 19
-[15:58:32] [Server thread/INFO]: [voicechat] Enabling voicechat v2.6.21
-[15:58:32] [Server thread/INFO]: [voicechat] Initializing compatibility for version 1.21.1-R0.1
-[15:58:32] [Server thread/INFO]: [voicechat] Compatibility version 20
-[15:58:32] [Server thread/INFO]: [voicechat] Successfully initialized commodore command completion
-[15:58:32] [Server thread/INFO]: [voicechat] Successfully added ViaVersion mappings
-[15:58:32] [Server thread/INFO]: [PolitariaMapBridge] Enabling PolitariaMapBridge v1.0.0
-[15:58:32] [Server thread/INFO]: [PolitariaMapBridge] Динамические территории стран для BlueMap включены.
-[15:58:32] [Server thread/INFO]: [fast-leaf-decay] Enabling fast-leaf-decay v2.0.1
-[15:58:32] [Server thread/INFO]: [spark] Starting background profiler...
-[15:58:33] [Server thread/INFO]: Done preparing level "world" (8.624s)
-[15:58:33] [Server thread/INFO]: Starting GS4 status listener
-[15:58:33] [Server thread/INFO]: Thread Query Listener started
-[15:58:33] [Query Listener #1/INFO]: Query running on 0.0.0.0:26088
-[15:58:33] [Server thread/INFO]: Running delayed init tasks
-[15:58:33] [Craft Scheduler Thread - 1 - BlueMap/INFO]: [BlueMap] Loading...
-[15:58:33] [Craft Scheduler Thread - 2 - ViaVersion/INFO]: [ViaVersion] Finished mapping loading, shutting down loader executor.
-[15:58:34] [Craft Scheduler Thread - 1 - BlueMap/INFO]: [BlueMap] Loading resources...
-[15:58:35] [ForkJoinPool.commonPool-worker-1/INFO]: [Skript] Loaded 5330 aliases in 3916ms
-[15:58:35] [Server thread/INFO]: [Skript] Loading variables...
-[15:58:35] [Server thread/INFO]: [Skript] Loaded 424 variables in 0.1 seconds
-[15:58:38] [Craft Scheduler Thread - 1 - BlueMap/INFO]: [BlueMap] Resources loaded.
-[15:58:38] [Craft Scheduler Thread - 1 - BlueMap/INFO]: [BlueMap] Initializing Storage: 'file' (Type: 'bluemap:file')
-[15:58:38] [Craft Scheduler Thread - 1 - BlueMap/INFO]: [BlueMap] Loading map 'world'...
-[15:58:39] [Craft Scheduler Thread - 1 - BlueMap/INFO]: [BlueMap] Loading map 'world_the_end'...
-[15:58:39] [Craft Scheduler Thread - 1 - BlueMap/INFO]: [BlueMap] Loading map 'world_nether'...
-[15:58:39] [Craft Scheduler Thread - 1 - BlueMap/INFO]: [BlueMap] WebServer bound to all network interfaces on port 26306
-[15:58:39] [BlueMap-Webserver/INFO]: [BlueMap] WebServer started.
-[15:58:39] [Craft Scheduler Thread - 1 - BlueMap/INFO]: [BlueMap] Loaded!
-[15:58:46] [Server thread/INFO]: [Skript] All scripts loaded without errors.
-[15:58:46] [Server thread/INFO]: [Skript] Loaded 9 scripts with a total of 179 structures in 10.75 seconds
-[15:58:46] [Server thread/INFO]: [Skript] Finished loading.
-[15:58:46] [Server thread/INFO]: [PolitariaIdentity] Плейсхолдеры TAB для страны и баланса включены.
-[15:58:46] [Server thread/INFO]: Done (43.074s)! For help, type "help"
-[15:58:46] [Server thread/WARN]: Can't keep up! Is the server overloaded? Running 13152ms or 263 ticks behind
-[15:58:46] [Server thread/INFO]: [voicechat] Loading plugins
-[15:58:46] [Server thread/INFO]: [voicechat] Loaded 0 plugin(s)
-[15:58:46] [Server thread/INFO]: [voicechat] Initializing plugins
-[15:58:46] [Server thread/INFO]: [voicechat] Initialized 0 plugin(s)
-[15:58:46] [Server thread/WARN]: [voicechat] Running in offline mode - Voice chat encryption is not secure!
-[15:58:46] [VoiceChatServerThread/INFO]: [voicechat] Voice host is 'play4.eternalzero.cloud:26037'
-[15:58:46] [VoiceChatServerThread/INFO]: [voicechat] Voice chat server started at port 26037
-[15:59:42] [User Authenticator #0/INFO]: UUID of player washapso is 30117ceb-db68-3c7e-8ee3-5b696de4040d
-[15:59:43] [Server thread/INFO]: washapso joined the game
-[15:59:43] [Server thread/INFO]: washapso[/91.236.210.70:56194] logged in with entity id 90 at ([world]7.75262881426394, 69.0, 514.1920148491587)
-[15:59:43] [Server thread/INFO]: [voicechat] Received secret request of washapso (20)
-[15:59:43] [Server thread/INFO]: [voicechat] Sent secret to washapso
-[15:59:43] [VoiceChatPacketProcessingThread/INFO]: [voicechat] Successfully authenticated player 30117ceb-db68-3c7e-8ee3-5b696de4040d
-[15:59:44] [VoiceChatPacketProcessingThread/INFO]: [voicechat] Successfully validated connection of player 30117ceb-db68-3c7e-8ee3-5b696de4040d
-[15:59:44] [VoiceChatPacketProcessingThread/INFO]: [voicechat] Player washapso (30117ceb-db68-3c7e-8ee3-5b696de4040d) successfully connected to voice chat
-[16:00:01] [User Authenticator #0/INFO]: UUID of player Danilcxz is 8888f8b8-222a-3467-89bb-29f1aa0bce88
-[16:00:02] [Server thread/INFO]: Danilcxz joined the game
-[16:00:02] [Server thread/INFO]: Danilcxz[/83.246.166.41:62337] logged in with entity id 641 at ([world]14.603339049280912, 78.12752727981709, 516.7013443340998)
-[16:00:35] [Server thread/INFO]: washapso issued server command: /gamemode spectator
-[16:00:35] [Server thread/INFO]: [washapso: Set own game mode to Spectator Mode]
-[16:00:39] [Server thread/INFO]: washapso issued server command: /gamemode creative
-[16:00:39] [Server thread/INFO]: [washapso: Set own game mode to Creative Mode]
-[16:00:45] [Server thread/INFO]: Danilcxz issued server command: /chat
-[16:00:51] [Server thread/INFO]: [Глобальный] Danilcxz: ЛЕША НЕНАДО
-[16:01:36] [Server thread/INFO]: [Глобальный] Danilcxz: 100 максимум
-[16:01:39] [Server thread/INFO]: [Глобальный] Danilcxz: ну 150
-[16:01:45] [Server thread/WARN]: washapso moved too quickly! 3.7883743322367422,0.0,132.5101201325491
-[16:02:18] [Server thread/INFO]: washapso issued server command: /tp Danilcxz
-[16:02:18] [Server thread/INFO]: [washapso: Teleported washapso to Danilcxz]
-[16:02:18] [Server thread/WARN]: washapso moved too quickly! 37.22959478629884,-41.54670091704993,-234.482922530716
-[16:02:32] [Server thread/INFO]: washapso issued server command: /gamemode spectator
-[16:02:32] [Server thread/INFO]: [washapso: Set own game mode to Spectator Mode]
-[16:02:39] [Server thread/INFO]: washapso issued server command: /tp Danilcxz
-[16:02:39] [Server thread/INFO]: [washapso: Teleported washapso to Danilcxz]
-[16:02:42] [Server thread/INFO]: washapso issued server command: /gamemode creative
-[16:02:42] [Server thread/INFO]: [washapso: Set own game mode to Creative Mode]
-[16:02:45] [Server thread/INFO]: [Глобальный] Danilcxz: 200
-[16:02:50] [Server thread/INFO]: [Глобальный] Danilcxz: 100
-[16:02:53] [Server thread/INFO]: [Глобальный] Danilcxz: 88
-[16:02:57] [Server thread/INFO]: [Глобальный] Danilcxz: 39
-[16:04:00] [Server thread/INFO]: washapso issued server command: /gamemode spectator
-[16:04:00] [Server thread/INFO]: [washapso: Set own game mode to Spectator Mode]
-[16:04:24] [Server thread/INFO]: washapso issued server command: /tp d
-[16:04:25] [Server thread/INFO]: washapso issued server command: /tp Danilcxz
-[16:04:25] [Server thread/INFO]: [washapso: Teleported washapso to Danilcxz]
-[16:04:28] [Server thread/INFO]: washapso issued server command: /gamemode creative
-[16:04:28] [Server thread/INFO]: [washapso: Set own game mode to Creative Mode]
+[10:30:08] [ServerMain/INFO]: [bootstrap] Running Java 21 (OpenJDK 64-Bit Server VM 21.0.12+8-LTS; Eclipse Adoptium Temurin-21.0.12+8) on Linux 6.19.9-1.el8.elrepo.x86_64 (amd64)
+[10:30:08] [ServerMain/INFO]: [bootstrap] Loading Purpur 1.21.1-2329-ver/1.21.1@803bf62 (2024-10-31T20:25:04Z) for Minecraft 1.21.1
+[10:30:08] [ServerMain/INFO]: [PluginInitializerManager] Initializing plugins...
+[10:30:09] [ServerMain/WARN]: [org.eclipse.aether.internal.impl.synccontext.named.DiscriminatingNameMapper] Failed to get hostname, using 'localhost'
+java.net.UnknownHostException: 6fbe3f6c-08db-4e9b-a1a4-14d3424c6259: 6fbe3f6c-08db-4e9b-a1a4-14d3424c6259: Name or service not known
+	at java.base/java.net.InetAddress.getLocalHost(InetAddress.java:1936) ~[?:?]
+	at org.eclipse.aether.internal.impl.synccontext.named.DiscriminatingNameMapper.getHostname(DiscriminatingNameMapper.java:90) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at org.eclipse.aether.internal.impl.synccontext.named.DiscriminatingNameMapper.<init>(DiscriminatingNameMapper.java:69) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at org.eclipse.aether.internal.impl.synccontext.named.NameMappers.discriminatingNameMapper(NameMappers.java:68) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at org.eclipse.aether.internal.impl.synccontext.named.NamedLockFactoryAdapterFactoryImpl.getManuallyCreatedNameMappers(NamedLockFactoryAdapterFactoryImpl.java:78) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at org.eclipse.aether.internal.impl.synccontext.named.NamedLockFactoryAdapterFactoryImpl.<init>(NamedLockFactoryAdapterFactoryImpl.java:107) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at java.base/jdk.internal.reflect.DirectConstructorHandleAccessor.newInstance(DirectConstructorHandleAccessor.java:62) ~[?:?]
+	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:502) ~[?:?]
+	at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:486) ~[?:?]
+	at org.eclipse.aether.impl.DefaultServiceLocator$Entry.newInstance(DefaultServiceLocator.java:159) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at org.eclipse.aether.impl.DefaultServiceLocator$Entry.getInstances(DefaultServiceLocator.java:140) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at org.eclipse.aether.impl.DefaultServiceLocator$Entry.getInstance(DefaultServiceLocator.java:130) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at org.eclipse.aether.impl.DefaultServiceLocator.getService(DefaultServiceLocator.java:271) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at org.eclipse.aether.internal.impl.synccontext.DefaultSyncContextFactory.initService(DefaultSyncContextFactory.java:68) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at org.eclipse.aether.impl.DefaultServiceLocator$Entry.newInstance(DefaultServiceLocator.java:163) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at org.eclipse.aether.impl.DefaultServiceLocator$Entry.getInstances(DefaultServiceLocator.java:140) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at org.eclipse.aether.impl.DefaultServiceLocator$Entry.getInstance(DefaultServiceLocator.java:130) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at org.eclipse.aether.impl.DefaultServiceLocator.getService(DefaultServiceLocator.java:271) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at org.eclipse.aether.internal.impl.DefaultMetadataResolver.initService(DefaultMetadataResolver.java:123) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at org.eclipse.aether.impl.DefaultServiceLocator$Entry.newInstance(DefaultServiceLocator.java:163) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at org.eclipse.aether.impl.DefaultServiceLocator$Entry.getInstances(DefaultServiceLocator.java:140) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at org.eclipse.aether.impl.DefaultServiceLocator$Entry.getInstance(DefaultServiceLocator.java:130) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at org.eclipse.aether.impl.DefaultServiceLocator.getService(DefaultServiceLocator.java:271) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at org.apache.maven.repository.internal.DefaultVersionResolver.initService(DefaultVersionResolver.java:106) ~[maven-resolver-provider-3.9.6.jar:3.9.6]
+	at org.eclipse.aether.impl.DefaultServiceLocator$Entry.newInstance(DefaultServiceLocator.java:163) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at org.eclipse.aether.impl.DefaultServiceLocator$Entry.getInstances(DefaultServiceLocator.java:140) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at org.eclipse.aether.impl.DefaultServiceLocator$Entry.getInstance(DefaultServiceLocator.java:130) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at org.eclipse.aether.impl.DefaultServiceLocator.getService(DefaultServiceLocator.java:271) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at org.eclipse.aether.internal.impl.DefaultRepositorySystem.initService(DefaultRepositorySystem.java:158) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at org.eclipse.aether.impl.DefaultServiceLocator$Entry.newInstance(DefaultServiceLocator.java:163) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at org.eclipse.aether.impl.DefaultServiceLocator$Entry.getInstances(DefaultServiceLocator.java:140) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at org.eclipse.aether.impl.DefaultServiceLocator$Entry.getInstance(DefaultServiceLocator.java:130) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at org.eclipse.aether.impl.DefaultServiceLocator.getService(DefaultServiceLocator.java:271) ~[maven-resolver-impl-1.9.18.jar:1.9.18]
+	at org.bukkit.plugin.java.LibraryLoader.<init>(LibraryLoader.java:60) ~[paper-mojangapi-1.21.1-R0.1-SNAPSHOT.jar:?]
+	at io.papermc.paper.plugin.provider.type.spigot.SpigotPluginProvider.<clinit>(SpigotPluginProvider.java:38) ~[purpur-1.21.1.jar:1.21.1-2329-803bf62]
+	at io.papermc.paper.plugin.provider.type.PluginFileType.<clinit>(PluginFileType.java:40) ~[purpur-1.21.1.jar:1.21.1-2329-803bf62]
+	at io.papermc.paper.plugin.provider.source.FileProviderSource.registerProviders(FileProviderSource.java:77) ~[purpur-1.21.1.jar:1.21.1-2329-803bf62]
+	at io.papermc.paper.plugin.provider.source.DirectoryProviderSource.registerProviders(DirectoryProviderSource.java:52) ~[purpur-1.21.1.jar:1.21.1-2329-803bf62]
+	at io.papermc.paper.plugin.provider.source.DirectoryProviderSource.registerProviders(DirectoryProviderSource.java:17) ~[purpur-1.21.1.jar:1.21.1-2329-803bf62]
+	at io.papermc.paper.plugin.util.EntrypointUtil.registerProvidersFromSource(EntrypointUtil.java:15) ~[purpur-1.21.1.jar:1.21.1-2329-803bf62]
+	at io.papermc.paper.plugin.PluginInitializerManager.load(PluginInitializerManager.java:113) ~[purpur-1.21.1.jar:1.21.1-2329-803bf62]
+	at net.minecraft.server.Main.main(Main.java:129) ~[purpur-1.21.1.jar:1.21.1-2329-803bf62]
+	at io.papermc.paper.PaperBootstrap.boot(PaperBootstrap.java:21) ~[purpur-1.21.1.jar:1.21.1-2329-803bf62]
+	at org.bukkit.craftbukkit.Main.main(Main.java:295) ~[purpur-1.21.1.jar:1.21.1-2329-803bf62]
+	at io.papermc.paperclip.Paperclip.lambda$main$0(Paperclip.java:42) ~[app:?]
+	at java.base/java.lang.Thread.run(Thread.java:1583) ~[?:?]
+Caused by: java.net.UnknownHostException: 6fbe3f6c-08db-4e9b-a1a4-14d3424c6259: Name or service not known
+	at java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Native Method) ~[?:?]
+	at java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:52) ~[?:?]
+	at java.base/java.net.InetAddress$PlatformResolver.lookupByName(InetAddress.java:1211) ~[?:?]
+	at java.base/java.net.InetAddress.getAddressesFromNameService(InetAddress.java:1828) ~[?:?]
+	at java.base/java.net.InetAddress$NameServiceAddresses.get(InetAddress.java:1139) ~[?:?]
+	at java.base/java.net.InetAddress.getAllByName0(InetAddress.java:1818) ~[?:?]
+	at java.base/java.net.InetAddress.getLocalHost(InetAddress.java:1931) ~[?:?]
+	... 45 more
+[10:30:10] [ServerMain/INFO]: [PluginInitializerManager] Initialized 22 plugins
+[10:30:10] [ServerMain/INFO]: [PluginInitializerManager] Bukkit plugins (22):
+ - AutoBackup (1.1), BlueMap (5.16), Citizens (2.0.35-SNAPSHOT (build 3598)), CoreProtect (24.0), DisableJoinMessage (1.1), GrimAC (2.3.73), Orebfuscator (5.6.1), PolitariaApartments (1.0.0), PolitariaIdentity (1.6.0-tags), PolitariaMapBridge (1.0.0), PolitariaSpawnProtection (1.0.0), ProAntiTab (2.4.3), ProtocolLib (5.4.0), SkinsRestorer (15.12.5), Skript (2.15.4), TAB (5.2.0), ViaBackwards (5.11.0), ViaVersion (5.11.0), WorldEdit (7.3.9+6959-7adf70b), fast-leaf-decay (2.0.1), skript-reflect (2.6.3), voicechat (2.6.21)
+[10:30:14] [ServerMain/INFO]: Environment: Environment[sessionHost=https://sessionserver.mojang.com, servicesHost=https://api.minecraftservices.com, name=PROD]
+[10:30:17] [ServerMain/INFO]: Loaded 1290 recipes
+[10:30:17] [ServerMain/INFO]: Loaded 1399 advancements
+[10:30:17] [Server thread/INFO]: Starting minecraft server version 1.21.1
+[10:30:17] [Server thread/INFO]: Loading properties
+[10:30:17] [Server thread/INFO]: This server is running Purpur version 1.21.1-2329-ver/1.21.1@803bf62 (2024-10-31T20:25:04Z) (Implementing API version 1.21.1-R0.1-SNAPSHOT)
+[10:30:18] [Server thread/INFO]: [spark] This server bundles the spark profiler. For more information please visit https://docs.papermc.io/paper/profiling
+[10:30:18] [Server thread/INFO]: Server Ping Player Sample Count: 12
+[10:30:18] [Server thread/INFO]: Using 4 threads for Netty based IO
+[10:30:19] [Server thread/INFO]: [ChunkTaskScheduler] Chunk system is using 1 I/O threads, 8 worker threads, and population gen parallelism of 8 threads
+[10:30:20] [Server thread/WARN]: [Pufferfish] SIMD operations are available for your server, but are not configured!
+[10:30:20] [Server thread/WARN]: [Pufferfish] To enable additional optimizations, add "--add-modules=jdk.incubator.vector" to your startup flags, BEFORE the "-jar".
+[10:30:20] [Server thread/WARN]: [Pufferfish] If you have already added this flag, then SIMD operations are not supported on your JVM or CPU.
+[10:30:20] [Server thread/WARN]: [Pufferfish] Debug: Java: 21.0.12, test run: true
+[10:30:20] [Server thread/INFO]: Default game type: SURVIVAL
+[10:30:20] [Server thread/INFO]: Generating keypair
+[10:30:20] [Server thread/INFO]: Starting Minecraft server on 0.0.0.0:12328
+[10:30:20] [Server thread/INFO]: Using epoll channel type
+[10:30:20] [Server thread/INFO]: Paper: Using libdeflate (Linux x86_64) compression from Velocity.
+[10:30:20] [Server thread/INFO]: Paper: Using OpenSSL 3.x.x (Linux x86_64) cipher from Velocity.
+[10:30:22] [Server thread/INFO]: [PolitariaSpawnProtection] Loading server plugin PolitariaSpawnProtection v1.0.0
+[10:30:22] [Server thread/INFO]: [ViaVersion] Loading server plugin ViaVersion v5.11.0
+[10:30:22] [Server thread/INFO]: [ViaVersion] ViaVersion 5.11.0 is now loaded. Registering protocol transformers and injecting...
+[10:30:24] [Server thread/INFO]: [ViaBackwards] Loading translations...
+[10:30:24] [Server thread/INFO]: [ViaBackwards] Registering protocols...
+[10:30:24] [Server thread/INFO]: [Skript] Loading server plugin Skript v2.15.4
+[10:30:24] [Server thread/INFO]: [ProtocolLib] Loading server plugin ProtocolLib v5.4.0
+[10:30:24] [Server thread/INFO]: [ViaBackwards] Loading server plugin ViaBackwards v5.11.0
+[10:30:24] [Server thread/INFO]: [BlueMap] Loading server plugin BlueMap v5.16
+[10:30:24] [Server thread/INFO]: [PolitariaApartments] Loading server plugin PolitariaApartments v1.0.0
+[10:30:24] [Server thread/INFO]: [TAB] Loading server plugin TAB v5.2.0
+[10:30:24] [Server thread/INFO]: [WorldEdit] Loading server plugin WorldEdit v7.3.9+6959-7adf70b
+[10:30:25] [Server thread/INFO]: Got request to register class com.sk89q.worldedit.bukkit.BukkitServerInterface with WorldEdit [com.sk89q.worldedit.extension.platform.PlatformManager@52339e64]
+[10:30:25] [Server thread/INFO]: [voicechat] Loading server plugin voicechat v2.6.21
+[10:30:25] [Server thread/INFO]: [skript-reflect] Loading server plugin skript-reflect v2.6.3
+[10:30:25] [Server thread/INFO]: [SkinsRestorer] Loading server plugin SkinsRestorer v15.12.5
+[10:30:25] [Server thread/INFO]: [ProAntiTab] Loading server plugin ProAntiTab v2.4.3
+[10:30:25] [Server thread/INFO]: [PolitariaMapBridge] Loading server plugin PolitariaMapBridge v1.0.0
+[10:30:25] [Server thread/INFO]: [PolitariaIdentity] Loading server plugin PolitariaIdentity v1.6.0-tags
+[10:30:25] [Server thread/INFO]: [Orebfuscator] Loading server plugin Orebfuscator v5.6.1
+[10:30:25] [Server thread/INFO]: [GrimAC] Loading server plugin GrimAC v2.3.73
+[10:30:25] [Server thread/INFO]: [GrimAC] Loading PacketEvents...
+[10:30:27] [Server thread/INFO]: [DisableJoinMessage] Loading server plugin DisableJoinMessage v1.1
+[10:30:27] [Server thread/INFO]: [fast-leaf-decay] Loading server plugin fast-leaf-decay v2.0.1
+[10:30:27] [Server thread/INFO]: [CoreProtect] Loading server plugin CoreProtect v24.0
+[10:30:27] [Server thread/INFO]: [Citizens] Loading server plugin Citizens v2.0.35-SNAPSHOT (build 3598)
+[10:30:27] [Server thread/INFO]: [AutoBackup] Loading server plugin AutoBackup v1.1
+[10:30:27] [Server thread/INFO]: Server permissions file permissions.yml is empty, ignoring it
+[10:30:27] [Server thread/INFO]: [ProtocolLib] Enabling ProtocolLib v5.4.0
+[10:30:27] [Server thread/INFO]: [WorldEdit] Enabling WorldEdit v7.3.9+6959-7adf70b
+[10:30:27] [Server thread/INFO]: Registering commands with com.sk89q.worldedit.bukkit.BukkitServerInterface
+[10:30:27] [Server thread/INFO]: WEPIF: Using the Bukkit Permissions API.
+[10:30:27] [Server thread/INFO]: Using com.sk89q.worldedit.bukkit.adapter.impl.v1_21.PaperweightAdapter as the Bukkit adapter
+[10:30:29] [Server thread/INFO]: [SkinsRestorer] Enabling SkinsRestorer v15.12.5
+[10:30:29] [Server thread/INFO]: [SkinsRestorer] Running on Minecraft 1.21.1.
+[10:30:30] [Server thread/INFO]: [SkinsRestorer] Using paper join listener!
+[10:30:30] [Server thread/WARN]: **** SERVER IS RUNNING IN OFFLINE/INSECURE MODE!
+[10:30:30] [Server thread/WARN]: The server will make no attempt to authenticate usernames. Beware.
+[10:30:30] [Server thread/WARN]: While this makes the game possible to play without internet access, it also opens up the ability for hackers to connect with any username they choose.
+[10:30:30] [Server thread/WARN]: To change this, set "online-mode" to "true" in the server.properties file.
+[10:30:30] [Server thread/INFO]: Preparing level "world"
+[10:30:30] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer] ----------------------------------------------
+[10:30:30] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     +===================+
+[10:30:30] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     |   SkinsRestorer   |
+[10:30:30] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     |-------------------|
+[10:30:30] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     |  Standalone Mode  |
+[10:30:30] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     +===================+
+[10:30:30] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer] ----------------------------------------------
+[10:30:30] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     Version: 15.12.5
+[10:30:30] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     Commit: 98b9488
+[10:30:30] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer]     This is the latest version!
+[10:30:30] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer] ----------------------------------------------
+[10:30:30] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer] Do you have issues? Read our troubleshooting guide: https://skinsrestorer.net/docs/troubleshooting
+[10:30:30] [Folia Async Scheduler Thread #1/INFO]: [SkinsRestorer] Want to support SkinsRestorer or receive priority support? Become a supporter: https://skinsrestorer.net/pricing
+[10:30:33] [Server thread/INFO]: Preparing start region for dimension minecraft:overworld
+[10:30:33] [Server thread/INFO]: Time elapsed: 2 ms
+[10:30:33] [Server thread/INFO]: Preparing start region for dimension minecraft:the_nether
+[10:30:35] [Server thread/INFO]: Time elapsed: 2496 ms
+[10:30:35] [Server thread/INFO]: Preparing start region for dimension minecraft:the_end
+[10:30:36] [Server thread/INFO]: Time elapsed: 218 ms
+[10:30:36] [Server thread/INFO]: [PolitariaSpawnProtection] Enabling PolitariaSpawnProtection v1.0.0
+[10:30:36] [Server thread/INFO]: [PolitariaSpawnProtection] Spawn protection: world, horizontal radius 50.0, all heights.
+[10:30:36] [Server thread/INFO]: [ViaVersion] Enabling ViaVersion v5.11.0
+[10:30:36] [Server thread/INFO]: [ViaVersion] ViaVersion detected server version: 1.21-1.21.1 (767)
+[10:30:36] [Server thread/INFO]: [Skript] Enabling Skript v2.15.4
+[10:30:36] [Server thread/INFO]: [Skript] The updater is disabled, so a check for the latest version of Skript was not performed.
+[10:30:38] [Server thread/INFO]: [Skript]  ~ created by & © Peter Güttinger aka Njol ~
+[10:30:38] [Server thread/INFO]: [ViaBackwards] Enabling ViaBackwards v5.11.0
+[10:30:38] [Server thread/INFO]: [BlueMap] Enabling BlueMap v5.16
+[10:30:38] [Server thread/INFO]: [BlueMap] Saving all worlds once, to make sure the level.dat is present...
+[10:30:38] [Server thread/WARN]: A manual (plugin-induced) save has been detected while server is configured to auto-save. This may affect performance.
+[10:30:39] [Server thread/INFO]: [PolitariaApartments] Enabling PolitariaApartments v1.0.0
+[10:30:39] [Server thread/INFO]: [PolitariaApartments] Loaded 1 apartments; settlement timezone Europe/Moscow.
+[10:30:39] [Server thread/INFO]: [TAB] Enabling TAB v5.2.0
+[10:30:39] [Server thread/INFO]: [TAB] Loaded NMS hook in 202ms
+[10:30:39] [ForkJoinPool.commonPool-worker-1/INFO]: [Skript] Loaded 5330 aliases in 1621ms
+[10:30:39] [Server thread/INFO]: [TAB] Enabled in 351ms
+[10:30:39] [Server thread/INFO]: [voicechat] Enabling voicechat v2.6.21
+[10:30:39] [Server thread/INFO]: [voicechat] Initializing compatibility for version 1.21.1-R0.1
+[10:30:39] [Server thread/INFO]: [voicechat] Compatibility version 20
+[10:30:39] [Server thread/INFO]: [voicechat] Successfully initialized commodore command completion
+[10:30:39] [Server thread/INFO]: [voicechat] Successfully added ViaVersion mappings
+[10:30:39] [Server thread/INFO]: [skript-reflect] Enabling skript-reflect v2.6.3
+[10:30:40] [Server thread/INFO]: [ProAntiTab] Enabling ProAntiTab v2.4.3
+[10:30:40] [Server thread/WARN]: [ProAntiTab] No known permissions plugin found, so some features may be disabled.
+[10:30:40] [Server thread/WARN]: [ProAntiTab] Read more about it here: https://rayzs.de/products/proantitab/nkppf
+[10:30:40] [Server thread/INFO]: [PolitariaMapBridge] Enabling PolitariaMapBridge v1.0.0
+[10:30:40] [Server thread/INFO]: [PolitariaMapBridge] Динамические территории стран для BlueMap включены.
+[10:30:40] [Server thread/INFO]: [PolitariaIdentity] Enabling PolitariaIdentity v1.6.0-tags
+[10:30:40] [Server thread/INFO]: [PolitariaIdentity] Персональные имена игроков и теги включены.
+[10:30:40] [Server thread/INFO]: [Orebfuscator] Enabling Orebfuscator v5.6.1
+[10:30:40] [Server thread/INFO]: [Orebfuscator] Searching NMS adapter for version="1.21.1", nms="v1_21_R1_mojang"!
+[10:30:40] [Server thread/INFO]: [Orebfuscator] NMS adapter for server version "v1_21_R1_mojang" found!
+[10:30:41] [Server thread/INFO]: [GrimAC] Enabling GrimAC v2.3.73
+[10:30:41] [Server thread/INFO]: [GrimAC] Registering packets...
+[10:30:41] [Server thread/INFO]: [GrimAC] Registering tick schedulers...
+[10:30:42] [Server thread/INFO]: Grim Version: 2.3.73
+[10:30:42] [Server thread/INFO]: [GrimAC] Registering singular bukkit event... (PistonEvent)
+[10:30:42] [Server thread/INFO]: [DisableJoinMessage] Enabling DisableJoinMessage v1.1
+[10:30:42] [Server thread/INFO]: [DisableJoinMessage] DisableJoinMessage activado correctamente!
+[10:30:42] [Server thread/INFO]: [DisableJoinMessage] Los mensajes vainilla de entrada y salida de jugadores han sido desactivados.
+[10:30:42] [Server thread/INFO]: [fast-leaf-decay] Enabling fast-leaf-decay v2.0.1
+[10:30:42] [Server thread/INFO]: [CoreProtect] Enabling CoreProtect v24.0
+[10:30:42] [Server thread/INFO]: [CoreProtect] CoreProtect Community Edition has been successfully enabled! 
+[10:30:42] [Server thread/INFO]: [CoreProtect] Using SQLite for data storage.
+[10:30:42] [Server thread/INFO]: --------------------
+[10:30:42] [Server thread/INFO]: [CoreProtect] Enjoy CoreProtect? Join our Discord!
+[10:30:42] [Server thread/INFO]: [CoreProtect] Discord: www.coreprotect.net/discord/
+[10:30:42] [Server thread/INFO]: --------------------
+[10:30:42] [Server thread/INFO]: [Citizens] Enabling Citizens v2.0.35-SNAPSHOT (build 3598)
+[10:30:42] [Server thread/INFO]: [Citizens] Loading external libraries
+[10:30:42] [Server thread/INFO]: [Citizens] Using mojmapped server, avoiding server package checks
+[10:30:42] [Server thread/INFO]: [Citizens] Loaded 0 templates.
+[10:30:42] [Server thread/INFO]: [AutoBackup] Enabling AutoBackup v1.1
+[10:30:42] [Server thread/INFO]: [AutoBackup] AutoBackup plugin enabled! Backing up every 10800 seconds.
+[10:30:43] [Server thread/INFO]: [spark] Starting background profiler...
+[10:30:43] [Server thread/INFO]: Done preparing level "world" (13.286s)
+[10:30:43] [Server thread/INFO]: Starting GS4 status listener
+[10:30:43] [Server thread/WARN]: Unable to determine local host IP, please set server-ip in server.properties
+java.net.UnknownHostException: 6fbe3f6c-08db-4e9b-a1a4-14d3424c6259: 6fbe3f6c-08db-4e9b-a1a4-14d3424c6259: Name or service not known
+	at java.base/java.net.InetAddress.getLocalHost(InetAddress.java:1936) ~[?:?]
+	at net.minecraft.server.rcon.thread.QueryThreadGs4.<init>(QueryThreadGs4.java:63) ~[purpur-1.21.1.jar:1.21.1-2329-803bf62]
+	at net.minecraft.server.rcon.thread.QueryThreadGs4.create(QueryThreadGs4.java:78) ~[purpur-1.21.1.jar:1.21.1-2329-803bf62]
+	at net.minecraft.server.dedicated.DedicatedServer.initServer(DedicatedServer.java:377) ~[purpur-1.21.1.jar:1.21.1-2329-803bf62]
+	at net.minecraft.server.MinecraftServer.runServer(MinecraftServer.java:1230) ~[purpur-1.21.1.jar:1.21.1-2329-803bf62]
+	at net.minecraft.server.MinecraftServer.lambda$spin$0(MinecraftServer.java:333) ~[purpur-1.21.1.jar:1.21.1-2329-803bf62]
+	at java.base/java.lang.Thread.run(Thread.java:1583) ~[?:?]
+Caused by: java.net.UnknownHostException: 6fbe3f6c-08db-4e9b-a1a4-14d3424c6259: Name or service not known
+	at java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Native Method) ~[?:?]
+	at java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:52) ~[?:?]
+	at java.base/java.net.InetAddress$PlatformResolver.lookupByName(InetAddress.java:1211) ~[?:?]
+	at java.base/java.net.InetAddress.getAddressesFromNameService(InetAddress.java:1828) ~[?:?]
+	at java.base/java.net.InetAddress$NameServiceAddresses.get(InetAddress.java:1139) ~[?:?]
+	at java.base/java.net.InetAddress.getAllByName0(InetAddress.java:1818) ~[?:?]
+	at java.base/java.net.InetAddress.getLocalHost(InetAddress.java:1931) ~[?:?]
+	... 6 more
+[10:30:43] [Server thread/INFO]: Thread Query Listener started
+[10:30:43] [Query Listener #1/INFO]: Query running on 0.0.0.0:12328
+[10:30:43] [Server thread/INFO]: Running delayed init tasks
+[10:30:43] [Craft Scheduler Thread - 1 - BlueMap/INFO]: [BlueMap] Loading...
+[10:30:43] [Craft Scheduler Thread - 6 - AutoBackup/INFO]: [AutoBackup] Starting backup process...
+[10:30:43] [Craft Scheduler Thread - 2 - ViaVersion/INFO]: [ViaVersion] Finished mapping loading, shutting down loader executor.
+[10:30:43] [Server thread/INFO]: [Skript] Loading variables...
+[10:30:43] [Craft Scheduler Thread - 5 - GrimAC/INFO]: New GrimAC version found! Version 2.3.74-8eb5f28 is available to be downloaded here: https://modrinth.com/plugin/grimac
+[10:30:44] [Server thread/INFO]: [Skript] Loaded 3068 variables in 0.3 seconds
+[10:30:45] [Craft Scheduler Thread - 1 - BlueMap/INFO]: [BlueMap] Loading resources...
+[10:30:50] [User Authenticator #0/INFO]: UUID of player washapso is 30117ceb-db68-3c7e-8ee3-5b696de4040d
+[10:30:51] [Craft Scheduler Thread - 1 - BlueMap/INFO]: [BlueMap] Resources loaded.
+[10:30:51] [Craft Scheduler Thread - 1 - BlueMap/INFO]: [BlueMap] Initializing Storage: 'file' (Type: 'bluemap:file')
+[10:30:51] [Craft Scheduler Thread - 1 - BlueMap/INFO]: [BlueMap] Loading map 'world'...
+[10:30:52] [Craft Scheduler Thread - 1 - BlueMap/INFO]: [BlueMap] Loading map 'world_the_end'...
+[10:30:52] [Craft Scheduler Thread - 1 - BlueMap/INFO]: [BlueMap] Loading map 'world_nether'...
+[10:30:52] [Craft Scheduler Thread - 1 - BlueMap/INFO]: [BlueMap] WebServer bound to all network interfaces on port 12321
+[10:30:52] [BlueMap-Webserver/INFO]: [BlueMap] WebServer started.
+[10:30:52] [Craft Scheduler Thread - 1 - BlueMap/INFO]: [BlueMap] Loaded!
+[10:30:58] [Craft Scheduler Thread - 6 - AutoBackup/INFO]: [AutoBackup] Backed up world: world to backups/world_2026-09-10_10-30-43.zip
+[10:31:00] [Craft Scheduler Thread - 6 - AutoBackup/INFO]: [AutoBackup] Backed up world: world_nether to backups/world_nether_2026-09-10_10-30-58.zip
+[10:31:01] [Craft Scheduler Thread - 6 - AutoBackup/INFO]: [AutoBackup] Backed up world: world_the_end to backups/world_the_end_2026-09-10_10-31-00.zip
+[10:31:01] [Craft Scheduler Thread - 6 - AutoBackup/INFO]: [AutoBackup] Backup process completed.
+[10:31:02] [User Authenticator #0/INFO]: UUID of player washapso is 30117ceb-db68-3c7e-8ee3-5b696de4040d
+[10:31:06] [Server thread/INFO]: 
+[10:31:06] [Server thread/INFO]: СКУПКА ОБНОВЛЕНА!
+[10:31:06] [Server thread/INFO]: Появились 10 новых случайных товаров.
+[10:31:06] [Server thread/INFO]: Откройте /shop чтобы посмотреть ассортимент.
+[10:31:06] [Server thread/INFO]: 
+[10:31:06] [Server thread/INFO]: [Skript] All scripts loaded without errors.
+[10:31:06] [Server thread/INFO]: [Skript] Loaded 19 scripts with a total of 487 structures in 22.82 seconds
+[10:31:06] [Server thread/INFO]: [Skript] Finished loading.
+[10:31:07] [Server thread/INFO]: [CoreProtect] WorldEdit logging successfully initialized.
+[10:31:07] [Server thread/INFO]: [PolitariaIdentity] Плейсхолдеры TAB включены.
+[10:31:07] [Server thread/INFO]: [Citizens] Loaded 0 NPCs.
+[10:31:07] [Server thread/INFO]: Done (59.588s)! For help, type "help"
+[10:31:07] [Server thread/WARN]: Can't keep up! Is the server overloaded? Running 23612ms or 472 ticks behind
+[10:31:07] [Server thread/INFO]: [voicechat] Loading plugins
+[10:31:07] [Server thread/INFO]: [voicechat] Loaded 0 plugin(s)
+[10:31:07] [Server thread/INFO]: [voicechat] Initializing plugins
+[10:31:07] [Server thread/INFO]: [voicechat] Initialized 0 plugin(s)
+[10:31:07] [Server thread/WARN]: [voicechat] Running in offline mode - Voice chat encryption is not secure!
+[10:31:07] [VoiceChatServerThread/INFO]: [voicechat] Voice host is '163.5.201.8:12321'
+[10:31:07] [VoiceChatServerThread/INFO]: [voicechat] Voice chat server started at port 12321
+[10:31:07] [Server thread/INFO]: washapso (/57.128.140.147:53644) lost connection: Disconnected
+[10:31:08] [Craft Scheduler Thread - 5 - ProAntiTab/INFO]: [PAT | Bukkit] You are using the newest version! ^^
+[10:31:08] [orebfuscator-scheduler/WARN]: [Orebfuscator] Couldn't create L64X128StarStarRandom using SplittableRandom as fallback
+[10:31:09] [Server thread/INFO]: washapso[/198.244.228.170:44132] logged in with entity id 70 at ([world]24.15680863639174, 66.0, 150.6161928843389)
+[10:31:09] [Server thread/INFO]: [voicechat] Received secret request of washapso (20)
+[10:31:09] [Server thread/INFO]: [voicechat] Sent secret to washapso
+[10:31:10] [VoiceChatPacketProcessingThread/INFO]: [voicechat] Successfully authenticated player 30117ceb-db68-3c7e-8ee3-5b696de4040d
+[10:31:11] [Server thread/INFO]: POLITARIA » Добро пожаловать, washapso.
+[10:31:11] [VoiceChatPacketProcessingThread/INFO]: [voicechat] Successfully validated connection of player 30117ceb-db68-3c7e-8ee3-5b696de4040d
+[10:31:11] [VoiceChatPacketProcessingThread/INFO]: [voicechat] Player washapso (30117ceb-db68-3c7e-8ee3-5b696de4040d) successfully connected to voice chat
+[10:31:14] [Netty Epoll Server IO #2/INFO]: [ac.grim.grimac.shaded.com.github.retrooper.packetevents.PacketEventsAPI] Loading block mappings for V_1_20_5/15...
+[10:31:16] [Netty Epoll Server IO #2/INFO]: [ac.grim.grimac.shaded.com.github.retrooper.packetevents.PacketEventsAPI] Finished loading block mappings for V_1_20_5/15 in 1490.122024ms
+[10:31:25] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 1188a953-75b7-44ff-bb45-fc09c0971080 had NaN health set
+[10:31:29] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] be0094b4-6d97-438d-bfb8-32f89c779013 had NaN health set
+[10:31:29] [Server thread/WARN]: Can't keep up! Is the server overloaded? Running 7785ms or 155 ticks behind
+[10:31:30] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 77b8d816-f917-4c07-97cc-5312f3270213 had NaN health set
+[10:32:03] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] c7d5a0b6-21be-4689-85fb-90811c36aa55 had NaN health set
+[10:33:00] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 55f8eaf1-16b0-4b0b-8656-e6c5cb207bd2 had NaN health set
+[10:33:14] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 8d00ba63-48a1-4952-8c28-e25a5a02024c had NaN health set
+[10:33:22] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 7e9abc6b-daa1-4176-8770-0721da8f7ed6 had NaN health set
+[10:34:38] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 842bb32a-5ef2-4d0d-a3f1-a555c25f97eb had NaN health set
+[10:35:13] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 8d8c6c49-4a6f-47a2-86a0-883028ad8c98 had NaN health set
+[10:35:53] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] a2d90332-2dd0-4c06-b557-c64d49d9ad6b had NaN health set
+[10:35:57] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 6a686b98-5200-49bf-9f19-3fa4d162396c had NaN health set
+[10:36:12] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 3c6438a0-0f71-44b7-9caa-442b5836280c had NaN health set
+[10:36:56] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] ce7ccc66-e92c-4e9e-a07a-81b86b6af161 had NaN health set
+[10:38:45] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] da31d621-06d3-4891-b128-4cbf592c90df had NaN health set
+[10:40:04] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 0b2b4c28-ace5-46e4-bb4f-b1cfdbc3c8c4 had NaN health set
+[10:40:11] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 20cc5751-3335-49b8-9cb8-631b2544b65b had NaN health set
+[10:42:03] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] c34dc04c-a11d-4836-98b6-56041ef38f2e had NaN health set
+[10:42:45] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 30e5262d-8a4f-4151-a2e4-9342fdd387bb had NaN health set
+[10:43:09] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] e9b37f1f-95f3-4848-8b7a-24ef80f984de had NaN health set
+[10:43:43] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 6a28de58-585c-411b-b4a7-886559ba7bb1 had NaN health set
+[10:43:59] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 3fb36746-e049-4ae9-9971-2d939fce5a39 had NaN health set
+[10:45:00] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 34528d8a-005c-4d36-b43b-67fe6a173f7d had NaN health set
+[10:45:43] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 1eaf84ec-3aec-401a-b7cd-c1a3dcc167e5 had NaN health set
+[10:45:59] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 931f5da3-65ff-4877-8073-78d3840c9e68 had NaN health set
+[10:46:35] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 0bd5dde9-bfa3-48b0-bdbd-0e618e0caacc had NaN health set
+[10:47:07] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 9254a448-fef3-4ccd-b265-edea5765cf67 had NaN health set
+[10:47:37] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] fd1dc84d-35e8-4812-845f-6d53a9da984e had NaN health set
+[10:48:03] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] cd25fa19-2fa0-4c69-a693-65e8288eb810 had NaN health set
+[10:48:29] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 40095aa0-13dc-4d97-8b79-9d1de39ce65c had NaN health set
+[10:48:41] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 71d86901-6255-4439-8004-e4f28e3f5b87 had NaN health set
+[10:48:47] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 852cad24-8074-4973-aeb7-226bf022816a had NaN health set
+[10:49:06] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] c3ae101f-dc1d-400b-b334-6302044706b9 had NaN health set
+[10:49:08] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 3d568642-197f-402e-8e7f-1a5ff2f840ba had NaN health set
+[10:49:54] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 2172ad00-c6ef-4f9d-b385-05673501ec38 had NaN health set
+[10:50:47] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 9264c3fe-2b84-46e7-bf45-aa4ab3965d72 had NaN health set
+[10:51:00] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 31463e0c-62a9-4bd8-b005-2584dd9f0909 had NaN health set
+[10:52:31] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 5fe06949-16ca-4bb0-9ad7-98bebd2a74a1 had NaN health set
+[10:53:12] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] f5abcf4a-1989-4883-90a5-803e9f1382a6 had NaN health set
+[10:53:15] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] d1b8c4a0-6c42-4be3-b553-dacc1b600eb6 had NaN health set
+[10:53:20] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 33ca2dd6-a33e-4ed4-9122-f187ae2e3ac9 had NaN health set
+[10:53:22] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 60c10b29-1a10-472e-8b1f-1febd4e6068a had NaN health set
+[10:53:31] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 48dd91ec-fe85-4d4c-a9d6-37fe4757e411 had NaN health set
+[10:54:27] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 02de923d-dd11-433e-a1f4-482ab0c17e47 had NaN health set
+[10:54:57] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] c5ceefea-236c-445d-98a6-e6936e94c13a had NaN health set
+[10:55:24] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] d453ea9a-9158-4fa5-b180-39bc02a964bb had NaN health set
+[10:55:38] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] bf12eba2-59aa-450c-b417-e8d3a877b277 had NaN health set
+[10:55:52] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] e686e18e-9d7e-4972-acc8-35ebf1f12b64 had NaN health set
+[10:55:52] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 9ea930c7-b4d6-43b6-a049-4b6a5c653035 had NaN health set
+[10:55:54] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 0aded2a2-164b-47ea-84b3-6930456d9baa had NaN health set
+[10:55:58] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 38b67b65-9a45-40a3-b50c-5aba9bba57ea had NaN health set
+[10:56:19] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 148b85bf-4acb-4602-a57c-47e093579012 had NaN health set
+[10:57:16] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 8d2d5aa7-7234-48f4-ba6e-22ac74ac9b90 had NaN health set
+[10:58:35] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 40e71ad0-83be-4c8c-a34b-7cc57d41d302 had NaN health set
+[10:58:43] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 6362ffeb-7559-4bfb-86ca-83f1f6756bc9 had NaN health set
+[10:58:59] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] d5e506eb-766a-4bf4-9520-8adde97181f4 had NaN health set
+[10:59:06] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 6f2eb026-7626-456c-bde2-e01170e8345a had NaN health set
+[11:00:54] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 78a6ee54-8a92-4cec-9beb-81848a523d94 had NaN health set
+[11:01:34] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 978070ab-da2a-4255-b576-eea3638c719e had NaN health set
+[11:01:56] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] bbef314d-df6e-437f-b26e-a63dfdb0e7cf had NaN health set
+[11:02:36] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 3c1a87b8-ed53-4b6c-8a8a-393e2bd038d3 had NaN health set
+[11:03:45] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] ae3d4e1f-4f3c-4991-bc2f-07631771cfbd had NaN health set
+[11:04:13] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 37b10169-8128-40f2-bf6b-86e1d5701293 had NaN health set
+[11:04:24] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 8be5bc2b-4c5a-43ba-950d-45dab950d39a had NaN health set
+[11:05:17] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] bfbce91a-8c21-44a9-80fe-4cb3d5740882 had NaN health set
+[11:05:44] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 71bb133f-2921-49f8-8ba2-2b06703155f2 had NaN health set
+[11:06:04] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 52443021-6826-409d-8529-a2c46b30d1b0 had NaN health set
+[11:06:11] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 5971dde3-ba49-4d98-8ad0-c4adab6129fc had NaN health set
+[11:07:26] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] c316b2f8-b9bb-4cea-a299-2562b6c3a058 had NaN health set
+[11:10:02] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 79b240c9-9bf1-4ddb-8285-9958f868c0c3 had NaN health set
+[11:10:14] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 7270d53c-27f0-4da9-a33c-9701749edecc had NaN health set
+[11:10:18] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] fa19394f-b8b7-4de7-83dc-f2ba59367237 had NaN health set
+[11:10:58] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 677512d4-3df0-4cf2-a464-26fc62409386 had NaN health set
+[11:11:16] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 54700db6-5e8e-4f9a-be4f-a8fd249201df had NaN health set
+[11:12:09] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 80ef5f62-0d98-4265-943c-01d5884a92dc had NaN health set
+[11:12:47] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] c85983b2-ab42-437c-b8ff-4b3463d8d744 had NaN health set
+[11:13:03] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] a86f80c2-1e3a-4cca-bdcb-71a0d21d956f had NaN health set
+[11:13:09] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 67ff3ffc-abd2-46cf-ad94-81b1f036ef64 had NaN health set
+[11:13:21] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 30f0ad05-c08d-4b4a-a4b8-6282e2678502 had NaN health set
+[11:13:31] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 4bb55621-3df7-450d-9db1-eb2781f57f41 had NaN health set
+[11:13:45] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] ca13d128-c0d3-447c-b4d3-0b6dec8213cc had NaN health set
+[11:14:46] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] c980f4c9-53d6-4815-b711-089151460b90 had NaN health set
+[11:14:54] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 33211570-322b-4742-bfaa-57156a75aaa0 had NaN health set
+[11:15:29] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] ae366994-26a2-4d22-8a15-4a74c7165cf1 had NaN health set
+[11:15:59] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] ce2df2b9-7863-4717-af74-ba6c22ce9b59 had NaN health set
+[11:16:19] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] cb6035a9-b2c1-425b-964d-27442654133b had NaN health set
+[11:16:54] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 2c3cc7f6-c996-48d6-ad22-262a75e55a6f had NaN health set
+[11:16:55] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 41ea6b74-0e2e-49e3-9cdb-479762fb7d69 had NaN health set
+[11:17:46] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 8292e1df-63df-4b7c-82cf-effb464e6ee3 had NaN health set
+[11:20:26] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] d02792c7-f4d9-41fd-bcad-d1f6d982a783 had NaN health set
+[11:22:17] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] cc2c3988-a1a8-44ae-be55-eb737df5728c had NaN health set
+[11:22:18] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] f288edb0-eba1-4711-8e3f-52ac1e72aab5 had NaN health set
+[11:22:21] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 4ac9ddb6-f996-4019-917b-ac21e614770d had NaN health set
+[11:22:42] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 0626ddcb-9e74-4a63-8b47-76da6dd1dac0 had NaN health set
+[11:23:34] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 5bea729b-e211-4574-9698-99164f4afbf7 had NaN health set
+[11:23:56] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 8b15161d-5566-470b-8dfa-6765286def25 had NaN health set
+[11:24:06] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 8c3d2c37-6699-4b67-8175-d7df45a62262 had NaN health set
+[11:24:14] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 18f7866d-e544-4fc1-8a12-01bc6e177f55 had NaN health set
+[11:24:31] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 85674e1d-aa70-400d-a69e-c9fc9ec78510 had NaN health set
+[11:24:58] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] dce37cad-ccab-48cd-8789-6e9cdb591123 had NaN health set
+[11:25:33] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 23220ed7-753e-401e-9ce2-de8e05e79e8f had NaN health set
+[11:27:43] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 4f33edc8-234a-4887-af5b-88832055704f had NaN health set
+[11:28:21] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 2d84d6bf-bdeb-49f8-afa2-70fb33b57e32 had NaN health set
+[11:29:10] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 187ea607-1b3f-48d3-adf1-4c3e97320a78 had NaN health set
+[11:29:25] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] f632886c-1bb3-4e51-b3c6-037d2d38cae4 had NaN health set
+[11:29:46] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] f53ddb5c-1fa8-42d0-956e-c748ecce4a64 had NaN health set
+[11:29:51] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 2cc692ca-8224-4447-8617-724e4482e07c had NaN health set
+[11:29:57] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 06ac55ff-de36-413f-ab8d-7311a14d7849 had NaN health set
+[11:30:20] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] bed95bb9-0a3c-45fb-aa12-ab6e7d20c527 had NaN health set
+[11:30:44] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] b26c4c37-1f77-4b91-a385-f634f9261a63 had NaN health set
+[11:30:49] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] a5371e5c-36b2-4be5-8251-feedc8e1ede3 had NaN health set
+[11:31:09] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 952f4661-3b19-445b-a9c5-aebb3815079c had NaN health set
+[11:31:09] [Server thread/INFO]: 
+[11:31:09] [Server thread/INFO]: СКУПКА ОБНОВЛЕНА!
+[11:31:09] [Server thread/INFO]: Появились 10 новых случайных товаров.
+[11:31:09] [Server thread/INFO]: Откройте /shop чтобы посмотреть ассортимент.
+[11:31:09] [Server thread/INFO]: 
+[11:31:57] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 67d21c3d-1c83-4e7b-89ad-491513f31732 had NaN health set
+[11:32:41] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 46e1a4b3-b17e-4f2e-8113-38843d785502 had NaN health set
+[11:33:29] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 3fad364e-a770-4422-b66e-417e5d94dea8 had NaN health set
+[11:33:31] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] db9dc699-27a3-4c92-966d-36ea907342d2 had NaN health set
+[11:34:12] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] b95526ad-d8bc-4ec5-9cb9-d7fd02759d75 had NaN health set
+[11:34:21] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 50c41065-75c6-4804-8f34-aabbecd9a414 had NaN health set
+[11:34:45] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] f6a5bef8-6d54-499f-8b44-a3d20f3c673e had NaN health set
+[11:35:10] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 3b3501bd-17e6-4bfc-93f4-bedcf8cb4c72 had NaN health set
+[11:35:26] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 90f4ee8f-b826-4833-a157-96963e08c9d4 had NaN health set
+[11:36:24] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] dc3c0b63-582c-4aee-94b5-650be1175d4d had NaN health set
+[11:36:47] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 6fb747c5-9096-4135-a93a-272d76dbc3f8 had NaN health set
+[11:37:16] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 6f459a40-0e2c-4184-a1a0-7496d024b992 had NaN health set
+[11:37:49] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] f6b4377d-486a-4087-bcd8-0103c5fe01a4 had NaN health set
+[11:38:07] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] b2407fe4-f4cf-48ae-8b98-d94d0677dfb8 had NaN health set
+[11:38:12] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] ce61b003-2543-427d-ab6b-0eb86ae256c7 had NaN health set
+[11:38:18] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 9010679f-853a-4c0e-a852-e5c8de06ea80 had NaN health set
+[11:40:30] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 3c091b2c-6c01-4c93-8f76-cb304da36fa3 had NaN health set
+[11:40:46] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] aa17f6d1-9179-4a18-becd-07f323747da8 had NaN health set
+[11:40:55] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] f49d2f62-f7e5-4e9c-8182-a0e141e057dd had NaN health set
+[11:41:13] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 8cc7992e-ec62-40e1-a1d6-17fc7b30c732 had NaN health set
+[11:41:22] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 3b53eba1-604d-417d-b37b-5f17a4e4a759 had NaN health set
+[11:42:29] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 04d17923-7e6d-4bad-bc0f-7f9e7b214ab4 had NaN health set
+[11:42:58] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 18a4dc86-92ba-4fae-bbfe-4af2128f9eb6 had NaN health set
+[11:43:42] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 982770d7-e847-46a0-969d-74493c8ceccb had NaN health set
+[11:44:36] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] f57513b8-2e47-4654-a447-3c079ceaecc0 had NaN health set
+[11:44:48] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] a4f56fc4-fcc1-45de-a57d-a7193cf486ac had NaN health set
+[11:45:15] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 5f57f9f5-ba45-4860-8828-bf7ae2f1e6d6 had NaN health set
+[11:46:41] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] a48112c3-c6f3-4291-83f7-57d4fdb0b17c had NaN health set
+[11:48:26] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 99ab7948-c10d-450e-a5d2-fb6948bef39c had NaN health set
+[11:48:35] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 3f5c015f-73e9-47eb-8eeb-30567599abc7 had NaN health set
+[11:49:00] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] c33c8bc0-b7d4-4d39-9d7a-1877bafde5dd had NaN health set
+[11:50:26] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 520208d1-7418-4789-b3c0-54f1d0ca3aac had NaN health set
+[11:51:44] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 66007e50-43f5-42ce-81e5-2b93716e9e4c had NaN health set
+[11:52:11] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 7fd891fc-7c62-4d95-9b60-99549c7909e9 had NaN health set
+[11:52:37] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] cb329ba4-8449-4ddf-8d69-5999ed3de5ed had NaN health set
+[11:52:47] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] c1706f83-999b-4f18-901f-16403a0c6017 had NaN health set
+[11:54:22] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 11f002d9-790a-48b2-91b3-b500244f0f3f had NaN health set
+[11:55:02] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 25f119b7-5adc-4466-ac54-612e005c5371 had NaN health set
+[11:55:39] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] b0ad2456-283d-4b90-8cba-8460873e8a2a had NaN health set
+[11:55:56] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] e4bd6b16-1a45-4c1e-b73b-31173ce4ac58 had NaN health set
+[11:58:23] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 9c239983-aee1-4a6c-ac45-d1c444dab058 had NaN health set
+[11:58:52] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] aaa0ac6d-e0c0-4b85-8237-f136b47646b4 had NaN health set
+[11:59:09] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 9e75f898-0732-439f-b75d-63f9d241ee1c had NaN health set
+[11:59:22] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 95e45339-d0db-4d2d-b542-3253d5034e91 had NaN health set
+[11:59:51] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] da8f0a22-f6fd-44c1-a936-a9f0cff488fa had NaN health set
+[11:59:53] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 9381c621-ac31-43f7-939e-b1dcdc2905c7 had NaN health set
+[12:00:02] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 78a07a57-5f0e-48ba-b247-38ac03da6037 had NaN health set
+[12:00:28] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 9bc6f003-91c9-48a0-b459-3ce9e23044f1 had NaN health set
+[12:00:48] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 1a547920-dcf0-494e-8a50-33da3ccf7108 had NaN health set
+[12:01:20] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] d2871e41-88cc-4f40-9728-bb4821c204a9 had NaN health set
+[12:02:13] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 03bd0c78-4975-494d-9199-59fb7f2b37d3 had NaN health set
+[12:02:34] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] b425fbea-f09b-43a4-a4ab-9c6843b65a83 had NaN health set
+[12:03:06] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] e34617f3-81e9-47e2-a8cc-08c0ce4b4189 had NaN health set
+[12:04:11] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 5abf786d-aa70-4cb4-acbf-807e6f5c3a2d had NaN health set
+[12:04:32] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 3ae1d4cb-5cad-4606-a125-ddb780ff37ef had NaN health set
+[12:05:05] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 697322d1-568d-4d89-9a51-77b116be4649 had NaN health set
+[12:05:15] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 427d0720-5249-4fb4-8fd7-24195d85b35b had NaN health set
+[12:06:07] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 2d9690d0-929a-468a-9e92-3088115cfc6b had NaN health set
+[12:06:18] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 6b1bedfd-9fe0-418f-a1d7-f543b1999b7c had NaN health set
+[12:06:37] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 68c3bcf7-ebb7-49ee-ab78-ce6be4457154 had NaN health set
+[12:07:35] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 2a17d26c-0eb2-4e17-ac1d-b223fdb5ba94 had NaN health set
+[12:07:59] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 5b6395e3-68c1-42a8-b5fb-a6ccf601e84f had NaN health set
+[12:08:33] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] e0e05a2a-eec8-4527-a2fb-926e23acff34 had NaN health set
+[12:08:43] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] f4334322-5972-4b6a-baa9-eb522ef36eb9 had NaN health set
+[12:09:05] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] e8811eab-06e9-450b-846e-947b5568ad42 had NaN health set
+[12:09:10] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] 487bbb18-124a-4b52-afd7-c0880833d51f had NaN health set
+[12:09:14] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] eba59c12-0c5f-498b-b184-f44790cb4e3d had NaN health set
+[12:09:26] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] dfd66623-0396-420b-b4ed-679937dc2c4e had NaN health set
+[12:09:56] [Server thread/ERROR]: [STDERR] [net.minecraft.world.entity.LivingEntity] [NAN-HEALTH] dbf06674-ed5f-4932-8aa6-c8b02cf87d38 had NaN health set
+[12:10:02] [Server thread/INFO]: washapso lost connection: Disconnected
+[12:10:02] [Server thread/INFO]: [voicechat] Disconnecting client washapso
+[12:10:02] [Server thread/INFO]: No bossbar exists with the ID 'politaria:jail_washapso'
+[12:11:18] [Server thread/INFO]: No player was found
+[12:25:29] [Server thread/INFO]: Stopping the server
+[12:25:29] [Server thread/INFO]: Stopping server
+[12:25:29] [Server thread/INFO]: [AutoBackup] Disabling AutoBackup v1.1
+[12:25:29] [Server thread/INFO]: [AutoBackup] AutoBackup plugin disabled!
+[12:25:29] [Server thread/INFO]: [Citizens] Disabling Citizens v2.0.35-SNAPSHOT (build 3598)
+[12:25:29] [Server thread/INFO]: [CoreProtect] Disabling CoreProtect v24.0
+[12:25:29] [Server thread/INFO]: [CoreProtect] Finishing up data logging. Please wait...
+[12:25:30] [Server thread/INFO]: [CoreProtect] Success! Disabled CoreProtect v24.0
+[12:25:30] [Server thread/INFO]: [fast-leaf-decay] Disabling fast-leaf-decay v2.0.1
+[12:25:30] [Server thread/INFO]: [DisableJoinMessage] Disabling DisableJoinMessage v1.1
+[12:25:30] [Server thread/INFO]: [DisableJoinMessage] DisableJoinMessage desactivado correctamente!
+[12:25:30] [Server thread/INFO]: [GrimAC] Disabling GrimAC v2.3.73
+[12:25:30] [Server thread/INFO]: [GrimAC] Terminating PacketEvents...
+[12:25:30] [Server thread/INFO]: [Orebfuscator] Disabling Orebfuscator v5.6.1
+[12:25:30] [Server thread/INFO]: [PolitariaIdentity] Disabling PolitariaIdentity v1.6.0-tags
+[12:25:30] [Server thread/INFO]: [PolitariaMapBridge] Disabling PolitariaMapBridge v1.0.0
+[12:25:30] [Server thread/INFO]: [ProAntiTab] Disabling ProAntiTab v2.4.3
+[12:25:30] [Server thread/INFO]: [SkinsRestorer] Disabling SkinsRestorer v15.12.5
+[12:25:30] [Server thread/INFO]: [skript-reflect] Disabling skript-reflect v2.6.3
+[12:25:30] [Server thread/INFO]: [voicechat] Disabling voicechat v2.6.21
+[12:25:30] [Server thread/INFO]: [WorldEdit] Disabling WorldEdit v7.3.9+6959-7adf70b
+[12:25:30] [Server thread/INFO]: Unregistering com.sk89q.worldedit.bukkit.BukkitServerInterface from WorldEdit
+[12:25:30] [Server thread/INFO]: [TAB] Disabling TAB v5.2.0
+[12:25:30] [Server thread/INFO]: [TAB] Disabled in 0ms
+[12:25:30] [Server thread/INFO]: [PolitariaApartments] Disabling PolitariaApartments v1.0.0
+[12:25:30] [Server thread/INFO]: [BlueMap] Disabling BlueMap v5.16
+[12:25:30] [Server thread/INFO]: [BlueMap] Stopping...
+[12:25:30] [Server thread/INFO]: [BlueMap] Saved and stopped!
+[12:25:30] [Server thread/INFO]: [ViaBackwards] Disabling ViaBackwards v5.11.0
+[12:25:30] [Server thread/INFO]: [ProtocolLib] Disabling ProtocolLib v5.4.0
+[12:25:30] [Server thread/INFO]: [Skript] Disabling Skript v2.15.4
+[12:25:30] [Server thread/INFO]: [ViaVersion] Disabling ViaVersion v5.11.0
+[12:25:30] [Server thread/INFO]: [ViaVersion] ViaVersion has been disabled; uninjected the platform and shut down the scheduler.
+[12:25:30] [Server thread/INFO]: [PolitariaSpawnProtection] Disabling PolitariaSpawnProtection v1.0.0
+[12:25:30] [Server thread/INFO]: Saving players
+[12:25:30] [Server thread/INFO]: Saving worlds
+[12:25:30] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[12:25:30] [Server thread/INFO]: [ChunkHolderManager] Waiting 60s for chunk system to halt for world 'world'
+[12:25:30] [Server thread/INFO]: [ChunkHolderManager] Halted chunk system for world 'world'
+[12:25:30] [Server thread/INFO]: [ChunkHolderManager] Saving all chunkholders for world 'world'
+[12:25:30] [Server thread/INFO]: [ChunkHolderManager] Saved 0 block chunks, 0 entity chunks, 0 poi chunks in world 'world' in 0.04s
+[12:25:31] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world_nether]'/minecraft:the_nether
+[12:25:31] [Server thread/INFO]: [ChunkHolderManager] Waiting 60s for chunk system to halt for world 'world_nether'
+[12:25:31] [Server thread/INFO]: [ChunkHolderManager] Halted chunk system for world 'world_nether'
+[12:25:31] [Server thread/INFO]: [ChunkHolderManager] Saving all chunkholders for world 'world_nether'
+[12:25:31] [Server thread/INFO]: [ChunkHolderManager] Saved 0 block chunks, 23 entity chunks, 0 poi chunks in world 'world_nether' in 0.05s
+[12:25:31] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world_the_end]'/minecraft:the_end
+[12:25:31] [Server thread/INFO]: [ChunkHolderManager] Waiting 60s for chunk system to halt for world 'world_the_end'
+[12:25:31] [Server thread/INFO]: [ChunkHolderManager] Halted chunk system for world 'world_the_end'
+[12:25:31] [Server thread/INFO]: [ChunkHolderManager] Saving all chunkholders for world 'world_the_end'
+[12:25:31] [Server thread/INFO]: [ChunkHolderManager] Saved 0 block chunks, 10 entity chunks, 0 poi chunks in world 'world_the_end' in 0.03s
+[12:25:31] [Server thread/INFO]: ThreadedAnvilChunkStorage (world): All chunks are saved
+[12:25:31] [Server thread/INFO]: ThreadedAnvilChunkStorage (DIM-1): All chunks are saved
+[12:25:31] [Server thread/INFO]: ThreadedAnvilChunkStorage (DIM1): All chunks are saved
+[12:25:31] [Server thread/INFO]: ThreadedAnvilChunkStorage: All dimensions are saved

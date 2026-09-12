@@ -1,0 +1,13 @@
+# Height of the tag line above the player's feet.
+# If it overlaps PolitariaIdentity's label, increase this value a little.
+label-height: 2.85
+
+# Update period in ticks. 2 = 10 times per second.
+update-period: 2
+
+media-permissions:
+  - minecraft.command.teleport
+  - minecraft.command.give
+  - minecraft.command.gamemode
+  - minecraft.command.time
+  - minecraft.command.weather
