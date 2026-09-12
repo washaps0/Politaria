@@ -1,0 +1,85 @@
+# POLITARIA - Country Locator Bar
+# Minecraft 1.21.11 / Skript 2.16+
+#
+# IMPORTANT:
+# Vanilla Minecraft cannot hide a waypoint only for selected viewers.
+# This script synchronizes Politaria countries with vanilla scoreboard teams.
+# TeamLocatorBar (Paper plugin) then filters TRACKED_WAYPOINT packets so only
+# players in the same team/country are visible on the vanilla Locator Bar.
+#
+# Required TeamLocatorBar config:
+#   teammate.enabled: true
+#   enemy.enabled: false
+#   neutral.enabled: false
+#
+# Country source of truth is the existing variable:
+#   {country.player::<uuid>} = country id
+
+options:
+    locator-sync-period: 1 second
+    locator-team-prefix: plc_
+
+# Returns/creates a short persistent vanilla team id for a Politaria country.
+# We intentionally do not use the country name or UUID directly because vanilla
+# scoreboard team identifiers should stay short and stable even after renames.
+function locatorTeamForCountry(countryId: text) :: text:
+    if {country.locator.team::%{_countryId}%} is set:
+        return {country.locator.team::%{_countryId}%}
+
+    if {country.locator.next-team} is not set:
+        set {country.locator.next-team} to 0
+
+    add 1 to {country.locator.next-team}
+    set {_team} to "{@locator-team-prefix}%{country.locator.next-team}%"
+    set {country.locator.team::%{_countryId}%} to {_team}
+
+    # Create it once. Team data itself is persisted by Minecraft's scoreboard.
+    execute console command "team add %{_team}%"
+    return {_team}
+
+# Put one player in the locator team matching their current Politaria country.
+function locatorSyncPlayer(p: player):
+    set {_uuid} to "%uuid of {_p}%"
+    set {_country} to {country.player::%{_uuid}%}
+    set {_oldTeam} to {country.locator.player-team::%{_uuid}%}
+
+    # No country -> the player must be neutral. TeamLocatorBar is configured to
+    # hide neutrals, so the player disappears from every country's Locator Bar.
+    if {_country} is not set:
+        if {_oldTeam} is set:
+            execute console command "team leave %name of {_p}%"
+            delete {country.locator.player-team::%{_uuid}%}
+        stop
+
+    set {_newTeam} to locatorTeamForCountry("%{_country}%")
+
+    # Avoid unnecessary scoreboard packets every second.
+    if {_oldTeam} is {_newTeam}:
+        stop
+
+    execute console command "team join %{_newTeam}% %name of {_p}%"
+    set {country.locator.player-team::%{_uuid}%} to {_newTeam}
+
+# Make sure the vanilla locator bar itself stays enabled.
+on load:
+    execute console command "gamerule minecraft:locator_bar true"
+
+    # Re-create mapped teams if a scoreboard was reset while Skript variables
+    # survived. Minecraft simply reports 'already exists' for existing teams.
+    loop {country.locator.team::*}:
+        execute console command "team add %loop-value%"
+
+    wait 1 tick
+    loop all players:
+        locatorSyncPlayer(loop-player)
+
+on join:
+    wait 2 ticks
+    locatorSyncPlayer(player)
+
+# Country membership can change from several menus/commands in countries.sk.
+# A lightweight 1-second sync keeps the bar correct without modifying every
+# country-management code path and also repairs state after /sk reload.
+every {@locator-sync-period}:
+    loop all players:
+        locatorSyncPlayer(loop-player)
