@@ -125,6 +125,18 @@ function policeIsGuard(p: player) :: boolean:
 		return true
 	return false
 
+# Всегда возвращает видимый предмет. У офлайн-игрока это обычная player head,
+# у онлайн-игрока — его настоящая голова. Так GUI не получает пустой item.
+function policeWantedHead(targetUuid: text) :: item:
+	set {_head} to player head
+	set {_online} to player({_targetUuid}, true)
+	if {_online} is set:
+		set {_onlineHead} to head of {_online}
+		if {_onlineHead} is set:
+			if {_onlineHead} is not air:
+				set {_head} to {_onlineHead}
+	return {_head}
+
 function policeCanSeePassport(viewer: player, targetUuid: text) :: boolean:
 	if "%uuid of {_viewer}%" is {_targetUuid}:
 		return true
@@ -196,10 +208,7 @@ function policeOpenPassport(viewer: player, targetUuid: text, page: number):
 	set {_menu} to chest inventory with 6 rows named "{@police-passport-title}"
 	policeFill({_menu})
 
-	if {_target} is set:
-		set {_target-head} to head of {_target}
-	else:
-		set {_target-head} to player head
+	set {_target-head} to policeWantedHead({_targetUuid})
 	set name of {_target-head} to "<aqua><bold>%{_name}%"
 	set lore of {_target-head} to "<gray>Паспорт игрока" and "<dark gray>UUID: %{_targetUuid}%"
 	set slot 4 of {_menu} to {_target-head}
@@ -311,11 +320,7 @@ function policeOpenWantedList(p: player, page: number):
 				set {_citizenship} to "<gray>Без гражданства"
 			else:
 				set {_citizenship} to "%countryColor({_targetCountry})%%countryName({_targetCountry})%"
-			set {_target-profile} to offlineplayer({_targetUuid}, false)
-			if {_target-profile} is set:
-				set {_target-head} to head of {_target-profile}
-			else:
-				set {_target-head} to player head
+			set {_target-head} to policeWantedHead({_targetUuid})
 			set name of {_target-head} to "<red><bold>%{_name}%"
 			set lore of {_target-head} to policeStars({_stars}) and "<gray>%policeLevelName({_stars})%" and "<gray>Гражданство: %{_citizenship}%" and "" and "<yellow>Нажмите для подробностей"
 			set slot {_slot} of {_menu} to {_target-head}
@@ -355,11 +360,7 @@ function policeOpenWantedDetail(p: player, targetUuid: text):
 	set {_menu} to chest inventory with 4 rows named "<dark gray>Розыск • %{_name}%"
 	loop integers between 0 and 35:
 		set slot loop-value of {_menu} to gray stained glass pane named " "
-	set {_target-profile} to offlineplayer({_targetUuid}, false)
-	if {_target-profile} is set:
-		set {_target-head} to head of {_target-profile}
-	else:
-		set {_target-head} to player head
+	set {_target-head} to policeWantedHead({_targetUuid})
 	set name of {_target-head} to "<red><bold>%{_name}%"
 	set lore of {_target-head} to policeStars({_stars}) and "<gray>%policeLevelName({_stars})%" and "<gray>Гражданство: %{_citizenship}%"
 	set slot 4 of {_menu} to {_target-head}
@@ -391,15 +392,16 @@ command /wanted:
 # =========================================================
 
 function policeDecorateExistingMenu(p: player):
-	# Главное меню страны: свободный слот 36.
+	# Главное меню страны: РОЗЫСК всегда находится в слоте 35.
+	# Слот 36 зарезервирован за хранилищем, 37 — за развитием.
 	if {country.menu::%uuid of {_p}%} is "main":
 		set {_id} to countryId({_p})
 		if {_id} is not "":
 			set {_count} to size of {police.wanted::%{_id}%::*}
 			if policeIsGuard({_p}) is true:
-				set slot 36 of current inventory of {_p} to recovery compass named "<red><bold>РОЗЫСК" with lore "<gray>Разыскиваемых: <white>%{_count}%" and "<gray>Управление, звёзды и отслеживание" and "<light green>У вас есть права стражи"
+				set slot 35 of current inventory of {_p} to recovery compass named "<red><bold>РОЗЫСК" with lore "<gray>Разыскиваемых: <white>%{_count}%" and "<gray>Управление, звёзды и отслеживание" and "<light green>У вас есть права стражи"
 			else:
-				set slot 36 of current inventory of {_p} to compass named "<red><bold>РОЗЫСК" with lore "<gray>Разыскиваемых: <white>%{_count}%" and "<gray>Просмотр списка вашей страны" and "<dark gray>Изменять может только стража"
+				set slot 35 of current inventory of {_p} to compass named "<red><bold>РОЗЫСК" with lore "<gray>Разыскиваемых: <white>%{_count}%" and "<gray>Просмотр списка вашей страны" and "<dark gray>Изменять может только стража"
 
 	# Редактор роли: отдельное право GUARD в свободном слоте 35.
 	if {country.menu::%uuid of {_p}%} is "role-editor":
@@ -583,10 +585,10 @@ on inventory click:
 		stop
 
 	# -----------------------------------------------------
-	# Инъекция в главное меню страны
+	# Инъекция в главное меню страны — сразу правильный слот.
 	# -----------------------------------------------------
 	if {country.menu::%uuid of player%} is "main":
-		if {_slot} is 36:
+		if {_slot} is 35:
 			cancel event
 			policeOpenWantedList(player, 1)
 			stop
