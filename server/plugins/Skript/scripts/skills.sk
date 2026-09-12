@@ -58,11 +58,18 @@ function skillNextXP(level: number) :: number:
         return 1125
     return skillXPForLevel({_level} + 1)
 
-# Не вызываем jobsCurrent(), чтобы skills.sk не зависел от порядка загрузки jobs.sk.
+# Read the selected job directly so this file does not depend on jobs.sk function load order.
 function skillsCurrentJob(p: player) :: text:
     if {jobs.current::%uuid of {_p}%} is not set:
         return ""
     return lowercase "%{jobs.current::%uuid of {_p}%}%"
+
+# True ONLY while jobs.sk has actually reserved the action bar for a salary message.
+# Merely having a job no longer hides skill XP UI.
+function skillsJobUIBusy(p: player) :: boolean:
+    if {jobs.actionbar-lock::%uuid of {_p}%} is in the future:
+        return true
+    return false
 
 # =========================================================
 # MINING
@@ -165,16 +172,15 @@ function miningAddXP(p: player, amount: number):
     set {_old-level} to miningLevel({_p})
     if {_old-level} >= 10:
         stop
+
     add {_amount} to {skills.mining.xp::%uuid of {_p}%}
     set {_new-level} to miningLevel({_p})
     set {_xp} to miningXP({_p})
-    set {_working} to false
-    if skillsCurrentJob({_p}) is "miner":
-        set {_working} to true
+    set {_ui-busy} to skillsJobUIBusy({_p})
 
     if {_new-level} > {_old-level}:
         send "{@skills-prefix} &fНавык &bШахтёрство &fповышен до &b%{_new-level}% уровня&f!" to {_p}
-        if {_working} is false:
+        if {_ui-busy} is false:
             send action bar formatted "<aqua><bold>⛏ ШАХТЁРСТВО</bold> <dark_gray>» <green><bold>УРОВЕНЬ %{_new-level}%!" to {_p}
         if {_old-level} < 4:
             if {_new-level} >= 4:
@@ -183,7 +189,7 @@ function miningAddXP(p: player, amount: number):
             send "{@skills-prefix} &6Шахтёрство достигло максимального уровня!" to {_p}
         stop
 
-    if {_working} is true:
+    if {_ui-busy} is true:
         stop
 
     set {_needed} to skillNextXP({_new-level})
@@ -192,10 +198,12 @@ function miningAddXP(p: player, amount: number):
 on break with priority monitor:
     if event is cancelled:
         stop
+
     set {_name} to lowercase "%type of event-block%"
     set {_earned-xp} to miningOreXP({_name})
     if {_earned-xp} <= 0:
         stop
+
     if {skills.mining.placed::%location of event-block%} is set:
         delete {skills.mining.placed::%location of event-block%}
         stop
@@ -218,7 +226,7 @@ on break with priority monitor:
 
     miningAddXP(player, {_earned-xp})
 
-    # Во время работы шахтёром jobs.sk полностью управляет дропом.
+    # While employed as miner, jobs.sk owns drops and bonus resources.
     if {_working} is true:
         stop
 
@@ -409,6 +417,7 @@ function craftingAddXP(p: player, amount: number):
     set {_old-level} to craftingLevel({_p})
     if {_old-level} >= 10:
         stop
+
     add {_amount} to {skills.crafting.xp::%uuid of {_p}%}
     set {_new-level} to craftingLevel({_p})
     set {_xp} to craftingXP({_p})
@@ -645,6 +654,7 @@ function farmingAddXP(p: player, amount: number):
     set {_old-level} to farmingLevel({_p})
     if {_old-level} >= 10:
         stop
+
     add {_amount} to {skills.farming.xp::%uuid of {_p}%}
     set {_new-level} to farmingLevel({_p})
     set {_xp} to farmingXP({_p})
@@ -1039,16 +1049,15 @@ function hunterAddXP(p: player, amount: number):
     set {_old-level} to hunterLevel({_p})
     if {_old-level} >= 10:
         stop
+
     add {_amount} to {skills.hunter.xp::%uuid of {_p}%}
     set {_new-level} to hunterLevel({_p})
     set {_xp} to hunterXP({_p})
-    set {_working} to false
-    if skillsCurrentJob({_p}) is "hunter":
-        set {_working} to true
+    set {_ui-busy} to skillsJobUIBusy({_p})
 
     if {_new-level} > {_old-level}:
         send "{@skills-prefix} &fНавык &cОхотник &fповышен до &c%{_new-level}% уровня&f!" to {_p}
-        if {_working} is false:
+        if {_ui-busy} is false:
             send action bar formatted "<red><bold>⚔ ОХОТНИК</bold> <dark_gray>» <green><bold>УРОВЕНЬ %{_new-level}%!" to {_p}
         if {_old-level} < 4:
             if {_new-level} >= 4:
@@ -1057,7 +1066,7 @@ function hunterAddXP(p: player, amount: number):
             send "{@skills-prefix} &6Охотник достиг максимального уровня!" to {_p}
         stop
 
-    if {_working} is true:
+    if {_ui-busy} is true:
         stop
 
     set {_needed} to skillNextXP({_new-level})
@@ -1067,8 +1076,10 @@ on death:
     set {_killer} to attacker
     if {_killer} is not set:
         stop
+
     if {_killer} is a projectile:
         set {_killer} to shooter of {_killer}
+
     if {_killer} is not a player:
         stop
 
@@ -1097,7 +1108,7 @@ on death:
 
     hunterAddXP({_p}, {_earned-xp})
 
-    # Во время работы охотником jobs.sk полностью управляет дропом.
+    # While employed as hunter, jobs.sk owns drops and bonus resources.
     if {_working} is true:
         stop
 
@@ -1180,16 +1191,15 @@ function lumberjackAddXP(p: player, amount: number):
     set {_old-level} to lumberjackLevel({_p})
     if {_old-level} >= 10:
         stop
+
     add {_amount} to {skills.lumberjack.xp::%uuid of {_p}%}
     set {_new-level} to lumberjackLevel({_p})
     set {_xp} to lumberjackXP({_p})
-    set {_working} to false
-    if skillsCurrentJob({_p}) is "lumberjack":
-        set {_working} to true
+    set {_ui-busy} to skillsJobUIBusy({_p})
 
     if {_new-level} > {_old-level}:
         send "{@skills-prefix} &fНавык &6Лесоруб &fповышен до &6%{_new-level}% уровня&f!" to {_p}
-        if {_working} is false:
+        if {_ui-busy} is false:
             send action bar formatted "<gold><bold>🪓 ЛЕСОРУБ</bold> <dark_gray>» <green><bold>УРОВЕНЬ %{_new-level}%!" to {_p}
         if {_old-level} < 4:
             if {_new-level} >= 4:
@@ -1198,7 +1208,7 @@ function lumberjackAddXP(p: player, amount: number):
             send "{@skills-prefix} &6Лесоруб достиг максимального уровня!" to {_p}
         stop
 
-    if {_working} is true:
+    if {_ui-busy} is true:
         stop
 
     set {_needed} to skillNextXP({_new-level})
@@ -1237,7 +1247,7 @@ on break with priority monitor:
 
     lumberjackAddXP(player, {_earned-xp})
 
-    # Во время работы лесорубом jobs.sk полностью управляет дропом.
+    # While employed as lumberjack, jobs.sk owns drops and bonus logs.
     if {_working} is true:
         stop
 
@@ -1422,4 +1432,5 @@ command /skilldebug:
         send "&7Lumberjack XP: &f%lumberjackXP(player)%"
         send "&7Lumberjack level: &f%lumberjackLevel(player)%"
         send "&7Current job: &f%skillsCurrentJob(player)%"
+        send "&7Job UI busy: &f%skillsJobUIBusy(player)%"
         send ""
