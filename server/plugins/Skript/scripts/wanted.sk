@@ -125,8 +125,9 @@ function policeIsGuard(p: player) :: boolean:
 		return true
 	return false
 
-# Всегда возвращает видимый предмет. У офлайн-игрока это обычная player head,
-# у онлайн-игрока — его настоящая голова. Так GUI не получает пустой item.
+# Возвращает голову с настоящим скином.
+# Для игрока в сети берём профиль напрямую. Для офлайн-игрока делаем
+# lookup по сохранённому нику, потому что UUID сервера может быть offline UUID.
 function policeWantedHead(targetUuid: text) :: item:
 	set {_head} to player head
 	set {_online} to player({_targetUuid}, true)
@@ -134,7 +135,16 @@ function policeWantedHead(targetUuid: text) :: item:
 		set {_onlineHead} to head of {_online}
 		if {_onlineHead} is set:
 			if {_onlineHead} is not air:
-				set {_head} to {_onlineHead}
+				return {_onlineHead}
+
+	set {_name} to policeTargetName({_targetUuid})
+	if {_name} is not "Неизвестный игрок":
+		set {_offline} to offlineplayer({_name}, true)
+		if {_offline} is set:
+			set {_offlineHead} to head of {_offline}
+			if {_offlineHead} is set:
+				if {_offlineHead} is not air:
+					return {_offlineHead}
 	return {_head}
 
 function policeCanSeePassport(viewer: player, targetUuid: text) :: boolean:

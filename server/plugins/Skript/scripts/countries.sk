@@ -944,11 +944,18 @@ function countryOpenMembers(p: player):
 			set {_member-name} to "Неизвестный игрок"
 		set {_slot} to {_slots::%{_position}%}
 		set {_roles-text} to countryMemberRolesText({_id}, {_member-uuid})
-		set {_member-profile} to offlineplayer({_member-uuid}, false)
-		if {_member-profile} is set:
-			set {_member-head} to head of {_member-profile}
+		set {_member-head} to player head
+		set {_online-member} to player({_member-uuid}, true)
+		if {_online-member} is set:
+			set {_loaded-head} to head of {_online-member}
+			if {_loaded-head} is set:
+				set {_member-head} to {_loaded-head}
 		else:
-			set {_member-head} to player head
+			set {_member-profile} to offlineplayer({_member-name}, true)
+			if {_member-profile} is set:
+				set {_loaded-head} to head of {_member-profile}
+				if {_loaded-head} is set:
+					set {_member-head} to {_loaded-head}
 		set name of {_member-head} to "<white><bold>%{_member-name}%"
 		set lore of {_member-head} to "<gray>Роли: <white>%{_roles-text}%" and "" and "<yellow>Нажмите для управления"
 		set slot {_slot} of {_menu} to {_member-head}
@@ -968,11 +975,18 @@ function countryOpenMember(p: player, memberUuid: text):
 	set {_menu} to chest inventory with 3 rows named "<dark gray>Управление участником"
 	loop integers between 0 and 26:
 		set slot loop-value of {_menu} to gray stained glass pane named " "
-	set {_member-profile} to offlineplayer({_memberUuid}, false)
-	if {_member-profile} is set:
-		set {_member-head} to head of {_member-profile}
+	set {_member-head} to player head
+	set {_online-member} to player({_memberUuid}, true)
+	if {_online-member} is set:
+		set {_loaded-head} to head of {_online-member}
+		if {_loaded-head} is set:
+			set {_member-head} to {_loaded-head}
 	else:
-		set {_member-head} to player head
+		set {_member-profile} to offlineplayer({_name}, true)
+		if {_member-profile} is set:
+			set {_loaded-head} to head of {_member-profile}
+			if {_loaded-head} is set:
+				set {_member-head} to {_loaded-head}
 	set name of {_member-head} to "<white><bold>%{_name}%"
 	set lore of {_member-head} to "<gray>Роли: <white>%{_roles-text}%"
 	set slot 4 of {_menu} to {_member-head}
