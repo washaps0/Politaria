@@ -1,0 +1,76 @@
+# =========================================================
+# POLITARIA — WANTED GUI HEAD FIX
+# Исправляет пустые головы игроков в списке/карточке розыска.
+# wanted.sk иногда получает пустой item из head of offlineplayer(...).
+# Здесь всегда создаётся видимый player head, а для онлайн-игрока
+# используется его настоящая голова.
+# =========================================================
+
+function wantedUiHead(targetUuid: text) :: item:
+	set {_head} to player head
+	set {_online} to justicePlayerFromUuid({_targetUuid})
+	if {_online} is set:
+		set {_head} to head of {_online}
+		if {_head} is air:
+			set {_head} to player head
+	return {_head}
+
+function wantedUiDecorateList(p: player):
+	set {_title} to name of current inventory of {_p}
+	if {_title} does not contain "Розыск страны":
+		stop
+
+	set {_id} to countryId({_p})
+	if {_id} is "":
+		stop
+
+	set {_slots::*} to 10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 40, 41, 42 and 43
+	loop {_slots::*}:
+		set {_slot} to loop-value
+		set {_targetUuid} to {police.menu-target::%uuid of {_p}%::%{_slot}%}
+		if {_targetUuid} is set:
+			set {_name} to policeTargetName({_targetUuid})
+			set {_stars} to policeWantedStars({_id}, {_targetUuid})
+			set {_targetCountry} to policeTargetCountry({_targetUuid})
+			if {_targetCountry} is "":
+				set {_citizenship} to "<gray>Без гражданства"
+			else:
+				set {_citizenship} to "%countryColor({_targetCountry})%%countryName({_targetCountry})%"
+
+			set {_head} to wantedUiHead({_targetUuid})
+			set name of {_head} to "<red><bold>%{_name}%"
+			set lore of {_head} to policeStars({_stars}) and "<gray>%policeLevelName({_stars})%" and "<gray>Гражданство: %{_citizenship}%" and "" and "<yellow>Нажмите для подробностей"
+			set slot {_slot} of current inventory of {_p} to {_head}
+
+function wantedUiDecorateDetail(p: player):
+	set {_title} to name of current inventory of {_p}
+	if {_title} does not contain "Розыск •":
+		stop
+
+	set {_targetUuid} to {police.selected-target::%uuid of {_p}%}
+	if {_targetUuid} is not set:
+		stop
+	set {_id} to countryId({_p})
+	if {_id} is "":
+		stop
+
+	set {_name} to policeTargetName({_targetUuid})
+	set {_stars} to policeWantedStars({_id}, {_targetUuid})
+	set {_targetCountry} to policeTargetCountry({_targetUuid})
+	if {_targetCountry} is "":
+		set {_citizenship} to "<gray>Без гражданства"
+	else:
+		set {_citizenship} to "%countryColor({_targetCountry})%%countryName({_targetCountry})%"
+
+	set {_head} to wantedUiHead({_targetUuid})
+	set name of {_head} to "<red><bold>%{_name}%"
+	set lore of {_head} to policeStars({_stars}) and "<gray>%policeLevelName({_stars})%" and "<gray>Гражданство: %{_citizenship}%"
+	set slot 4 of current inventory of {_p} to {_head}
+
+on inventory open:
+	set {_p} to player
+	wait 4 ticks
+	if {_p} is not online:
+		stop
+	wantedUiDecorateList({_p})
+	wantedUiDecorateDetail({_p})
