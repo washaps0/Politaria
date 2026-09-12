@@ -1,0 +1,14 @@
+enabled: true
+
+colors:
+  teammate:
+    enabled: true
+    color: "#00FF00"
+
+  enemy:
+    enabled: false
+    color: "#FF0000"
+
+  neutral:
+    enabled: false
+    color: "#FFFFFF"
