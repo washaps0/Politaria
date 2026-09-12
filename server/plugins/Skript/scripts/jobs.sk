@@ -37,6 +37,7 @@ options:
 # {jobs.xp::<uuid>::<job>} = permanent experience in a specific profession.
 # {jobs.bonus-bank::<uuid>::<job>} stores a fractional salary bonus.
 # {jobs.placed::<block location>} prevents rewards for player-placed resources.
+# {jobs.actionbar-lock::<uuid>} is a short lock used so skills do not overwrite salary UI.
 
 function jobsName(id: text) :: text:
 	if {_id} is "lumberjack":
@@ -326,6 +327,10 @@ function jobsPay(p: player, baseAmount: number, job: text):
 	economyEnsure({_p})
 	add {_reward} to {economy.balance::%uuid of {_p}%}
 	jobsAddExperience({_p}, {_job}, {_baseAmount})
+
+	# Mark only the moments when the job really shows an action bar.
+	# skills.sk checks this instead of hiding XP for the whole time the player has a job.
+	set {jobs.actionbar-lock::%uuid of {_p}%} to 3 ticks from now
 	send action bar formatted "<green><bold>+%{_reward}%</bold> {@jobs-currency} <dark gray>• <gray>%jobsName({_job})% <dark gray>• <gray>ур. %{_level}%" to {_p}
 
 function jobsSet(p: player, newJob: text):
@@ -421,7 +426,8 @@ on place:
 	if {_mine-reward} is greater than 0:
 		set {jobs.placed::%jobsBlockKey(event-block)%} to true
 
-on break:
+# LOW priority lets the job reserve the action bar before skills.sk runs at MONITOR.
+on break with priority low:
 	set {_key} to jobsBlockKey(event-block)
 	if {jobs.placed::%{_key}%} is set:
 		delete {jobs.placed::%{_key}%}
@@ -439,7 +445,8 @@ on break:
 			clear drops
 			jobsPay(player, {_reward}, "miner")
 
-on death:
+# Run before skills.sk so salary UI can reserve the action bar only when payment happens.
+on death with priority low:
 	if attacker is not a player:
 		stop
 	set {_hunter} to attacker
@@ -455,6 +462,7 @@ on death:
 
 on quit:
 	delete {jobs.menu::%uuid of player%}
+	delete {jobs.actionbar-lock::%uuid of player%}
 
 on join:
 	wait 20 ticks
