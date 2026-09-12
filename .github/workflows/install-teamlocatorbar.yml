@@ -1,0 +1,59 @@
+name: Install TeamLocatorBar for Politaria
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - servercopy
+    paths:
+      - .github/workflows/install-teamlocatorbar.yml
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout servercopy
+        uses: actions/checkout@v4
+        with:
+          ref: servercopy
+
+      - name: Download stable TeamLocatorBar for 1.21.11
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p server/plugins
+
+          json="$(curl -fsSL -A 'Politaria/1.21.11' 'https://api.modrinth.com/v2/project/teamlocatorbar/version')"
+          url="$(printf '%s' "$json" | jq -r '
+            map(select(.version_type == "release"))
+            | map(select(.game_versions | index("1.21.11")))
+            | map(select(.loaders | index("paper")))
+            | first
+            | .files
+            | map(select(.primary == true))[0].url // .[0].url
+          ')"
+
+          if [ -z "$url" ] || [ "$url" = "null" ]; then
+            echo 'No stable TeamLocatorBar build for Paper 1.21.11 was found.' >&2
+            exit 1
+          fi
+
+          curl -fL --retry 3 -A 'Politaria/1.21.11' "$url" -o server/plugins/TeamLocatorBar.jar
+          unzip -tqq server/plugins/TeamLocatorBar.jar
+
+      - name: Commit plugin
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add server/plugins/TeamLocatorBar.jar
+          if git diff --cached --quiet; then
+            echo 'TeamLocatorBar.jar is already current.'
+            exit 0
+          fi
+          git commit -m '[locator] Install TeamLocatorBar for country-only waypoints'
+          git push origin HEAD:servercopy
