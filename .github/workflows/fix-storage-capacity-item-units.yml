@@ -1,0 +1,216 @@
+name: Fix storage capacity item units
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-storage-capacity-item-units.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Patch storage capacity
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from textwrap import dedent
+
+          p = Path('server/plugins/Skript/scripts/countries_storage.sk')
+          s = p.read_text(encoding='utf-8')
+
+          old = dedent('''\
+          function countryStorageMaxSlots(id: text) :: number:
+          \treturn countryStoragePages({_id}) * 45
+          ''')
+          new = dedent('''\
+          function countryStorageMaxSlots(id: text) :: number:
+          \tif countryLevel({_id}) is greater than or equal to 2:
+          \t\treturn 90
+          \treturn 45
+
+          function countryStorageMaxItems(id: text) :: number:
+          \treturn countryStorageMaxSlots({_id}) * 64
+          ''')
+          assert old in s, 'max slots block not found'
+          s = s.replace(old, new, 1)
+
+          old = dedent('''\
+          function countryStorageUsedSlots(id: text) :: number:
+          \tset {_used} to countryStorageCategorySlots({_id}, "general")
+          \tloop {country.storage-category-name::%{_id}%::*}:
+          \t\tset {_cat} to loop-index
+          \t\tadd countryStorageCategorySlots({_id}, {_cat}) to {_used}
+          \treturn {_used}
+          ''')
+          new = dedent('''\
+          function countryStorageCategoryItems(id: text, category: text) :: number:
+          \tset {_count} to 0
+          \tset {_page} to 1
+          \tset {_pages} to countryStoragePages({_id})
+          \twhile {_page} is less than or equal to {_pages}:
+          \t\tset {_slot} to 0
+          \t\twhile {_slot} is less than or equal to 44:
+          \t\t\tset {_item} to {country.storage5::%{_id}%::%{_category}%::%{_page}%::%{_slot}%}
+          \t\t\tif {_item} is set:
+          \t\t\t\tif {_item} is not air:
+          \t\t\t\t\tadd amount of {_item} to {_count}
+          \t\t\tadd 1 to {_slot}
+          \t\tadd 1 to {_page}
+          \treturn {_count}
+
+          function countryStorageUsedItems(id: text) :: number:
+          \tset {_used} to countryStorageCategoryItems({_id}, "general")
+          \tloop {country.storage-category-name::%{_id}%::*}:
+          \t\tset {_cat} to loop-index
+          \t\tadd countryStorageCategoryItems({_id}, {_cat}) to {_used}
+          \treturn {_used}
+
+          function countryStorageUsedSlots(id: text) :: number:
+          \tset {_used} to countryStorageCategorySlots({_id}, "general")
+          \tloop {country.storage-category-name::%{_id}%::*}:
+          \t\tset {_cat} to loop-index
+          \t\tadd countryStorageCategorySlots({_id}, {_cat}) to {_used}
+          \treturn {_used}
+          ''')
+          assert old in s, 'used slots block not found'
+          s = s.replace(old, new, 1)
+
+          old = dedent('''\
+          \tset {_original} to amount of {_item}
+          \tset {_remaining} to {_original}
+          \tset {_one} to {_item}
+          ''')
+          new = dedent('''\
+          \tset {_original} to amount of {_item}
+          \tset {_freeItems} to countryStorageMaxItems({_id}) - countryStorageUsedItems({_id})
+          \tif {_freeItems} is less than or equal to 0:
+          \t\treturn 0
+          \tset {_toStore} to {_original}
+          \tif {_toStore} is greater than {_freeItems}:
+          \t\tset {_toStore} to {_freeItems}
+          \tset {_remaining} to {_toStore}
+          \tset {_one} to {_item}
+          ''')
+          assert old in s, 'insert header not found'
+          s = s.replace(old, new, 1)
+          s = s.replace('return {_original} - {_remaining}', 'return {_toStore} - {_remaining}')
+          s = s.replace('return {_original}\n\nfunction countryStoragePutItemInCategory', 'return {_toStore}\n\nfunction countryStoragePutItemInCategory', 1)
+
+          start = s.index('\t# Enforce the shared country slot limit without deleting previously stored items.')
+          end = s.index('\n\tset {_slot} to 0\n\twhile {_slot} is less than or equal to 44:\n\t\tset {_shown} to slot {_slot} of {_inventoryToSync}', start)
+          replacement = dedent('''\
+          \t# Capacity uses item units: 64 items = 1 storage stack.
+          \t# A sword/armor piece therefore uses only 1/64 of a capacity stack.
+          \tset {_oldPageItems} to 0
+          \tset {_slot} to 0
+          \twhile {_slot} is less than or equal to 44:
+          \t\tset {_old} to {country.storage5::%{_id}%::%{_category}%::%{_page}%::%{_slot}%}
+          \t\tif {_old} is set:
+          \t\t\tif {_old} is not air:
+          \t\t\t\tadd amount of {_old} to {_oldPageItems}
+          \t\tadd 1 to {_slot}
+
+          \tset {_otherItems} to countryStorageUsedItems({_id}) - {_oldPageItems}
+          \tset {_allowedOnPage} to countryStorageMaxItems({_id}) - {_otherItems}
+          \tif {_allowedOnPage} is less than {_oldPageItems}:
+          \t\tset {_allowedOnPage} to {_oldPageItems}
+
+          \tset {_shownItems} to 0
+          \tset {_slot} to 0
+          \twhile {_slot} is less than or equal to 44:
+          \t\tset {_shown} to slot {_slot} of {_inventoryToSync}
+          \t\tif {_shown} is set:
+          \t\t\tif {_shown} is not air:
+          \t\t\t\tadd amount of {_shown} to {_shownItems}
+          \t\tadd 1 to {_slot}
+
+          \tset {_overflow} to {_shownItems} - {_allowedOnPage}
+          \tif {_overflow} is greater than 0:
+          \t\tset {_slot} to 44
+          \t\twhile {_slot} is greater than or equal to 0:
+          \t\t\tif {_overflow} is greater than 0:
+          \t\t\t\tset {_shown} to slot {_slot} of {_inventoryToSync}
+          \t\t\t\tset {_old} to {country.storage5::%{_id}%::%{_category}%::%{_page}%::%{_slot}%}
+          \t\t\t\tif {_shown} is set:
+          \t\t\t\t\tif {_shown} is not air:
+          \t\t\t\t\t\tset {_added} to amount of {_shown}
+          \t\t\t\t\t\tif {_old} is set:
+          \t\t\t\t\t\t\tif {_old} is not air:
+          \t\t\t\t\t\t\t\tset {_shownOne} to {_shown}
+          \t\t\t\t\t\t\t\tset {_oldOne} to {_old}
+          \t\t\t\t\t\t\t\tset amount of {_shownOne} to 1
+          \t\t\t\t\t\t\t\tset amount of {_oldOne} to 1
+          \t\t\t\t\t\t\t\tif {_shownOne} is {_oldOne}:
+          \t\t\t\t\t\t\t\t\tset {_added} to amount of {_shown} - amount of {_old}
+          \t\t\t\t\t\t\t\t\tif {_added} is less than 0:
+          \t\t\t\t\t\t\t\t\t\tset {_added} to 0
+          \t\t\t\t\t\tif {_added} is greater than 0:
+          \t\t\t\t\t\t\tset {_returnAmount} to {_added}
+          \t\t\t\t\t\t\tif {_returnAmount} is greater than {_overflow}:
+          \t\t\t\t\t\t\t\tset {_returnAmount} to {_overflow}
+          \t\t\t\t\t\t\tset {_leftAmount} to amount of {_shown} - {_returnAmount}
+          \t\t\t\t\t\t\tset {_returned} to {_shown}
+          \t\t\t\t\t\t\tset amount of {_returned} to {_returnAmount}
+          \t\t\t\t\t\t\tgive {_returned} to {_p}
+          \t\t\t\t\t\t\tif {_leftAmount} is less than or equal to 0:
+          \t\t\t\t\t\t\t\tset slot {_slot} of {_inventoryToSync} to air
+          \t\t\t\t\t\t\telse:
+          \t\t\t\t\t\t\t\tset amount of {_shown} to {_leftAmount}
+          \t\t\t\t\t\t\t\tset slot {_slot} of {_inventoryToSync} to {_shown}
+          \t\t\t\t\t\t\tsubtract {_returnAmount} from {_overflow}
+          \t\t\tsubtract 1 from {_slot}
+          ''')
+          s = s[:start] + replacement + s[end:]
+
+          old = dedent('''\
+          \tset {_used} to countryStorageUsedSlots({_id})
+          \tset {_max} to countryStorageMaxSlots({_id})
+          \tset slot 4 of {_menu} to chest named "<gold><bold>ХРАНИЛИЩЕ СТРАНЫ" with lore "<gray>Занято: <white>%{_used}%/%{_max}% стаков" and "<gray>Лимит общий для всех категорий."
+          ''')
+          new = dedent('''\
+          \tset {_usedItems} to countryStorageUsedItems({_id})
+          \tset {_maxItems} to countryStorageMaxItems({_id})
+          \tset {_maxStacks} to countryStorageMaxSlots({_id})
+          \tset slot 4 of {_menu} to chest named "<gold><bold>ХРАНИЛИЩЕ СТРАНЫ" with lore "<gray>Предметов: <white>%{_usedItems}%/%{_maxItems}%" and "<gray>Вместимость: <white>%{_maxStacks}% стаков по 64" and "<gray>Нестакаемые предметы тоже считаются по 1/64 стака."
+          ''')
+          assert old in s, 'hub capacity block not found'
+          s = s.replace(old, new, 1)
+
+          old = dedent('''\
+          \tset {_totalUsed} to countryStorageUsedSlots({_id})
+          \tset {_max} to countryStorageMaxSlots({_id})
+          \tset {_categoryUsed} to countryStorageCategorySlots({_id}, {_category})
+          \tset slot 49 of {_menu} to barrel named "<gold><bold>%{_name}%" with lore "<gray>В категории: <white>%{_categoryUsed}% стаков" and "<gray>Всего: <white>%{_totalUsed}%/%{_max}%" and "" and "<gray>Верхние 45 ячеек — обычный сундук." and "<gray>Роли только с одним правом используют Shift-клик." and "" and "<aqua>Нажмите, чтобы отсортировать как ClientSort"
+          ''')
+          new = dedent('''\
+          \tset {_totalItems} to countryStorageUsedItems({_id})
+          \tset {_maxItems} to countryStorageMaxItems({_id})
+          \tset {_categoryItems} to countryStorageCategoryItems({_id}, {_category})
+          \tset slot 49 of {_menu} to barrel named "<gold><bold>%{_name}%" with lore "<gray>В категории: <white>%{_categoryItems}% предметов" and "<gray>Всего: <white>%{_totalItems}%/%{_maxItems}% предметов" and "" and "<gray>64 предмета = 1 стак вместимости." and "<gray>Нестакаемые предметы считаются так же." and "<gray>Роли только с одним правом используют Shift-клик." and "" and "<aqua>Нажмите, чтобы отсортировать как ClientSort"
+          ''')
+          assert old in s, 'category info block not found'
+          s = s.replace(old, new, 1)
+
+          p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Commit changes
+        shell: bash
+        run: |
+          git rm .github/workflows/fix-storage-capacity-item-units.yml
+          git config user.name "Politaria Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add server/plugins/Skript/scripts/countries_storage.sk
+          git commit -m "Count storage capacity by item units"
+          git pull --rebase origin main
+          git push origin main
