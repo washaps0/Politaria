@@ -150,6 +150,49 @@ function countryMemberRoleCount(id: text, memberUuid: text) :: number:
 			add 1 to {_count}
 	return {_count}
 
+function countryRolePermissionCount(id: text, role: text) :: number:
+	set {_count} to 0
+	loop {country.role-perm::%{_id}%::%{_role}%::*}:
+		if loop-value is true:
+			add 1 to {_count}
+	return {_count}
+
+function countryMemberMainRole(id: text, memberUuid: text) :: text:
+	if {country.owner::%{_id}%} is {_memberUuid}:
+		return "owner"
+	countryEnsureRoleStorage({_id}, {_memberUuid})
+	set {_best-role} to ""
+	set {_best-rights} to -1
+	loop {country.roles-of::%{_id}%::%{_memberUuid}%::*}:
+		if loop-value is true:
+			set {_role} to loop-index
+			set {_rights} to countryRolePermissionCount({_id}, {_role})
+			if {_rights} is greater than {_best-rights}:
+				set {_best-rights} to {_rights}
+				set {_best-role} to {_role}
+	if {_best-role} is "":
+		if {country.role-name::%{_id}%::citizen} is set:
+			return "citizen"
+	return {_best-role}
+
+function countryMemberRoleIcon(id: text, memberUuid: text) :: item type:
+	set {_role} to countryMemberMainRole({_id}, {_memberUuid})
+	if {_role} is "owner":
+		return nether star
+	if {_role} is not "":
+		set {_type} to {country.role-icon::%{_id}%::%{_role}%} parsed as item type
+		if {_type} is set:
+			return {_type}
+	return paper
+
+function countryMemberMainRoleName(id: text, memberUuid: text) :: text:
+	set {_role} to countryMemberMainRole({_id}, {_memberUuid})
+	if {_role} is "owner":
+		return "Правитель"
+	if {_role} is not "":
+		return countryRoleName({_id}, {_role})
+	return "Гражданин"
+
 function countryMemberRolesText(id: text, memberUuid: text) :: text:
 	if {country.owner::%{_id}%} is {_memberUuid}:
 		return "Правитель"
@@ -944,21 +987,16 @@ function countryOpenMembers(p: player):
 			set {_member-name} to "Неизвестный игрок"
 		set {_slot} to {_slots::%{_position}%}
 		set {_roles-text} to countryMemberRolesText({_id}, {_member-uuid})
-		set {_member-head} to player head
-		set {_online-member} to player({_member-uuid}, true)
-		if {_online-member} is set:
-			set {_loaded-head} to head of {_online-member}
-			if {_loaded-head} is set:
-				set {_member-head} to {_loaded-head}
+		set {_main-role} to countryMemberMainRole({_id}, {_member-uuid})
+		set {_main-role-name} to countryMemberMainRoleName({_id}, {_member-uuid})
+		set {_member-icon} to countryMemberRoleIcon({_id}, {_member-uuid})
+		if {_main-role} is "owner":
+			set {_rights-text} to "Все права"
 		else:
-			set {_member-profile} to offlineplayer({_member-name}, true)
-			if {_member-profile} is set:
-				set {_loaded-head} to head of {_member-profile}
-				if {_loaded-head} is set:
-					set {_member-head} to {_loaded-head}
-		set name of {_member-head} to "<white><bold>%{_member-name}%"
-		set lore of {_member-head} to "<gray>Роли: <white>%{_roles-text}%" and "" and "<yellow>Нажмите для управления"
-		set slot {_slot} of {_menu} to {_member-head}
+			set {_rights} to countryRolePermissionCount({_id}, {_main-role})
+			set {_rights-text} to "%{_rights}% прав"
+		set {_member-item} to {_member-icon} named "<white><bold>%{_member-name}%" with lore "<gray>Главная роль: <white>%{_main-role-name}%" and "<gray>Права роли: <white>%{_rights-text}%" and "<gray>Все роли: <white>%{_roles-text}%" and "" and "<yellow>Нажмите для управления"
+		set slot {_slot} of {_menu} to {_member-item}
 		set {country.menu-member::%uuid of {_p}%::%{_slot}%} to {_member-uuid}
 		add 1 to {_position}
 	if countryHasPermission({_p}, "INVITE") is true:
@@ -975,21 +1013,16 @@ function countryOpenMember(p: player, memberUuid: text):
 	set {_menu} to chest inventory with 3 rows named "<dark gray>Управление участником"
 	loop integers between 0 and 26:
 		set slot loop-value of {_menu} to gray stained glass pane named " "
-	set {_member-head} to player head
-	set {_online-member} to player({_memberUuid}, true)
-	if {_online-member} is set:
-		set {_loaded-head} to head of {_online-member}
-		if {_loaded-head} is set:
-			set {_member-head} to {_loaded-head}
+	set {_main-role} to countryMemberMainRole({_id}, {_memberUuid})
+	set {_main-role-name} to countryMemberMainRoleName({_id}, {_memberUuid})
+	set {_member-icon} to countryMemberRoleIcon({_id}, {_memberUuid})
+	if {_main-role} is "owner":
+		set {_rights-text} to "Все права"
 	else:
-		set {_member-profile} to offlineplayer({_name}, true)
-		if {_member-profile} is set:
-			set {_loaded-head} to head of {_member-profile}
-			if {_loaded-head} is set:
-				set {_member-head} to {_loaded-head}
-	set name of {_member-head} to "<white><bold>%{_name}%"
-	set lore of {_member-head} to "<gray>Роли: <white>%{_roles-text}%"
-	set slot 4 of {_menu} to {_member-head}
+		set {_rights} to countryRolePermissionCount({_id}, {_main-role})
+		set {_rights-text} to "%{_rights}% прав"
+	set {_member-item} to {_member-icon} named "<white><bold>%{_name}%" with lore "<gray>Главная роль: <white>%{_main-role-name}%" and "<gray>Права роли: <white>%{_rights-text}%" and "<gray>Все роли: <white>%{_roles-text}%"
+	set slot 4 of {_menu} to {_member-item}
 	set slot 11 of {_menu} to name tag named "<light purple><bold>РОЛИ УЧАСТНИКА" with lore "<gray>Можно выдать несколько ролей одновременно" and "<gray>Нажмите, чтобы изменить"
 	set slot 15 of {_menu} to barrier named "<red><bold>ИСКЛЮЧИТЬ" with lore "<gray>Удалить участника из страны"
 	set slot 22 of {_menu} to arrow named "<yellow>Назад"
