@@ -1,0 +1,33 @@
+name: Apply storage autosort existing only
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-storage-autosort-existing-only.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Patch autosort
+        run: |
+          echo 'ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCnAgPSBQYXRoKCJzZXJ2ZXIvcGx1Z2lucy9Ta3JpcHQvc2NyaXB0cy9jb3VudHJpZXNfc3RvcmFnZS5zayIpCnMgPSBwLnJlYWRfdGV4dChlbmNvZGluZz0idXRmLTgiKQpvbGQgPSAnXHRcdFx0XHRpZiB7X3RhcmdldH0gaXMgIiI6XG5cdFx0XHRcdFx0c2V0IHtfdGFyZ2V0fSB0byAiZ2VuZXJhbCJcblx0XHRcdFx0c2V0IHtfYmVmb3JlfSB0byBhbW91bnQgb2Yge19pdGVtfVxuXHRcdFx0XHRzZXQge19tb3ZlZH0gdG8gY291bnRyeVN0b3JhZ2VJbnNlcnRBbW91bnQoe19pZH0sIHtfdGFyZ2V0fSwge19pdGVtfSlcblx0XHRcdFx0aWYge19tb3ZlZH0gaXMgZ3JlYXRlciB0aGFuIDA6XG5cdFx0XHRcdFx0YWRkIHtfbW92ZWR9IHRvIHtfbW92ZWRUb3RhbH1cblx0XHRcdFx0XHRzZXQge19sZWZ0fSB0byB7X2JlZm9yZX0gLSB7X21vdmVkfVxuXHRcdFx0XHRcdGlmIHtfbGVmdH0gaXMgbGVzcyB0aGFuIG9yIGVxdWFsIHRvIDA6XG5cdFx0XHRcdFx0XHRzZXQgc2xvdCB7X3Nsb3R9IG9mIHtfcH1cJ3MgaW52ZW50b3J5IHRvIGFpclxuXHRcdFx0XHRcdGVsc2U6XG5cdFx0XHRcdFx0XHRzZXQgYW1vdW50IG9mIHtfaXRlbX0gdG8ge19sZWZ0fVxuXHRcdFx0XHRcdFx0c2V0IHNsb3Qge19zbG90fSBvZiB7X3B9XCdzIGludmVudG9yeSB0byB7X2l0ZW19XG4nCm5ldyA9ICdcdFx0XHRcdGlmIHtfdGFyZ2V0fSBpcyBub3QgIiI6XG5cdFx0XHRcdFx0c2V0IHtfYmVmb3JlfSB0byBhbW91bnQgb2Yge19pdGVtfVxuXHRcdFx0XHRcdHNldCB7X21vdmVkfSB0byBjb3VudHJ5U3RvcmFnZUluc2VydEFtb3VudCh7X2lkfSwge190YXJnZXR9LCB7X2l0ZW19KVxuXHRcdFx0XHRcdGlmIHtfbW92ZWR9IGlzIGdyZWF0ZXIgdGhhbiAwOlxuXHRcdFx0XHRcdFx0YWRkIHtfbW92ZWR9IHRvIHtfbW92ZWRUb3RhbH1cblx0XHRcdFx0XHRcdHNldCB7X2xlZnR9IHRvIHtfYmVmb3JlfSAtIHtfbW92ZWR9XG5cdFx0XHRcdFx0XHRpZiB7X2xlZnR9IGlzIGxlc3MgdGhhbiBvciBlcXVhbCB0byAwOlxuXHRcdFx0XHRcdFx0XHRzZXQgc2xvdCB7X3Nsb3R9IG9mIHtfcH1cJ3MgaW52ZW50b3J5IHRvIGFpclxuXHRcdFx0XHRcdFx0ZWxzZTpcblx0XHRcdFx0XHRcdFx0c2V0IGFtb3VudCBvZiB7X2l0ZW19IHRvIHtfbGVmdH1cblx0XHRcdFx0XHRcdFx0c2V0IHNsb3Qge19zbG90fSBvZiB7X3B9XCdzIGludmVudG9yeSB0byB7X2l0ZW19XG4nCmlmIG9sZCBub3QgaW4gczoKICAgIHJhaXNlIFN5c3RlbUV4aXQoImF1dG9zb3J0IHRhcmdldCBibG9jayBub3QgZm91bmQiKQpwLndyaXRlX3RleHQocy5yZXBsYWNlKG9sZCwgbmV3LCAxKSwgZW5jb2Rpbmc9InV0Zi04IikK' | base64 -d > /tmp/patch.py
+          python /tmp/patch.py
+      - name: Commit fix
+        run: |
+          git rm .github/workflows/apply-storage-autosort-existing-only.yml
+          git rm -f .github/workflows/fix-storage-autosort-existing-only.yml || true
+          git config user.name "Politaria Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add server/plugins/Skript/scripts/countries_storage.sk
+          git commit -m "Sort only existing storage item types"
+          git pull --rebase origin main
+          git push origin main
