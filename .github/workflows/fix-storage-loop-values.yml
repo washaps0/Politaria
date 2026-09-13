@@ -1,0 +1,217 @@
+name: Fix country storage nested loops
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-storage-loop-values.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Replace ambiguous nested loops
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('server/plugins/Skript/scripts/countries_storage.sk')
+          text = path.read_text(encoding='utf-8')
+
+          def replace_function(name, next_name, body):
+              global text
+              start = text.index(f'function {name}')
+              end = text.index(f'function {next_name}', start)
+              text = text[:start] + body.rstrip() + '\n\n' + text[end:]
+
+          replace_function('countryStorageMaterialCount', 'countryStorageTakeMaterial', r'''function countryStorageMaterialCount(id: text, materialName: text) :: number:
+	countryStorageMigrate({_id})
+	set {_type} to {_materialName} parsed as item type
+	if {_type} is not set:
+		return 0
+	set {_count} to 0
+	set {_pages} to countryStoragePages({_id})
+	set {_page} to 1
+	while {_page} is less than or equal to {_pages}:
+		set {_slot} to 0
+		while {_slot} is less than or equal to 44:
+			set {_item} to {country.storage4::%{_id}%::general::%{_page}%::%{_slot}%}
+			if {_item} is set:
+				if type of {_item} is {_type}:
+					add amount of {_item} to {_count}
+			add 1 to {_slot}
+		add 1 to {_page}
+	loop {country.storage-category-name::%{_id}%::*}:
+		set {_cat} to loop-index
+		set {_page} to 1
+		while {_page} is less than or equal to {_pages}:
+			set {_slot} to 0
+			while {_slot} is less than or equal to 44:
+				set {_item} to {country.storage4::%{_id}%::%{_cat}%::%{_page}%::%{_slot}%}
+				if {_item} is set:
+					if type of {_item} is {_type}:
+						add amount of {_item} to {_count}
+				add 1 to {_slot}
+			add 1 to {_page}
+	return {_count}''')
+
+          replace_function('countryStorageTakeMaterial', 'countryStorageAddMaterial', r'''function countryStorageTakeMaterial(id: text, materialName: text, wanted: number) :: boolean:
+	if {_wanted} is less than or equal to 0:
+		return true
+	countryStorageMigrate({_id})
+	if countryStorageMaterialCount({_id}, {_materialName}) is less than {_wanted}:
+		return false
+	set {_type} to {_materialName} parsed as item type
+	set {_left} to {_wanted}
+	set {_pages} to countryStoragePages({_id})
+	set {_page} to 1
+	while {_page} is less than or equal to {_pages}:
+		set {_slot} to 0
+		while {_slot} is less than or equal to 44:
+			if {_left} is greater than 0:
+				set {_item} to {country.storage4::%{_id}%::general::%{_page}%::%{_slot}%}
+				if {_item} is set:
+					if type of {_item} is {_type}:
+						set {_amount} to amount of {_item}
+						if {_amount} is less than or equal to {_left}:
+							subtract {_amount} from {_left}
+							delete {country.storage4::%{_id}%::general::%{_page}%::%{_slot}%}
+						else:
+							set {_new} to {_amount} - {_left}
+							set amount of {_item} to {_new}
+							set {country.storage4::%{_id}%::general::%{_page}%::%{_slot}%} to {_item}
+							set {_left} to 0
+			add 1 to {_slot}
+		add 1 to {_page}
+	loop {country.storage-category-name::%{_id}%::*}:
+		if {_left} is greater than 0:
+			set {_cat} to loop-index
+			set {_page} to 1
+			while {_page} is less than or equal to {_pages}:
+				set {_slot} to 0
+				while {_slot} is less than or equal to 44:
+					if {_left} is greater than 0:
+						set {_item} to {country.storage4::%{_id}%::%{_cat}%::%{_page}%::%{_slot}%}
+						if {_item} is set:
+							if type of {_item} is {_type}:
+								set {_amount} to amount of {_item}
+								if {_amount} is less than or equal to {_left}:
+									subtract {_amount} from {_left}
+									delete {country.storage4::%{_id}%::%{_cat}%::%{_page}%::%{_slot}%}
+								else:
+									set {_new} to {_amount} - {_left}
+									set amount of {_item} to {_new}
+									set {country.storage4::%{_id}%::%{_cat}%::%{_page}%::%{_slot}%} to {_item}
+									set {_left} to 0
+					add 1 to {_slot}
+				add 1 to {_page}
+	return true''')
+
+          replace_function('countryStorageUsedSlots', 'countryStorageCategorySlots', r'''function countryStorageUsedSlots(id: text) :: number:
+	set {_used} to 0
+	set {_pages} to countryStoragePages({_id})
+	set {_page} to 1
+	while {_page} is less than or equal to {_pages}:
+		set {_slot} to 0
+		while {_slot} is less than or equal to 44:
+			if {country.storage4::%{_id}%::general::%{_page}%::%{_slot}%} is set:
+				add 1 to {_used}
+			add 1 to {_slot}
+		add 1 to {_page}
+	loop {country.storage-category-name::%{_id}%::*}:
+		set {_cat} to loop-index
+		set {_page} to 1
+		while {_page} is less than or equal to {_pages}:
+			set {_slot} to 0
+			while {_slot} is less than or equal to 44:
+				if {country.storage4::%{_id}%::%{_cat}%::%{_page}%::%{_slot}%} is set:
+					add 1 to {_used}
+				add 1 to {_slot}
+			add 1 to {_page}
+	return {_used}''')
+
+          replace_function('countryStorageCategorySlots', 'countryStoragePutItemInCategory', r'''function countryStorageCategorySlots(id: text, category: text) :: number:
+	set {_used} to 0
+	set {_pages} to countryStoragePages({_id})
+	set {_page} to 1
+	while {_page} is less than or equal to {_pages}:
+		set {_slot} to 0
+		while {_slot} is less than or equal to 44:
+			if {country.storage4::%{_id}%::%{_category}%::%{_page}%::%{_slot}%} is set:
+				add 1 to {_used}
+			add 1 to {_slot}
+		add 1 to {_page}
+	return {_used}''')
+
+          replace_function('countryStoragePutItemInCategory', 'countryStorageMigrate', r'''function countryStoragePutItemInCategory(id: text, category: text, itemToStore: item) :: boolean:
+	set {_item} to {_itemToStore}
+	if {_item} is not set:
+		return false
+	if {_item} is air:
+		return false
+	set {_one} to {_item}
+	set amount of {_one} to 1
+	set {_pages} to countryStoragePages({_id})
+	set {_page} to 1
+	while {_page} is less than or equal to {_pages}:
+		set {_slot} to 0
+		while {_slot} is less than or equal to 44:
+			set {_stored} to {country.storage4::%{_id}%::%{_category}%::%{_page}%::%{_slot}%}
+			if {_stored} is set:
+				set {_stored-one} to {_stored}
+				set amount of {_stored-one} to 1
+				if {_stored-one} is {_one}:
+					set {_stored-type} to type of {_stored}
+					set {_limit} to maximum stack size of {_stored-type}
+					set {_current} to amount of {_stored}
+					if {_current} is less than {_limit}:
+						set {_space} to {_limit} - {_current}
+						set {_moving} to amount of {_item}
+						if {_moving} is greater than {_space}:
+							set {_moving} to {_space}
+						add {_moving} to {_current}
+						set amount of {_stored} to {_current}
+						set {country.storage4::%{_id}%::%{_category}%::%{_page}%::%{_slot}%} to {_stored}
+						set {_remaining} to amount of {_item} - {_moving}
+						if {_remaining} is less than or equal to 0:
+							countryStorageRememberType({_id}, {_category}, {_item})
+							return true
+						set amount of {_item} to {_remaining}
+			add 1 to {_slot}
+		add 1 to {_page}
+	if countryStorageUsedSlots({_id}) is greater than or equal to countryStorageMaxSlots({_id}):
+		return false
+	set {_page} to 1
+	while {_page} is less than or equal to {_pages}:
+		set {_slot} to 0
+		while {_slot} is less than or equal to 44:
+			if {country.storage4::%{_id}%::%{_category}%::%{_page}%::%{_slot}%} is not set:
+				set {country.storage4::%{_id}%::%{_category}%::%{_page}%::%{_slot}%} to {_item}
+				countryStorageRememberType({_id}, {_category}, {_item})
+				return true
+			add 1 to {_slot}
+		add 1 to {_page}
+	return false''')
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Commit fix
+        shell: bash
+        run: |
+          git rm .github/workflows/fix-storage-loop-values.yml
+          git config user.name "Politaria Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add server/plugins/Skript/scripts/countries_storage.sk
+          git commit -m "Fix ambiguous country storage loop values"
+          git pull --rebase origin main
+          git push origin main
