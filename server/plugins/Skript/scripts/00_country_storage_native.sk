@@ -1,0 +1,245 @@
+# =========================================================
+# POLITARIA COUNTRY STORAGE - NATIVE INVENTORY MOVEMENT
+#
+# This script is intentionally prefixed with 00_ so its inventory event
+# handlers run before countries_storage.sk. While a storage category is
+# open, normal Minecraft inventory behaviour is allowed for the item area
+# (slots 0-44 and the player's inventory). After Minecraft finishes the
+# click/drag, the visible chest contents are synchronized back into the
+# persistent {country.storage::*} variables.
+#
+# Result:
+# - normal left/right click stack splitting works;
+# - items can be picked up and placed with the cursor;
+# - shift-click automatically moves items;
+# - inventory drag works;
+# - exact stack amounts can be deposited/withdrawn;
+# - the old category/control buttons in countries_storage.sk still work.
+# =========================================================
+
+function cstorageNativeCountryId(p: player) :: text:
+	if {country.player::%uuid of {_p}%} is set:
+		return {country.player::%uuid of {_p}%}
+	return ""
+
+function cstorageNativeCanDeposit(p: player) :: boolean:
+	set {_id} to cstorageNativeCountryId({_p})
+	if {_id} is "":
+		return false
+	if {_p} has permission "politaria.country.admin":
+		return true
+	if {_p} is op:
+		return true
+	set {_member} to "%uuid of {_p}%"
+	if {country.owner::%{_id}%} is {_member}:
+		return true
+	# Keep compatibility with the old primary-role variable.
+	set {_legacy} to {country.role-of::%{_id}%::%{_member}%}
+	if {_legacy} is set:
+		if {country.role-perm::%{_id}%::%{_legacy}%::STORAGE_DEPOSIT} is true:
+			return true
+	loop {country.roles-of::%{_id}%::%{_member}%::*}:
+		if loop-value is true:
+			set {_role} to loop-index
+			if {country.role-perm::%{_id}%::%{_role}%::STORAGE_DEPOSIT} is true:
+				return true
+	return false
+
+function cstorageNativeCanWithdraw(p: player) :: boolean:
+	set {_id} to cstorageNativeCountryId({_p})
+	if {_id} is "":
+		return false
+	if {_p} has permission "politaria.country.admin":
+		return true
+	if {_p} is op:
+		return true
+	set {_member} to "%uuid of {_p}%"
+	if {country.owner::%{_id}%} is {_member}:
+		return true
+	# Keep compatibility with the old primary-role variable.
+	set {_legacy} to {country.role-of::%{_id}%::%{_member}%}
+	if {_legacy} is set:
+		if {country.role-perm::%{_id}%::%{_legacy}%::STORAGE_WITHDRAW} is true:
+			return true
+	loop {country.roles-of::%{_id}%::%{_member}%::*}:
+		if loop-value is true:
+			set {_role} to loop-index
+			if {country.role-perm::%{_id}%::%{_role}%::STORAGE_WITHDRAW} is true:
+				return true
+	return false
+
+function cstorageNativeMaxSlots(id: text) :: number:
+	set {_level} to {country.level::%{_id}%}
+	if {_level} is not set:
+		set {_level} to 1
+	if {_level} is greater than or equal to 2:
+		return 90
+	return 45
+
+function cstorageNativeCategoryOfSlot(id: text, globalSlot: number) :: text:
+	if {country.storage-category::%{_id}%::%{_globalSlot}%} is set:
+		return {country.storage-category::%{_id}%::%{_globalSlot}%}
+	return "general"
+
+function cstorageNativeFindFreeGlobal(id: text) :: number:
+	set {_max} to cstorageNativeMaxSlots({_id}) - 1
+	loop integers between 0 and {_max}:
+		if {country.storage::%{_id}%::%loop-value%} is not set:
+			return loop-value
+	return -1
+
+function cstorageNativeRememberType(id: text, category: text, storedItem: item):
+	set {_type-text} to "%type of {_storedItem}%"
+	set {country.storage-category-type::%{_id}%::%{_category}%::%{_type-text}%} to true
+
+# Synchronize the actual top 45 GUI slots after Vanilla/Paper has applied
+# the user's click or drag. Empty visual slots receive a real global storage
+# slot only when an item is actually placed into them.
+function cstorageNativeSync(p: player):
+	if {_p} is not online:
+		stop
+	set {_id} to cstorageNativeCountryId({_p})
+	if {_id} is "":
+		stop
+	set {_cat} to {country.storage-current-category::%uuid of {_p}%}
+	if {_cat} is not set:
+		stop
+	set {_inv} to {_p}'s current inventory
+
+	loop integers between 0 and 44:
+		set {_view} to loop-value
+		set {_shown} to slot {_view} of {_inv}
+		set {_global} to {country.storage-view::%uuid of {_p}%::%{_view}%}
+
+		# Existing displayed storage slot.
+		if {_global} is set:
+			if {_shown} is set:
+				if {_shown} is not air:
+					set {country.storage::%{_id}%::%{_global}%} to {_shown}
+					if {_cat} is "general":
+						delete {country.storage-category::%{_id}%::%{_global}%}
+					else:
+						set {country.storage-category::%{_id}%::%{_global}%} to {_cat}
+					cstorageNativeRememberType({_id}, {_cat}, {_shown})
+				else:
+					# Delete only if this global slot still belongs to the category
+					# currently being edited. This avoids deleting another category
+					# if two players happen to use the storage at the same time.
+					if {country.storage::%{_id}%::%{_global}%} is set:
+						set {_actual-cat} to cstorageNativeCategoryOfSlot({_id}, {_global})
+						if {_actual-cat} is {_cat}:
+							delete {country.storage::%{_id}%::%{_global}%}
+							delete {country.storage-category::%{_id}%::%{_global}%}
+			else:
+				if {country.storage::%{_id}%::%{_global}%} is set:
+					set {_actual-cat} to cstorageNativeCategoryOfSlot({_id}, {_global})
+					if {_actual-cat} is {_cat}:
+						delete {country.storage::%{_id}%::%{_global}%}
+						delete {country.storage-category::%{_id}%::%{_global}%}
+
+		# Newly occupied visual slot (for example normal cursor placement,
+		# right-click split, drag, or shift-click from the player inventory).
+		else:
+			if {_shown} is set:
+				if {_shown} is not air:
+					set {_free} to cstorageNativeFindFreeGlobal({_id})
+					if {_free} is less than 0:
+						# The virtual category GUI may have empty cells even when the
+						# country's shared storage limit is full. Return the stack safely.
+						give {_shown} to {_p}
+						set slot {_view} of {_inv} to air
+						send action bar "<red>Хранилище страны заполнено." to {_p}
+					else:
+						set {country.storage-view::%uuid of {_p}%::%{_view}%} to {_free}
+						set {country.storage::%{_id}%::%{_free}%} to {_shown}
+						if {_cat} is "general":
+							delete {country.storage-category::%{_id}%::%{_free}%}
+						else:
+							set {country.storage-category::%{_id}%::%{_free}%} to {_cat}
+						cstorageNativeRememberType({_id}, {_cat}, {_shown})
+
+# -------------------------------------------------------------------------
+# Native click handling for the storage item area.
+# -------------------------------------------------------------------------
+on inventory click:
+	if {country.menu::%uuid of player%} is not "storage-category":
+		stop
+	if event-slot is not set:
+		stop
+
+	set {_raw} to raw index of event-slot
+
+	# Slots 45-53 are navigation/control buttons. Let countries_storage.sk
+	# handle those exactly as before.
+	if {_raw} is between 45 and 53:
+		stop
+
+	set {_old-state} to {country.menu::%uuid of player%}
+
+	# Top storage area. Arbitrary cursor actions can both add and remove
+	# items, so full native manipulation requires both storage permissions.
+	if {_raw} is between 0 and 44:
+		set {_shift-withdraw} to false
+		if click type is left mouse button with shift:
+			set {_shift-withdraw} to true
+		if click type is right mouse button with shift:
+			set {_shift-withdraw} to true
+
+		if {_shift-withdraw} is true:
+			if cstorageNativeCanWithdraw(player) is not true:
+				cancel event
+				send action bar "<red>У вашей роли нет права забирать вещи из хранилища." to player
+		else:
+			if cstorageNativeCanDeposit(player) is not true:
+				cancel event
+				send action bar "<red>Для ручного перемещения нужно право пополнять хранилище." to player
+			if cstorageNativeCanWithdraw(player) is not true:
+				cancel event
+				send action bar "<red>Для ручного перемещения нужно право забирать из хранилища." to player
+
+		# Hide this event from the legacy teleport-on-click handler.
+		set {country.menu::%uuid of player%} to "storage-native"
+		wait 1 tick
+		cstorageNativeSync(player)
+		if player is online:
+			if {country.menu::%uuid of player%} is "storage-native":
+				set {country.menu::%uuid of player%} to {_old-state}
+		stop
+
+	# Player inventory area. Ordinary clicks should behave normally. Shift
+	# click can automatically move a stack into the category and therefore
+	# needs deposit permission.
+	if {_raw} is greater than or equal to 54:
+		set {_shift-deposit} to false
+		if click type is left mouse button with shift:
+			set {_shift-deposit} to true
+		if click type is right mouse button with shift:
+			set {_shift-deposit} to true
+		if {_shift-deposit} is true:
+			if cstorageNativeCanDeposit(player) is not true:
+				cancel event
+				send action bar "<red>У вашей роли нет права пополнять хранилище." to player
+
+		set {country.menu::%uuid of player%} to "storage-native"
+		wait 1 tick
+		cstorageNativeSync(player)
+		if player is online:
+			if {country.menu::%uuid of player%} is "storage-native":
+				set {country.menu::%uuid of player%} to {_old-state}
+		stop
+
+# Allow vanilla drag distribution over the storage area. This makes it
+# possible to hold a stack and spread an exact amount across several cells.
+on inventory drag:
+	if {country.menu::%uuid of player%} is not "storage-category":
+		stop
+	set {_old-state} to {country.menu::%uuid of player%}
+	if cstorageNativeCanDeposit(player) is not true:
+		cancel event
+		send action bar "<red>У вашей роли нет права пополнять хранилище." to player
+	set {country.menu::%uuid of player%} to "storage-native"
+	wait 1 tick
+	cstorageNativeSync(player)
+	if player is online:
+		if {country.menu::%uuid of player%} is "storage-native":
+			set {country.menu::%uuid of player%} to {_old-state}
