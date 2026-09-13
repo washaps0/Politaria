@@ -1,6 +1,6 @@
 # =========================================================
 # POLITARIA TRADE SYSTEM
-# Purpur 1.21.1 / Skript 2.11+
+# Purpur 1.21.1 / Skript 2.15+
 # Uses economy.sk:
 #   {economy.balance::<uuid>}
 #   economyEnsure(player)
@@ -11,6 +11,7 @@ options:
 	trade-request-time: 30 seconds
 	trade-max-money: 100000000
 	trade-max-slots: 12
+	trade-countdown: 5
 
 # =========================================================
 # HELPERS
@@ -19,17 +20,20 @@ options:
 function tradeResetApprovals(p: player):
 	set {_id} to uuid of {_p}
 	delete {trade.ready::%{_id}%}
-	delete {trade.confirm::%{_id}%}
+	delete {trade.countdown::%{_id}%}
+	add 1 to {trade.revision::%{_id}%}
 	set {_partner-id} to {trade.partner::%{_id}%}
 	if {_partner-id} is set:
 		delete {trade.ready::%{_partner-id}%}
-		delete {trade.confirm::%{_partner-id}%}
+		delete {trade.countdown::%{_partner-id}%}
+		add 1 to {trade.revision::%{_partner-id}%}
 
 function tradeClearPlayerData(id: text):
 	delete {trade.partner::%{_id}%}
 	delete {trade.money::%{_id}%}
 	delete {trade.ready::%{_id}%}
-	delete {trade.confirm::%{_id}%}
+	delete {trade.countdown::%{_id}%}
+	delete {trade.revision::%{_id}%}
 	delete {trade.menu::%{_id}%}
 	delete {trade.menuinv::%{_id}%}
 	delete {trade.input::%{_id}%}
@@ -43,26 +47,23 @@ function tradeReturnItems(p: player):
 		give loop-value to {_p}
 	delete {trade.items::%{_id}%::*}
 
-function tradeRemoveOwnItem(p: player, index: number):
+# Reads the 12 editable slots from the player's own trade GUI.
+# These GUI slots are the source of truth while the trade is open.
+function tradeSyncOwnOffer(p: player):
 	set {_id} to uuid of {_p}
-	set {_remove} to rounded down {_index}
-	if {trade.items::%{_id}%::%{_remove}%} is not set:
+	if {trade.menuinv::%{_id}%} is not set:
 		stop
+	set {_menu} to {trade.menuinv::%{_id}%}
+	set {_own-slots::*} to 10, 11, 12, 19, 20, 21, 28, 29, 30, 37, 38 and 39
 
-	set {_removed-item} to {trade.items::%{_id}%::%{_remove}%}
-	delete {_new::*}
 	set {_n} to 0
-	loop {trade.items::%{_id}%::*}:
+	loop {_own-slots::*}:
 		add 1 to {_n}
-		if {_n} is not {_remove}:
-			add loop-value to {_new::*}
-
-	delete {trade.items::%{_id}%::*}
-	loop {_new::*}:
-		add loop-value to {trade.items::%{_id}%::*}
-
-	give {_removed-item} to {_p}
-	tradeResetApprovals({_p})
+		set {_item} to slot loop-value of {_menu}
+		if {_item} is air:
+			delete {trade.items::%{_id}%::%{_n}%}
+		else:
+			set {trade.items::%{_id}%::%{_n}%} to {_item}
 
 function tradeRender(p: player):
 	set {_id} to uuid of {_p}
@@ -92,7 +93,7 @@ function tradeRender(p: player):
 	loop {_other-slots::*}:
 		set slot loop-value of {_menu} to air
 
-	set slot 1 of {_menu} to player head named "<green><bold>ВАШЕ ПРЕДЛОЖЕНИЕ" with lore "<gray>ЛКМ по предмету: <white>добавить весь стак" and "<gray>ПКМ по предмету: <white>добавить 1 предмет" and "" and "<yellow>В предложении:" and "<gray>ЛКМ: вернуть весь стак" and "<gray>ПКМ: вернуть 1 предмет"
+	set slot 1 of {_menu} to player head named "<green><bold>ВАШЕ ПРЕДЛОЖЕНИЕ" with lore "<gray>Берите предметы курсором из инвентаря" and "<gray>и кладите их прямо в зелёную часть обмена." and "" and "<white>ЛКМ: <gray>перенести стак" and "<white>ПКМ: <gray>разделить / положить часть"
 	set slot 7 of {_menu} to player head named "<yellow><bold>ПРЕДЛОЖЕНИЕ %name of {_partner}%"
 
 	# Divider
@@ -102,21 +103,19 @@ function tradeRender(p: player):
 	set slot 31 of {_menu} to black stained glass pane named " "
 	set slot 40 of {_menu} to black stained glass pane named " "
 
-	# Own items
+	# Own items, preserving exact slot positions.
 	set {_n} to 0
-	loop {trade.items::%{_id}%::*}:
+	loop {_own-slots::*}:
 		add 1 to {_n}
-		if {_n} is less than or equal to {@trade-max-slots}:
-			set {_slot} to {_own-slots::%{_n}%}
-			set slot {_slot} of {_menu} to loop-value
+		if {trade.items::%{_id}%::%{_n}%} is set:
+			set slot loop-value of {_menu} to {trade.items::%{_id}%::%{_n}%}
 
-	# Partner items
+	# Partner items, preserving their positions.
 	set {_n} to 0
-	loop {trade.items::%{_partner-id}%::*}:
+	loop {_other-slots::*}:
 		add 1 to {_n}
-		if {_n} is less than or equal to {@trade-max-slots}:
-			set {_slot} to {_other-slots::%{_n}%}
-			set slot {_slot} of {_menu} to loop-value
+		if {trade.items::%{_partner-id}%::%{_n}%} is set:
+			set slot loop-value of {_menu} to {trade.items::%{_partner-id}%::%{_n}%}
 
 	# Money
 	if {trade.money::%{_id}%} is not set:
@@ -128,25 +127,22 @@ function tradeRender(p: player):
 	set slot 53 of {_menu} to gold ingot named "<gold><bold>ДЕНЬГИ %name of {_partner}%" with lore "<white>%{trade.money::%{_partner-id}%}% монет"
 
 	# Cancel
-	set slot 49 of {_menu} to barrier named "<red><bold>ОТМЕНИТЬ ОБМЕН" with lore "<gray>Все ваши предметы будут возвращены."
+	set slot 49 of {_menu} to barrier named "<red><bold>ОТМЕНИТЬ ОБМЕН" with lore "<gray>Все предметы будут возвращены."
 
-	# State / confirm button
+	# Ready / countdown button. No second confirmation anymore.
 	if {trade.ready::%{_id}%} is true:
 		if {trade.ready::%{_partner-id}%} is true:
-			if {trade.confirm::%{_id}%} is true:
-				set slot 47 of {_menu} to lime concrete named "<green><bold>ВЫ ПОДТВЕРДИЛИ" with lore "<gray>Ждём второго игрока..."
+			if {trade.countdown::%{_id}%} is set:
+				set slot 47 of {_menu} to clock named "<yellow><bold>ОБМЕН ЧЕРЕЗ %{trade.countdown::%{_id}%}% СЕК." with lore "<gray>Оба игрока готовы." and "<red>Нажмите, чтобы отменить готовность."
 			else:
-				set slot 47 of {_menu} to diamond named "<aqua><bold>ПОДТВЕРДИТЬ ОБМЕН" with lore "<yellow>Финальное подтверждение." and "<red>После подтверждения изменить предложение нельзя."
+				set slot 47 of {_menu} to lime concrete named "<green><bold>ОБА ГОТОВЫ" with lore "<gray>Запуск обмена..."
 		else:
 			set slot 47 of {_menu} to lime concrete named "<green><bold>ВЫ ГОТОВЫ" with lore "<gray>Ждём второго игрока..." and "<yellow>Нажмите ещё раз, чтобы снять готовность."
 	else:
 		set slot 47 of {_menu} to lime dye named "<green><bold>ГОТОВ" with lore "<gray>Проверьте предметы и деньги," and "<gray>затем нажмите сюда."
 
 	if {trade.ready::%{_partner-id}%} is true:
-		if {trade.confirm::%{_partner-id}%} is true:
-			set slot 51 of {_menu} to lime concrete named "<green>%name of {_partner}% ПОДТВЕРДИЛ"
-		else:
-			set slot 51 of {_menu} to yellow concrete named "<yellow>%name of {_partner}% ГОТОВ"
+		set slot 51 of {_menu} to yellow concrete named "<yellow>%name of {_partner}% ГОТОВ"
 	else:
 		set slot 51 of {_menu} to red concrete named "<red>%name of {_partner}% НЕ ГОТОВ"
 
@@ -174,12 +170,14 @@ function tradeOpenBoth(a: player, b: player):
 	set {trade.partner::%{_b-id}%} to {_a-id}
 	set {trade.money::%{_a-id}%} to 0
 	set {trade.money::%{_b-id}%} to 0
+	set {trade.revision::%{_a-id}%} to 0
+	set {trade.revision::%{_b-id}%} to 0
 	delete {trade.items::%{_a-id}%::*}
 	delete {trade.items::%{_b-id}%::*}
 	delete {trade.ready::%{_a-id}%}
 	delete {trade.ready::%{_b-id}%}
-	delete {trade.confirm::%{_a-id}%}
-	delete {trade.confirm::%{_b-id}%}
+	delete {trade.countdown::%{_a-id}%}
+	delete {trade.countdown::%{_b-id}%}
 
 	tradeOpen({_a})
 	tradeOpen({_b})
@@ -195,9 +193,13 @@ function tradeCancel(p: player, reason: text):
 
 	set {_partner} to player from {_partner-id}
 
-	# Mark closing so inventory-close does not recursively cancel again.
 	set {trade.ending::%{_id}%} to true
 	set {trade.ending::%{_partner-id}%} to true
+
+	# Make sure the last GUI state is saved before returning escrow.
+	tradeSyncOwnOffer({_p})
+	if {_partner} is set:
+		tradeSyncOwnOffer({_partner})
 
 	tradeReturnItems({_p})
 	if {_partner} is set:
@@ -226,15 +228,14 @@ function tradeComplete(p: player):
 		tradeCancel({_a}, "Второй игрок вышел с сервера.")
 		stop
 
-	# Both must still be fully confirmed.
+	# Both players must still be ready when the countdown finishes.
 	if {trade.ready::%{_a-id}%} is not true:
 		stop
 	if {trade.ready::%{_b-id}%} is not true:
 		stop
-	if {trade.confirm::%{_a-id}%} is not true:
-		stop
-	if {trade.confirm::%{_b-id}%} is not true:
-		stop
+
+	tradeSyncOwnOffer({_a})
+	tradeSyncOwnOffer({_b})
 
 	if {trade.money::%{_a-id}%} is not set:
 		set {trade.money::%{_a-id}%} to 0
@@ -247,7 +248,6 @@ function tradeComplete(p: player):
 	economyEnsure({_a})
 	economyEnsure({_b})
 
-	# Re-check balances at the exact moment of exchange.
 	if economyBalance({_a}) is less than {_a-money}:
 		tradeCancel({_a}, "%name of {_a}% больше не имеет нужной суммы денег.")
 		stop
@@ -258,10 +258,7 @@ function tradeComplete(p: player):
 	set {trade.ending::%{_a-id}%} to true
 	set {trade.ending::%{_b-id}%} to true
 
-	# IMPORTANT: copy both offers before touching/closing the trade GUI.
-	# The GUI contains visual copies of these same ItemStacks. On some
-	# Skript/Paper combinations transferring while that custom inventory
-	# is still open can make the item disappear when the GUI is closed.
+	# Snapshot both offers before closing the GUIs.
 	delete {_a-items::*}
 	delete {_b-items::*}
 	loop {trade.items::%{_a-id}%::*}:
@@ -269,8 +266,6 @@ function tradeComplete(p: player):
 	loop {trade.items::%{_b-id}%::*}:
 		add loop-value to {_b-items::*}
 
-	# Close the trade inventories BEFORE giving any real items.
-	# trade.ending prevents on inventory close from cancelling the trade.
 	close {_a}'s inventory
 	close {_b}'s inventory
 
@@ -280,13 +275,12 @@ function tradeComplete(p: player):
 	remove {_b-money} from {economy.balance::%{_b-id}%}
 	add {_b-money} to {economy.balance::%{_a-id}%}
 
-	# Item exchange from independent snapshots, not from GUI-backed lists.
+	# Item exchange.
 	loop {_a-items::*}:
 		give loop-value to {_b}
 	loop {_b-items::*}:
 		give loop-value to {_a}
 
-	# Only delete escrow after both transfer loops have run.
 	delete {trade.items::%{_a-id}%::*}
 	delete {trade.items::%{_b-id}%::*}
 
@@ -295,6 +289,56 @@ function tradeComplete(p: player):
 
 	tradeClearPlayerData({_a-id})
 	tradeClearPlayerData({_b-id})
+
+function tradeStartCountdown(p: player):
+	set {_a} to {_p}
+	set {_a-id} to uuid of {_a}
+	set {_b-id} to {trade.partner::%{_a-id}%}
+	if {_b-id} is not set:
+		stop
+	set {_b} to player from {_b-id}
+	if {_b} is not set:
+		stop
+	if {trade.ready::%{_a-id}%} is not true:
+		stop
+	if {trade.ready::%{_b-id}%} is not true:
+		stop
+	if {trade.countdown::%{_a-id}%} is set:
+		stop
+
+	set {_rev-a} to {trade.revision::%{_a-id}%}
+	set {_rev-b} to {trade.revision::%{_b-id}%}
+	set {trade.countdown::%{_a-id}%} to {@trade-countdown}
+	set {trade.countdown::%{_b-id}%} to {@trade-countdown}
+	tradeRenderBoth({_a})
+
+	loop {@trade-countdown} times:
+		wait 1 second
+
+		# Abort this specific countdown if anything changed.
+		if {trade.partner::%{_a-id}%} is not {_b-id}:
+			stop
+		if {trade.partner::%{_b-id}%} is not {_a-id}:
+			stop
+		if {trade.ready::%{_a-id}%} is not true:
+			stop
+		if {trade.ready::%{_b-id}%} is not true:
+			stop
+		if {trade.revision::%{_a-id}%} is not {_rev-a}:
+			stop
+		if {trade.revision::%{_b-id}%} is not {_rev-b}:
+			stop
+
+		if loop-number is {@trade-countdown}:
+			delete {trade.countdown::%{_a-id}%}
+			delete {trade.countdown::%{_b-id}%}
+			tradeComplete({_a})
+			stop
+
+		set {_remaining} to {@trade-countdown} - loop-number
+		set {trade.countdown::%{_a-id}%} to {_remaining}
+		set {trade.countdown::%{_b-id}%} to {_remaining}
+		tradeRenderBoth({_a})
 
 # =========================================================
 # COMMANDS
@@ -385,86 +429,61 @@ on inventory click:
 	if {trade.partner::%{_id}%} is not set:
 		stop
 
-	cancel event
 	if event-slot is not set:
+		cancel event
 		stop
 
 	set {_raw} to raw index of event-slot
 	set {_partner-id} to {trade.partner::%{_id}%}
 	set {_partner} to player from {_partner-id}
 	if {_partner} is not set:
+		cancel event
 		tradeCancel(player, "Второй игрок вышел с сервера.")
 		stop
 
-	# Bottom inventory:
-	# LMB = add the whole stack, RMB = add only 1 item.
+	set {_own-slots::*} to 10, 11, 12, 19, 20, 21, 28, 29, 30, 37, 38 and 39
+
+	# Player inventory: allow normal LMB/RMB so the player can pick up,
+	# split and rearrange stacks naturally. Shift/hotbar tricks stay blocked.
 	if {_raw} is greater than or equal to 54:
-		if event-item is air:
-			stop
 		if {trade.ready::%{_id}%} is true:
-			send "<red>Сначала снимите готовность, чтобы изменить предложение." to player
+			cancel event
+			send "<red>Сначала снимите готовность, чтобы менять предметы." to player
 			stop
-		set {_size} to size of {trade.items::%{_id}%::*}
-		if {_size} is greater than or equal to {@trade-max-slots}:
-			send "<red>В обмен можно добавить максимум {@trade-max-slots} стаков." to player
+		if click type is left mouse button:
 			stop
-
-		set {_clicked} to event-item
-
-		# RMB: move exactly one item from the clicked stack.
 		if click type is right mouse button:
-			set {_item} to {_clicked}
-			set amount of {_item} to 1
-			add {_item} to {trade.items::%{_id}%::*}
-
-			set {_old-amount} to amount of {_clicked}
-			if {_old-amount} is less than or equal to 1:
-				set event-slot to air
-			else:
-				set {_remaining} to {_clicked}
-				set amount of {_remaining} to {_old-amount} - 1
-				set event-slot to {_remaining}
-		else:
-			# LMB (and other normal clicks): move the whole stack.
-			add {_clicked} to {trade.items::%{_id}%::*}
-			set event-slot to air
-
-		tradeResetApprovals(player)
-		tradeRenderBoth(player)
+			stop
+		cancel event
 		stop
 
-	# Own offer slots:
-	# LMB = return the whole stack, RMB = return only 1 item.
-	set {_own-slots::*} to 10, 11, 12, 19, 20, 21, 28, 29, 30, 37, 38 and 39
-	set {_n} to 0
+	# Own 12 trade slots: behave like normal inventory slots.
+	set {_is-own} to false
 	loop {_own-slots::*}:
-		add 1 to {_n}
 		if {_raw} is loop-value:
-			if {trade.ready::%{_id}%} is true:
-				send "<red>Сначала снимите готовность, чтобы изменить предложение." to player
-				stop
+			set {_is-own} to true
 
-			if {trade.items::%{_id}%::%{_n}%} is not set:
-				stop
-
-			if click type is right mouse button:
-				set {_stack} to {trade.items::%{_id}%::%{_n}%}
-				set {_stack-amount} to amount of {_stack}
-				if {_stack-amount} is less than or equal to 1:
-					tradeRemoveOwnItem(player, {_n})
-				else:
-					set {_one} to {_stack}
-					set amount of {_one} to 1
-					give {_one} to player
-
-					set amount of {_stack} to {_stack-amount} - 1
-					set {trade.items::%{_id}%::%{_n}%} to {_stack}
-					tradeResetApprovals(player)
-			else:
-				tradeRemoveOwnItem(player, {_n})
-
-			tradeRenderBoth(player)
+	if {_is-own} is true:
+		if {trade.ready::%{_id}%} is true:
+			cancel event
+			send "<red>Сначала снимите готовность, чтобы менять предложение." to player
 			stop
+
+		if click type is not left mouse button:
+			if click type is not right mouse button:
+				cancel event
+				stop
+
+		# Let Minecraft perform the cursor/stack action first, then save it.
+		wait 1 tick
+		if {trade.partner::%{_id}%} is set:
+			tradeSyncOwnOffer(player)
+			tradeResetApprovals(player)
+			tradeRenderBoth(player)
+		stop
+
+	# Everything else in the top GUI is protected.
+	cancel event
 
 	# Money input.
 	if {_raw} is 45:
@@ -483,30 +502,29 @@ on inventory click:
 		tradeCancel(player, "%name of player% отменил обмен.")
 		stop
 
-	# Ready / final confirmation.
+	# Ready button. If both are ready, the 5-second timer starts automatically.
 	if {_raw} is 47:
-		if {trade.ready::%{_id}%} is not true:
-			set {trade.ready::%{_id}%} to true
-			delete {trade.confirm::%{_id}%}
-			tradeRenderBoth(player)
-			stop
-
-		# If partner is not ready yet, second click removes ready state.
-		if {trade.ready::%{_partner-id}%} is not true:
+		if {trade.ready::%{_id}%} is true:
 			delete {trade.ready::%{_id}%}
-			delete {trade.confirm::%{_id}%}
+			delete {trade.countdown::%{_id}%}
+			delete {trade.countdown::%{_partner-id}%}
+			add 1 to {trade.revision::%{_id}%}
+			add 1 to {trade.revision::%{_partner-id}%}
 			tradeRenderBoth(player)
 			stop
 
-		# Both are ready -> this is final confirm.
-		if {trade.confirm::%{_id}%} is not true:
-			set {trade.confirm::%{_id}%} to true
-			tradeRenderBoth(player)
-			if {trade.confirm::%{_partner-id}%} is true:
-				tradeComplete(player)
-			stop
+		# Save the latest editable GUI state before locking the offer.
+		tradeSyncOwnOffer(player)
+		set {trade.ready::%{_id}%} to true
+		tradeRenderBoth(player)
+
+		if {trade.ready::%{_partner-id}%} is true:
+			tradeStartCountdown(player)
+		stop
 
 on inventory drag:
+	# Drag-painting is blocked because it can spill into protected/partner slots.
+	# Normal LMB/RMB cursor movement and stack splitting are fully supported.
 	if {trade.menu::%uuid of player%} is true:
 		cancel event
 
@@ -520,6 +538,7 @@ on inventory close:
 		delete {trade.ignoreclose::%{_id}%}
 		stop
 	if {trade.partner::%{_id}%} is set:
+		tradeSyncOwnOffer(player)
 		tradeCancel(player, "%name of player% закрыл окно обмена.")
 
 # =========================================================
@@ -571,8 +590,6 @@ on chat:
 
 on quit:
 	set {_id} to uuid of player
-
-	# Remove incoming/outgoing requests involving this online player.
 	delete {trade.request::%{_id}%::*}
 
 	if {trade.partner::%{_id}%} is set:
