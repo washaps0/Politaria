@@ -1,0 +1,42 @@
+name: Fix storage sorting compatibility
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-storage-sort-skript-compat.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Patch unsupported Skript sort
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('server/plugins/Skript/scripts/countries_storage.sk')
+          s = p.read_text(encoding='utf-8')
+          old = '\tsort {_sortKeys::*} in alphabetical order\n'
+          if old not in s:
+              raise SystemExit('unsupported sort line not found')
+          s = s.replace(old, '\t# Keep insertion order for compatibility with this Skript version.\n', 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit changes
+        shell: bash
+        run: |
+          git rm .github/workflows/fix-storage-sort-skript-compat.yml
+          git config user.name "Politaria Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add server/plugins/Skript/scripts/countries_storage.sk
+          git commit -m "Fix ClientSort compatibility with Skript"
+          git pull --rebase origin main
+          git push origin main
