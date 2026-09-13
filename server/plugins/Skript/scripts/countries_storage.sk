@@ -1296,7 +1296,8 @@ on chat:
 		if {country.storage-category-seq::%{_id}%} is not set:
 			set {country.storage-category-seq::%{_id}%} to 0
 		add 1 to {country.storage-category-seq::%{_id}%}
-		set {_cat} to "c%{country.storage-category-seq::%{_id}%}%"
+		set {_seq} to {country.storage-category-seq::%{_id}%}
+		set {_cat} to "c%{_seq}%"
 		set {country.storage-category-name::%{_id}%::%{_cat}%} to {_input}
 		wait 1 tick
 		countryOpenStorageHub(player)
