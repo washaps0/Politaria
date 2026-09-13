@@ -1113,18 +1113,17 @@ function countryStorageAutoSortPlayer(p: player) :: number:
 						if countryStorageCategoryHasType({_id}, {_cat}, {_typeText}) is true:
 							set {_target} to {_cat}
 							stop loop
-				if {_target} is "":
-					set {_target} to "general"
-				set {_before} to amount of {_item}
-				set {_moved} to countryStorageInsertAmount({_id}, {_target}, {_item})
-				if {_moved} is greater than 0:
-					add {_moved} to {_movedTotal}
-					set {_left} to {_before} - {_moved}
-					if {_left} is less than or equal to 0:
-						set slot {_slot} of {_p}'s inventory to air
-					else:
-						set amount of {_item} to {_left}
-						set slot {_slot} of {_p}'s inventory to {_item}
+				if {_target} is not "":
+					set {_before} to amount of {_item}
+					set {_moved} to countryStorageInsertAmount({_id}, {_target}, {_item})
+					if {_moved} is greater than 0:
+						add {_moved} to {_movedTotal}
+						set {_left} to {_before} - {_moved}
+						if {_left} is less than or equal to 0:
+							set slot {_slot} of {_p}'s inventory to air
+						else:
+							set amount of {_item} to {_left}
+							set slot {_slot} of {_p}'s inventory to {_item}
 		add 1 to {_slot}
 	return {_movedTotal}
 
