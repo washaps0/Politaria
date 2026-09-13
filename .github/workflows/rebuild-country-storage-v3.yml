@@ -1,0 +1,50 @@
+name: Rebuild country storage V3
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/rebuild-country-storage-v3.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Replace category storage with persistent chest slots
+        shell: bash
+        run: |
+          cat > /tmp/section.b64 <<'EOF'
+IyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQojIENPVU5UUlkgU1RPUkFHRSBDQVRFR09SSUVTIFYzCiMgUmVhbCBjaGVzdC1saWtlIHNsb3QgbGF5b3V0LgojCiMge2NvdW50cnkuc3RvcmFnZTo6Kn0gcmVtYWlucyB0aGUgY2Fub25pY2FsIGJhY2tpbmcgc3RvcmFnZSBzbyBjb3VudHJ5CiMgZGV2ZWxvcG1lbnQgLyBwcm9kdWN0aW9uIC8gdXBncmFkZSBjb2RlIGtlZXBzIHdvcmtpbmcuCiMge2NvdW50cnkuc3RvcmFnZS1wb3M6OjxpZD46OjxjYXRlZ29yeT46OjxwYWdlPjo8c2xvdD59IHN0b3JlcyB3aGVyZSBlYWNoCiMgYmFja2luZyBzbG90IGlzIHNob3duLiBJdGVtcyBhcmUgTk9UIGNvbXBhY3RlZCBhbnltb3JlLgojID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KCmZ1bmN0aW9uIGNvdW50cnlTdG9yYWdlQ2FuTWFuYWdlQ2F0ZWdvcmllcyhwOiBwbGF5ZXIpIDo6IGJvb2xlYW46CglzZXQge19pZH0gdG8gY291bnRyeUlkKHtfcH0pCglpZiB7X2lkfSBpcyAiIjoKCQlyZXR1cm4gZmFsc2UKCWlmIGNvdW50cnlJc0FkbWluKHtfcH0pIGlzIHRydWU6CgkJcmV0dXJuIHRydWUKCWlmIHtjb3VudHJ5Lm93bmVyOjole19pZH0lfSBpcyAiJXV1aWQgb2Yge19wfSUiOgoJCXJldHVybiB0cnVlCglpZiBjb3VudHJ5SGFzUGVybWlzc2lvbih7X3B9LCAiTUFOQUdFX0RFVkVMT1BNRU5UIikgaXMgdHJ1ZToKCQlyZXR1cm4gdHJ1ZQoJcmV0dXJuIGZhbHNlCgpmdW5jdGlvbiBjb3VudHJ5U3RvcmFnZUNhdGVnb3J5TmFtZShpZDogdGV4dCwgY2F0ZWdvcnk6IHRleHQpIDo6IHRleHQ6CglpZiB7X2NhdGVnb3J5fSBpcyAiZ2VuZXJhbCI6CgkJcmV0dXJuICLQntCx0YnQtdC1IgoJaWYge2NvdW50cnkuc3RvcmFnZS1jYXRlZ29yeS1uYW1lOjole19pZH0lOjole19jYXRlZ29yeX0lfSBpcyBzZXQ6CgkJcmV0dXJuIHtjb3VudHJ5LnN0b3JhZ2UtY2F0ZWdvcnktbmFtZTo6JXtfaWR9JTo6JXt fY2F0ZWdvcnl9JX0KCXJldHVybiAi0JrQsNGC0LXQs9C+0YDQuNGPIgoKZnVuY3Rpb24gY291bnRyeVN0b3JhZ2VDYXRlZ29yeU9mU2xvdChpZDogdGV4dCwgZ2xvYmFsU2xvdDogbnVtYmVyKSA6OiB0ZXh0OgoJaWYge2NvdW50cnkuc3RvcmFnZS1jYXRlZ29yeTo6JXtfaWR9JTo6JXt fZ2xvYmFsU2xvdH0lfSBpcyBzZXQ6CgkJcmV0dXJuIHtjb3VudHJ5LnN0b3JhZ2UtY2F0ZWdvcnk6OiV7X2lkfSU6OiV7X2dsb2JhbFNsb3R9JX0KCXJldHVybiAiZ2VuZXJhbCIK
+EOF
+          python - <<'PY'
+          from pathlib import Path
+          import base64
+          p=Path('server/plugins/Skript/scripts/countries_storage.sk')
+          t=p.read_text(encoding='utf-8')
+          marker='# =========================================================\n# COUNTRY STORAGE CATEGORIES V2\n'
+          if marker not in t:
+              marker='# =========================================================\n# COUNTRY STORAGE CATEGORIES V3\n'
+          if marker not in t:
+              raise SystemExit('country storage category marker not found')
+          prefix=t.split(marker,1)[0].rstrip()+'\n\n'
+          section=base64.b64decode(Path('/tmp/section.b64').read_text().replace('\n','')).decode('utf-8')
+          p.write_text(prefix+section,encoding='utf-8')
+          PY
+
+      - name: Commit rebuilt storage and remove workflow
+        shell: bash
+        run: |
+          git rm .github/workflows/rebuild-country-storage-v3.yml
+          git config user.name "Politaria Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add server/plugins/Skript/scripts/countries_storage.sk
+          git commit -m "Make country storage use persistent chest slots"
+          git push origin main
