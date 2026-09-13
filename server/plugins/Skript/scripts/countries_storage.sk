@@ -1490,8 +1490,8 @@ function countryStorageSyncCategoryView(p: player):
 					set {_free} to countryStorageFindFreeGlobalSlot({_id})
 					if {_free} is less than 0:
 						give {_shown} to {_p}
-						set slot {_view} o {_inv} to air
-						send action bar "<red>Франилище страны заполнено." to {_p}
+						set slot {_view} of {_inv} to air
+						send action bar "<red>Хранилище страны заполнено." to {_p}
 					else:
 						set {country.storage-view::%uuid of {_p}%::%{_view}%} to {_free}
 						set {country.storage::%{_id}%::%{_free}%} to {_shown}
@@ -1500,7 +1500,7 @@ function countryStorageSyncCategoryView(p: player):
 						else:
 							set {country.storage-category::%{_id}%::%{_free}%} to {_cat}
 						set {_type-text} to "%type of {_shown}%"
-							set {country.storage-category-type::%{_id}%::%{_cat}%::%{_type-text}%} to true
+						set {country.storage-category-type::%{_id}%::%{_cat}%::%{_type-text}%} to true
 
 on inventory click:
 	if {country.menu::%uuid of player%} is not "storage-category":
