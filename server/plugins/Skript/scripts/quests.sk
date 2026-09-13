@@ -1,0 +1,1451 @@
+options:
+
+    quests-title: <dark gray>Квесты
+
+    starting-balance: 200
+
+    quests-count: 9
+
+    quests-chat-reward: 20
+
+    quests-voice-reward: 20
+
+    quests-voice-url: https://modrinth.com/plugin/simple-voice-chat
+
+    quests-skills-reward: 30
+
+    quests-discord-reward: 50
+
+    quests-discord-url: https://discord.gg/AXMPnCbUT
+
+
+
+# =========================================================
+
+# ВЫДАЧА ДЕНЕГ
+
+# =========================================================
+
+function questGiveMoney(p: player, amount: number):
+
+    if {economy.balance::%uuid of {_p}%} is not set:
+
+        set {economy.balance::%uuid of {_p}%} to {@starting-balance}
+
+    add {_amount} to {economy.balance::%uuid of {_p}%}
+
+
+
+# =========================================================
+
+# ЗАВЕРШЕНИЕ КВЕСТА
+
+# =========================================================
+
+# Guidance is in chat and menus, separate from territory action-bar messages.
+
+# Persistent IDs stay unchanged: 5 = handshake, 6 = voice link, 7 = chat. New skills tutorial uses ID 9.
+
+# Display order is independent of IDs; old completions and social.sk calls stay valid.
+
+function questNext(p: player) :: number:
+
+    # ID 9 is the skills tutorial. Existing IDs stay unchanged.
+    set {_order::*} to 1, 2, 3, 4, 9, 7, 5, 6 and 8
+
+    loop {_order::*}:
+
+        if {quests.done::%uuid of {_p}%::%loop-value%} is not true:
+
+            return loop-value
+
+    return 0
+
+function questShowNext(p: player):
+
+    if {_p} is not online:
+
+        stop
+
+    if {auth.logged-in::%name of {_p}%} is not true:
+
+        stop
+
+    set {_next} to questNext({_p})
+
+    if {_next} is 0:
+
+        send formatted "<light green>Все {@quests-count} вводных квестов выполнены. Приятной игры!" to {_p}
+
+        stop
+
+    if {_next} is 1:
+
+        set {_hint} to "Откройте меню стран: нажмите задание 1 в меню квестов. Создавать страну не нужно."
+
+    if {_next} is 2:
+
+        set {_hint} to "Нажмите задание 2 и дождитесь случайной телепортации в мир. Урон отменяет ожидание."
+
+    if {_next} is 3:
+
+        set {_wood} to {quests.oak::%uuid of {_p}%}
+
+        if {_wood} is not set:
+
+            set {_wood} to 0
+
+        set {_hint} to "Найдите дуб за пределами спавна и срубите 4 бревна. Прогресс: %{_wood}%/4."
+
+    if {_next} is 4:
+
+        set {_hint} to "Нажмите задание 4 и дождитесь возвращения на спавн: 5 секунд без урона."
+
+    if {_next} is 9:
+
+        set {_mining-done} to {quests.skills.mining::%uuid of {_p}%}
+        set {_crafting-done} to {quests.skills.crafting::%uuid of {_p}%}
+
+        if {_mining-done} is true:
+            set {_mining-text} to "готово"
+        else:
+            set {_mining-text} to "не выполнено"
+
+        if {_crafting-done} is true:
+            set {_crafting-text} to "готово"
+        else:
+            set {_crafting-text} to "не выполнено"
+
+        set {_hint} to "Откройте /skills, получите опыт Шахтёрства и Крафта. Шахтёрство: %{_mining-text}%. Крафт: %{_crafting-text}%."
+
+    if {_next} is 5:
+
+        set {_hint} to "Подойдите к игроку, посмотрите на него, нажмите Shift + F и «Пожать руку». Дождитесь его согласия."
+
+    if {_next} is 6:
+
+        set {_hint} to "Нажмите задание 7, чтобы получить ссылку на Simple Voice Chat. Затем откройте её в чате."
+
+    if {_next} is 8:
+
+        set {_hint} to "Нажмите последнее задание, чтобы получить приглашение в Discord. Откройте ссылку в чате и присоединитесь к серверу."
+
+    set {_number} to {_next}
+
+    if {_next} is 9:
+        set {_number} to 5
+
+    if {_next} is 7:
+        set {_number} to 6
+        set {_hint} to "Введите /chat, чтобы открыть выбор канала чата. Можно также нажать задание 6 в меню квестов."
+
+    if {_next} is 5:
+        set {_number} to 7
+
+    if {_next} is 6:
+        set {_number} to 8
+
+    if {_next} is 8:
+        set {_number} to 9
+
+    send formatted "<gold><bold>КВЕСТ %{_number}%/{@quests-count}</bold><reset> <white>%{_hint}%" to {_p}
+
+    send formatted "<command:/quests><tooltip:Нажмите, чтобы открыть задания><yellow><bold>[ ОТКРЫТЬ КВЕСТЫ ]<reset> <gray>Нажмите кнопку в чате или найдите «Квесты» в меню /c." to {_p}
+
+function questComplete(p: player, id: number):
+
+    if {quests.done::%uuid of {_p}%::%{_id}%} is true:
+
+        stop
+
+
+
+    # =====================================================
+
+    # 1 — ОТКРЫТЬ /c
+
+    # =====================================================
+
+    if {_id} is 1:
+
+        set {quests.done::%uuid of {_p}%::1} to true
+
+        questGiveMoney({_p}, 15)
+
+        send "" to {_p}
+
+        send formatted "<light green><bold>КВЕСТ ВЫПОЛНЕН" to {_p}
+
+        send formatted "<white>Открыть меню стран" to {_p}
+
+        send formatted "<gold>+15 монет" to {_p}
+
+        send "" to {_p}
+
+        play sound "entity.player.levelup" with volume 1 and pitch 1.4 at {_p}
+
+        questShowNext({_p})
+
+        stop
+
+
+
+    # =====================================================
+
+    # 2 — /rtp
+
+    # =====================================================
+
+    if {_id} is 2:
+
+        set {quests.done::%uuid of {_p}%::2} to true
+
+        questGiveMoney({_p}, 10)
+
+        send "" to {_p}
+
+        send formatted "<light green><bold>КВЕСТ ВЫПОЛНЕН" to {_p}
+
+        send formatted "<white>Использовать /rtp" to {_p}
+
+        send formatted "<gold>+10 монет" to {_p}
+
+        send "" to {_p}
+
+        play sound "entity.player.levelup" with volume 1 and pitch 1.4 at {_p}
+
+        questShowNext({_p})
+
+        stop
+
+
+
+    # =====================================================
+
+    # 3 — ДОБЫТЬ 4 ДУБА
+
+    # =====================================================
+
+    if {_id} is 3:
+
+        set {quests.done::%uuid of {_p}%::3} to true
+
+        set {quests.oak::%uuid of {_p}%} to 4
+
+        questGiveMoney({_p}, 20)
+
+        send "" to {_p}
+
+        send formatted "<light green><bold>КВЕСТ ВЫПОЛНЕН" to {_p}
+
+        send formatted "<white>Добыть 4 дубовых бревна" to {_p}
+
+        send formatted "<gold>+20 монет" to {_p}
+
+        send "" to {_p}
+
+        play sound "entity.player.levelup" with volume 1 and pitch 1.4 at {_p}
+
+        questShowNext({_p})
+
+        stop
+
+
+
+    # =====================================================
+
+    # 4 — /spawn
+
+    # =====================================================
+
+    if {_id} is 4:
+
+        set {quests.done::%uuid of {_p}%::4} to true
+
+        questGiveMoney({_p}, 20)
+
+        send "" to {_p}
+
+        send formatted "<light green><bold>КВЕСТ ВЫПОЛНЕН" to {_p}
+
+        send formatted "<white>Использовать /spawn" to {_p}
+
+        send formatted "<gold>+20 монет" to {_p}
+
+        send "" to {_p}
+
+        play sound "entity.player.levelup" with volume 1 and pitch 1.4 at {_p}
+
+        questShowNext({_p})
+
+        stop
+
+
+
+    # =====================================================
+
+    # 9 — НАВЫКИ
+    # Отображается как квест 5.
+
+    # =====================================================
+
+    if {_id} is 9:
+
+        set {quests.done::%uuid of {_p}%::9} to true
+
+        questGiveMoney({_p}, {@quests-skills-reward})
+
+        send "" to {_p}
+
+        send formatted "<light green><bold>КВЕСТ ВЫПОЛНЕН" to {_p}
+
+        send formatted "<white>Познакомиться с системой навыков" to {_p}
+
+        send formatted "<gold>+{@quests-skills-reward} монет" to {_p}
+
+        send "" to {_p}
+
+        play sound "entity.player.levelup" with volume 1 and pitch 1.4 at {_p}
+
+        questShowNext({_p})
+
+        stop
+
+
+
+    # =====================================================
+
+    # 5 — HANDSHAKE
+
+    # =====================================================
+
+    if {_id} is 5:
+
+        set {quests.done::%uuid of {_p}%::5} to true
+
+        questGiveMoney({_p}, 50)
+
+        send "" to {_p}
+
+        send formatted "<light green><bold>КВЕСТ ВЫПОЛНЕН" to {_p}
+
+        send formatted "<white>Поздороваться с другим игроком" to {_p}
+
+        send formatted "<gold>+50 монет" to {_p}
+
+        send "" to {_p}
+
+        play sound "entity.player.levelup" with volume 1 and pitch 1.4 at {_p}
+
+        questShowNext({_p})
+
+        stop
+
+
+
+    # 6 — Получить ссылку на Simple Voice Chat (скачивание не проверяется).
+
+    if {_id} is 6:
+
+        set {quests.done::%uuid of {_p}%::6} to true
+
+        questGiveMoney({_p}, {@quests-voice-reward})
+
+        send "" to {_p}
+
+        send formatted "<light green><bold>КВЕСТ ВЫПОЛНЕН" to {_p}
+
+        send formatted "<white>Получить ссылку на Simple Voice Chat" to {_p}
+
+        send formatted "<gold>+{@quests-voice-reward} монет" to {_p}
+
+        play sound "entity.player.levelup" with volume 1 and pitch 1.4 at {_p}
+
+        questShowNext({_p})
+
+        stop
+
+    # Display quest 5, persistent ID 7: open /chat once.
+
+    if {_id} is 7:
+
+        set {quests.done::%uuid of {_p}%::7} to true
+
+        questGiveMoney({_p}, {@quests-chat-reward})
+
+        send "" to {_p}
+
+        send formatted "<light green><bold>КВЕСТ ВЫПОЛНЕН" to {_p}
+
+        send formatted "<white>Открыть настройки чата /chat" to {_p}
+
+        send formatted "<gold>+{@quests-chat-reward} монет" to {_p}
+
+        play sound "entity.player.levelup" with volume 1 and pitch 1.4 at {_p}
+
+        questShowNext({_p})
+
+        stop
+
+    # 8 — Discord invitation. Membership is not verified without a bot/account link.
+
+    if {_id} is 8:
+
+        set {quests.done::%uuid of {_p}%::8} to true
+
+        questGiveMoney({_p}, {@quests-discord-reward})
+
+        send "" to {_p}
+
+        send formatted "<light green><bold>КВЕСТ ВЫПОЛНЕН" to {_p}
+
+        send formatted "<white>Получить приглашение в Discord" to {_p}
+
+        send formatted "<gold>+{@quests-discord-reward} монет" to {_p}
+
+        play sound "entity.player.levelup" with volume 1 and pitch 1.4 at {_p}
+
+        questShowNext({_p})
+
+        stop
+
+# OPEN_URL is handled by the client: it cannot also notify the server.
+
+# Complete when requesting the link, never claim to verify download/installation.
+
+function questVoiceLink(p: player):
+
+    if {_p} is not online:
+
+        stop
+
+    if {auth.logged-in::%name of {_p}%} is not true:
+
+        stop
+
+    questComplete({_p}, 6)
+
+    send formatted "<aqua><bold>SIMPLE VOICE CHAT</bold><reset> <white>Нажмите ссылку ниже, чтобы перейти к скачиванию." to {_p}
+
+    send formatted "<gray>Выберите мод для своей версии Minecraft и загрузчика (например, Fabric или Forge), а не серверный плагин." to {_p}
+
+    send formatted "<open_url:{@quests-voice-url}><tooltip:Открыть страницу Simple Voice Chat на Modrinth><yellow><bold>[ СКАЧАТЬ SIMPLE VOICE CHAT ]" to {_p}
+
+    send "<gray>Задание засчитано за получение ссылки. Скачивание и установка не проверяются." to {_p}
+
+# =========================================================
+
+# ОТКРЫТИЕ GUI
+
+# =========================================================
+
+function questDiscordLink(p: player):
+
+    if {_p} is not online:
+
+        stop
+
+    if {auth.logged-in::%name of {_p}%} is not true:
+
+        stop
+
+    questComplete({_p}, 8)
+
+    send formatted "<aqua><bold>DISCORD POLITARIA</bold><reset> <white>Откройте приглашение и присоединитесь к нашему серверу." to {_p}
+
+    send formatted "<open_url:{@quests-discord-url}><tooltip:Открыть приглашение в Discord><yellow><bold>[ ВСТУПИТЬ В DISCORD ]" to {_p}
+
+    send "<gray>Зачёт за получение приглашения. Само вступление не проверяется." to {_p}
+
+function questsOpen(p: player):
+
+    if {auth.logged-in::%name of {_p}%} is not true:
+
+        send "<red>Сначала войдите в аккаунт." to {_p}
+
+        stop
+
+    set {quests.tutorial-shown::%uuid of {_p}%} to true
+
+    set {quests.seen-this-session::%uuid of {_p}%} to true
+
+    set {_menu} to chest inventory with 3 rows named "{@quests-title}"
+
+
+
+    # =====================================================
+
+    # ФОН
+
+    # =====================================================
+
+    loop integers between 0 and 26:
+
+        set slot loop-value of {_menu} to gray stained glass pane named " "
+
+
+
+    # =====================================================
+
+    # КВЕСТ 1
+
+    # =====================================================
+
+    if {quests.done::%uuid of {_p}%::1} is true:
+
+        set {_q1} to lime dye named "<light green><bold>ВЫПОЛНЕНО"
+
+        set lore of {_q1} to "<gray>Открыть меню стран" and "" and "<light green>✓ Получено 15 монет"
+
+    else:
+
+        set {_q1} to map named "<yellow><bold>1. МЕНЮ СТРАН"
+
+        set lore of {_q1} to "<gray>Нажмите: откроется меню стран /c" and "<gray>Создавать страну или вступать не нужно" and "" and "<gold>Награда: <yellow>15 монет"
+
+    set slot 9 of {_menu} to {_q1}
+
+
+
+    # =====================================================
+
+    # КВЕСТ 2
+
+    # =====================================================
+
+    if {quests.done::%uuid of {_p}%::2} is true:
+
+        set {_q2} to lime dye named "<light green><bold>ВЫПОЛНЕНО"
+
+        set lore of {_q2} to "<gray>Случайная телепортация в мир" and "" and "<light green>✓ Получено 10 монет"
+
+    else:
+
+        set {_q2} to ender pearl named "<aqua><bold>2. ВЫЙТИ В МИР"
+
+        set lore of {_q2} to "<gray>Нажмите: запустится /rtp" and "<gray>Дождитесь телепортации без урона" and "<gray>После этого ищите дуб для задания 3" and "" and "<gold>Награда: <yellow>10 монет"
+
+    set slot 10 of {_menu} to {_q2}
+
+
+
+    # =====================================================
+
+    # КВЕСТ 3
+
+    # =====================================================
+
+    if {quests.done::%uuid of {_p}%::3} is true:
+
+        set {_q3} to lime dye named "<light green><bold>ВЫПОЛНЕНО"
+
+        set lore of {_q3} to "<gray>Добыть 4 дубовых бревна" and "" and "<light green>✓ Получено 20 монет"
+
+    else:
+
+        set {_wood} to {quests.oak::%uuid of {_p}%}
+
+        if {_wood} is not set:
+
+            set {_wood} to 0
+
+        set {_q3} to oak log named "<gold><bold>3. ДОБЫТЬ ДУБ"
+
+        set lore of {_q3} to "<gray>1. Выйдите в мир через задание 2 (/rtp)" and "<gray>2. Найдите дуб и срубите 4 бревна" and "<gray>Нужны бревна, а не доски или береза" and "<gray>На защищенном спавне рубить нельзя" and "<white>Прогресс: <yellow>%{_wood}%<gray>/4" and "<yellow>Нажмите для подсказки в чат" and "" and "<gold>Награда: <yellow>20 монет"
+
+    set slot 11 of {_menu} to {_q3}
+
+
+
+    # =====================================================
+
+    # КВЕСТ 4
+
+    # =====================================================
+
+    if {quests.done::%uuid of {_p}%::4} is true:
+
+        set {_q4} to lime dye named "<light green><bold>ВЫПОЛНЕНО"
+
+        set lore of {_q4} to "<gray>Вернуться на спавн" and "" and "<light green>✓ Получено 20 монет"
+
+    else:
+
+        set {_q4} to compass named "<aqua><bold>4. НА СПАВН"
+
+        set lore of {_q4} to "<gray>Нажмите: запустится /spawn" and "<gray>Дождитесь 5 секунд без урона" and "" and "<gold>Награда: <yellow>20 монет"
+
+    set slot 12 of {_menu} to {_q4}
+
+    # =====================================================
+    # QUEST 5 — SKILLS
+    # Persistent ID 9
+    # =====================================================
+
+    if {quests.done::%uuid of {_p}%::9} is true:
+        set {_qskills} to lime dye named "<light green><bold>5. НАВЫКИ — ВЫПОЛНЕНО"
+        set lore of {_qskills} to "<gray>Познакомиться с Шахтёрством и Крафтом" and "" and "<light green>✓ Получено {@quests-skills-reward} монет"
+
+    else:
+        set {_mine-status} to "<red>✘ Получить опыт Шахтёрства"
+        if {quests.skills.mining::%uuid of {_p}%} is true:
+            set {_mine-status} to "<light green>✓ Получить опыт Шахтёрства"
+
+        set {_craft-status} to "<red>✘ Получить опыт Крафта"
+        if {quests.skills.crafting::%uuid of {_p}%} is true:
+            set {_craft-status} to "<light green>✓ Получить опыт Крафта"
+
+        set {_qskills} to experience bottle named "<aqua><bold>5. НАВЫКИ"
+        set lore of {_qskills} to "<gray>На POLITARIA есть прокачиваемые навыки." and "<gray>Нажмите, чтобы открыть /skills." and "" and "%{_mine-status}%" and "%{_craft-status}%" and "" and "<gray>Шахтёрство: добывайте натуральную руду." and "<gray>Крафт: создавайте инструменты или броню." and "" and "<gold>Награда: <yellow>{@quests-skills-reward} монет"
+
+    set slot 13 of {_menu} to {_qskills}
+
+
+    # Display quest 6: chat. ID 7 preserves existing player progress.
+
+    if {quests.done::%uuid of {_p}%::7} is true:
+
+        set {_qchat} to lime dye named "<light green><bold>6. НАСТРОИТЬ ЧАТ — ВЫПОЛНЕНО"
+
+        set lore of {_qchat} to "<gray>Открыть настройки чата /chat" and "" and "<light green>✓ Получено {@quests-chat-reward} монет"
+
+    else:
+
+        set {_qchat} to book named "<yellow><bold>6. НАСТРОИТЬ ЧАТ"
+
+        set lore of {_qchat} to "<gray>Введите /chat или нажмите это задание" and "<gray>Откроется выбор канала чата:" and "<gray>локальный, глобальный или чат страны" and "<gray>Для зачёта достаточно открыть меню" and "" and "<gold>Награда: <yellow>{@quests-chat-reward} монет"
+
+    set slot 14 of {_menu} to {_qchat}
+
+
+
+
+
+    # =====================================================
+
+    # КВЕСТ 7
+
+    # =====================================================
+
+    if {quests.done::%uuid of {_p}%::5} is true:
+
+        set {_q5} to lime dye named "<light green><bold>ВЫПОЛНЕНО"
+
+        set lore of {_q5} to "<gray>Познакомиться с другим игроком" and "" and "<light green>✓ Получено 50 монет"
+
+    else:
+
+        set {_q5} to player head named "<light purple><bold>7. ПОЖАТЬ РУКУ"
+
+        set lore of {_q5} to "<gray>1. Подойдите к игроку и смотрите на него" and "<gray>2. Нажмите Shift + F" and "<gray>3. Выберите «Пожать руку»" and "<gray>4. Второй игрок должен принять запрос" and "<yellow>Нажмите для подсказки в чат" and "" and "<gold>Награда: <yellow>50 монет"
+
+    set slot 15 of {_menu} to {_q5}
+
+    # КВЕСТ 8 — SIMPLE VOICE CHAT
+
+    if {quests.done::%uuid of {_p}%::6} is true:
+
+        set {_q6} to lime dye named "<light green><bold>8. SIMPLE VOICE CHAT — ВЫПОЛНЕНО"
+
+        set lore of {_q6} to "<gray>Ссылка на скачивание получена" and "<yellow>Нажмите, чтобы получить ссылку снова" and "<gray>Повторной награды не будет"
+
+    else:
+
+        set {_q6} to note block named "<aqua><bold>8. СКАЧАТЬ SIMPLE VOICE CHAT"
+
+        set lore of {_q6} to "<gray>1. Нажмите, чтобы получить ссылку в чат" and "<gray>2. Нажмите ссылку для скачивания мода" and "<gray>Зачёт за получение ссылки — без проверки установки" and "" and "<gold>Награда: <yellow>{@quests-voice-reward} монет"
+
+    set slot 16 of {_menu} to {_q6}
+
+    # КВЕСТ 9 — DISCORD (последний в списке)
+
+    if {quests.done::%uuid of {_p}%::8} is true:
+
+        set {_q8} to lime dye named "<light green><bold>9. DISCORD — ВЫПОЛНЕНО"
+
+        set lore of {_q8} to "<gray>Приглашение в Discord получено" and "<light green>✓ Получено {@quests-discord-reward} монет" and "<yellow>Нажмите, чтобы получить ссылку снова" and "<gray>Повторной награды не будет"
+
+    else:
+
+        set {_q8} to paper named "<aqua><bold>9. ВСТУПИТЬ В DISCORD"
+
+        set lore of {_q8} to "<gray>1. Нажмите, чтобы получить ссылку в чат" and "<gray>2. Откройте приглашение и вступите в Discord" and "<gray>Зачёт за получение ссылки, без проверки вступления" and "" and "<gold>Награда: <yellow>{@quests-discord-reward} монет"
+
+    set slot 17 of {_menu} to {_q8}
+
+
+
+
+
+    # =====================================================
+
+    # ИНФО
+
+    # =====================================================
+
+    set {_info} to book named "<yellow><bold>КВЕСТЫ"
+
+    set {_completed} to 0
+
+    loop integers between 1 and {@quests-count}:
+
+        if {quests.done::%uuid of {_p}%::%loop-value%} is true:
+
+            add 1 to {_completed}
+
+    set slot 4 of {_menu} to experience bottle named "<gold><bold>ПЕРВЫЕ ШАГИ: %{_completed}%/{@quests-count}" with lore "<gray>Начните с первого невыполненного задания" and "<gray>Наведите курсор, чтобы прочитать шаги" and "<gray>Нажмите на задание, чтобы начать"
+
+    set lore of {_info} to "<gray>Задания уже активны — брать их у NPC не нужно" and "<gray>Награды выдаются автоматически, один раз" and "<gray>Можно выполнять в любом порядке" and "" and "<yellow>Открыть снова: /quests, /квесты или кнопка в /c"
+
+    set slot 26 of {_menu} to barrier named "<red>Закрыть"
+
+    set slot 22 of {_menu} to {_info}
+
+
+
+    open {_menu} to {_p}
+
+
+
+# =========================================================
+
+# /QUESTS
+
+# =========================================================
+
+command /quests:
+
+    aliases: /quest, /квесты, /квест
+
+    executable by: players
+
+    trigger:
+
+        questsOpen(player)
+
+
+
+# =========================================================
+
+# АДМИН — ВЫПОЛНИТЬ КВЕСТ
+
+#
+
+# /questcomplete Nick 5
+
+# =========================================================
+
+command /questcomplete <player> <integer>:
+
+    permission: op
+
+    trigger:
+
+        set {_target} to arg-1
+
+        set {_id} to arg-2
+
+
+
+        if {_id} < 1:
+
+            send "<red>Номер квеста должен быть от 1 до {@quests-count}." to sender
+
+            stop
+
+        if {_id} > {@quests-count}:
+
+            send "<red>Номер квеста должен быть от 1 до {@quests-count}." to sender
+
+            stop
+
+
+
+        if {quests.done::%uuid of {_target}%::%{_id}%} is true:
+
+            send formatted "<yellow>Квест <white>#%{_id}% <yellow>уже выполнен игроком <white>%name of {_target}%<yellow>." to sender
+
+            stop
+
+
+
+        questComplete({_target}, {_id})
+
+        send formatted "<green>Квест <white>#%{_id}% <green>выполнен игроку <white>%name of {_target}%<green>." to sender
+
+
+
+# =========================================================
+
+# АДМИН — СБРОС КВЕСТА
+
+#
+
+# /questreset Nick 3
+
+# =========================================================
+
+command /questreset <player> <integer>:
+
+    permission: op
+
+    trigger:
+
+        set {_target} to arg-1
+
+        set {_id} to arg-2
+
+
+
+        if {_id} < 1:
+
+            send "<red>Номер квеста должен быть от 1 до {@quests-count}." to sender
+
+            stop
+
+        if {_id} > {@quests-count}:
+
+            send "<red>Номер квеста должен быть от 1 до {@quests-count}." to sender
+
+            stop
+
+
+
+        delete {quests.done::%uuid of {_target}%::%{_id}%}
+
+
+
+        # Если сбрасываем квест с дубом
+
+        if {_id} is 3:
+
+            delete {quests.oak::%uuid of {_target}%}
+
+        # Если сбрасываем квест навыков
+
+        if {_id} is 9:
+
+            delete {quests.skills.mining::%uuid of {_target}%}
+
+            delete {quests.skills.crafting::%uuid of {_target}%}
+
+
+
+        send formatted "<green>Квест <white>#%{_id}% <green>сброшен игроку <white>%name of {_target}%<green>." to sender
+
+        send formatted "<yellow>Ваш квест <white>#%{_id}% <yellow>был сброшен администратором." to {_target}
+
+
+
+# =========================================================
+
+# GUI PROTECTION
+
+# =========================================================
+
+on inventory click:
+
+    if name of player's current inventory is not "{@quests-title}":
+
+        stop
+
+    cancel event
+
+    if {auth.logged-in::%name of player%} is not true:
+
+        close player's inventory
+
+        stop
+
+    if event-slot is not set:
+
+        stop
+
+    if {ui.click-until::%uuid of player%} is in the future:
+
+        stop
+
+    set {ui.click-until::%uuid of player%} to 8 ticks from now
+
+    set {_slot} to raw index of event-slot
+
+    if {_slot} is 26:
+
+        close player's inventory
+
+        stop
+
+    if {_slot} is 9:
+        set {_quest} to 1
+
+    if {_slot} is 10:
+        set {_quest} to 2
+
+    if {_slot} is 11:
+        set {_quest} to 3
+
+    if {_slot} is 12:
+        set {_quest} to 4
+
+    if {_slot} is 13:
+        set {_quest} to 9
+
+    if {_slot} is 14:
+        set {_quest} to 7
+
+    if {_slot} is 15:
+        set {_quest} to 5
+
+    # Allow retrieving the URL even after completion; questComplete prevents duplicate rewards.
+
+    if {_slot} is 16:
+
+        close player's inventory
+
+        wait 1 tick
+
+        questVoiceLink(player)
+
+        stop
+
+    if {_slot} is 17:
+
+        close player's inventory
+
+        wait 1 tick
+
+        questDiscordLink(player)
+
+        stop
+
+    if {_quest} is not set:
+
+        stop
+
+    if {quests.done::%uuid of player%::%{_quest}%} is true:
+
+        send "<green>Это задание уже выполнено, награда получена." to player
+
+        stop
+
+    close player's inventory
+
+    wait 1 tick
+
+    if player is not online:
+
+        stop
+
+    if {auth.logged-in::%name of player%} is not true:
+
+        stop
+
+    if {_quest} is 1:
+
+        execute player command "c"
+
+    if {_quest} is 2:
+
+        execute player command "rtp"
+
+    if {_quest} is 3:
+
+        send formatted "<gold><bold>ДРОВОСЕК:</bold><reset> <white>Найдите дуб в мире и срубите 4 дубовых бревна. Не доски и не березу. На спавне рубить нельзя." to player
+
+        send formatted "<command:/rtp><tooltip:Случайная телепортация><yellow><bold>[ ВЫЙТИ В МИР /rtp ]" to player
+
+    if {_quest} is 4:
+
+        execute player command "spawn"
+
+    if {_quest} is 7:
+
+        execute player command "chat"
+
+    if {_quest} is 5:
+
+        send formatted "<light purple><bold>ЗНАКОМСТВО:</bold><reset> <white>Подойдите к другому игроку, смотрите на него и нажмите Shift + F. Выберите «Пожать руку» и дождитесь, пока он примет запрос." to player
+
+    if {_quest} is 9:
+
+        send formatted "<aqua><bold>НАВЫКИ:</bold><reset> <white>Шахтёрство растёт при добыче натуральной руды. Крафт растёт при создании инструментов и брони." to player
+
+        send formatted "<gray>На 4 уровне Шахтёрства открывается автоподбор. Уровень также повышает шанс дополнительного ресурса." to player
+
+        send formatted "<gray>У Крафта уровень повышает шанс улучшить созданный инструмент или броню до следующего материала." to player
+
+        execute player command "skills"
+
+on inventory drag:
+
+    if name of player's current inventory is "{@quests-title}":
+
+        cancel event
+
+
+
+# =========================================================
+
+# Завершение меню стран и телепортаций вызывается из countries.sk и rtp.sk.
+
+# =========================================================
+
+
+
+# =========================================================
+
+# КВЕСТ 5 / ID 9 — НАВЫКИ
+#
+# Квест не пытается ловить разницу XP до/после события.
+# Он просто ждёт, пока skills.sk обработает действие,
+# и затем проверяет, есть ли у игрока XP этого навыка.
+# =========================================================
+
+function questSkillsTryComplete(p: player):
+
+    if {quests.done::%uuid of {_p}%::9} is true:
+        stop
+
+    if {quests.skills.mining::%uuid of {_p}%} is not true:
+        stop
+
+    if {quests.skills.crafting::%uuid of {_p}%} is not true:
+        stop
+
+    questComplete({_p}, 9)
+
+
+# =========================================================
+# ПОЛУЧИТЬ MINING XP
+# Только за руду
+# =========================================================
+
+on break:
+
+    if {auth.logged-in::%name of player%} is not true:
+        stop
+
+    if {quests.done::%uuid of player%::9} is true:
+        stop
+
+    if {quests.skills.mining::%uuid of player%} is true:
+        stop
+
+
+    set {_kind} to type of event-block
+
+
+    # =====================================================
+    # ПРОВЕРКА: ЭТО РУДА?
+    # =====================================================
+
+    set {_is-ore} to false
+
+
+    if {_kind} is coal ore:
+        set {_is-ore} to true
+
+    else if {_kind} is deepslate coal ore:
+        set {_is-ore} to true
+
+    else if {_kind} is copper ore:
+        set {_is-ore} to true
+
+    else if {_kind} is deepslate copper ore:
+        set {_is-ore} to true
+
+    else if {_kind} is iron ore:
+        set {_is-ore} to true
+
+    else if {_kind} is deepslate iron ore:
+        set {_is-ore} to true
+
+    else if {_kind} is gold ore:
+        set {_is-ore} to true
+
+    else if {_kind} is deepslate gold ore:
+        set {_is-ore} to true
+
+    else if {_kind} is nether gold ore:
+        set {_is-ore} to true
+
+    else if {_kind} is redstone ore:
+        set {_is-ore} to true
+
+    else if {_kind} is deepslate redstone ore:
+        set {_is-ore} to true
+
+    else if {_kind} is lapis ore:
+        set {_is-ore} to true
+
+    else if {_kind} is deepslate lapis ore:
+        set {_is-ore} to true
+
+    else if {_kind} is diamond ore:
+        set {_is-ore} to true
+
+    else if {_kind} is deepslate diamond ore:
+        set {_is-ore} to true
+
+    else if {_kind} is emerald ore:
+        set {_is-ore} to true
+
+    else if {_kind} is deepslate emerald ore:
+        set {_is-ore} to true
+
+    else if {_kind} is nether quartz ore:
+        set {_is-ore} to true
+
+    else if {_kind} is ancient debris:
+        set {_is-ore} to true
+
+
+    if {_is-ore} is false:
+        stop
+
+
+    # =====================================================
+    # ЖДЁМ SKILLS.SK
+    # =====================================================
+
+    wait 3 ticks
+
+    if player is not online:
+        stop
+
+    set {_xp} to {skills.mining.xp::%uuid of player%}
+
+    if {_xp} is not set:
+        stop
+
+    if {_xp} <= 0:
+        stop
+
+
+    # =====================================================
+    # ЗАСЧИТЫВАЕМ
+    # =====================================================
+
+    set {quests.skills.mining::%uuid of player%} to true
+
+    send formatted "<aqua><bold>НАВЫКИ</bold> <dark gray>• <light green>✓ Получен опыт Шахтёрства" to player
+
+    play sound "entity.experience_orb.pickup" with volume 0.8 and pitch 1.3 at player
+
+    questSkillsTryComplete(player)
+
+
+
+# =========================================================
+# ПОЛУЧИТЬ CRAFTING XP
+# Только инструменты и броня
+# =========================================================
+
+on craft:
+
+    if {auth.logged-in::%name of player%} is not true:
+        stop
+
+    if {quests.done::%uuid of player%::9} is true:
+        stop
+
+    if {quests.skills.crafting::%uuid of player%} is true:
+        stop
+
+
+    set {_crafted} to event-item
+
+    if {_crafted} is not set:
+        stop
+
+    set {_kind} to type of {_crafted}
+
+
+    # =====================================================
+    # ПРОВЕРКА: ЭТО ИНСТРУМЕНТ ИЛИ БРОНЯ?
+    # =====================================================
+
+    set {_valid} to false
+
+
+    # WOODEN TOOLS
+
+    if {_kind} is wooden sword:
+        set {_valid} to true
+
+    else if {_kind} is wooden pickaxe:
+        set {_valid} to true
+
+    else if {_kind} is wooden axe:
+        set {_valid} to true
+
+    else if {_kind} is wooden shovel:
+        set {_valid} to true
+
+    else if {_kind} is wooden hoe:
+        set {_valid} to true
+
+
+    # STONE TOOLS
+
+    else if {_kind} is stone sword:
+        set {_valid} to true
+
+    else if {_kind} is stone pickaxe:
+        set {_valid} to true
+
+    else if {_kind} is stone axe:
+        set {_valid} to true
+
+    else if {_kind} is stone shovel:
+        set {_valid} to true
+
+    else if {_kind} is stone hoe:
+        set {_valid} to true
+
+
+    # IRON TOOLS
+
+    else if {_kind} is iron sword:
+        set {_valid} to true
+
+    else if {_kind} is iron pickaxe:
+        set {_valid} to true
+
+    else if {_kind} is iron axe:
+        set {_valid} to true
+
+    else if {_kind} is iron shovel:
+        set {_valid} to true
+
+    else if {_kind} is iron hoe:
+        set {_valid} to true
+
+
+    # DIAMOND TOOLS
+
+    else if {_kind} is diamond sword:
+        set {_valid} to true
+
+    else if {_kind} is diamond pickaxe:
+        set {_valid} to true
+
+    else if {_kind} is diamond axe:
+        set {_valid} to true
+
+    else if {_kind} is diamond shovel:
+        set {_valid} to true
+
+    else if {_kind} is diamond hoe:
+        set {_valid} to true
+
+
+    # LEATHER ARMOR
+
+    else if {_kind} is leather helmet:
+        set {_valid} to true
+
+    else if {_kind} is leather chestplate:
+        set {_valid} to true
+
+    else if {_kind} is leather leggings:
+        set {_valid} to true
+
+    else if {_kind} is leather boots:
+        set {_valid} to true
+
+
+    # IRON ARMOR
+
+    else if {_kind} is iron helmet:
+        set {_valid} to true
+
+    else if {_kind} is iron chestplate:
+        set {_valid} to true
+
+    else if {_kind} is iron leggings:
+        set {_valid} to true
+
+    else if {_kind} is iron boots:
+        set {_valid} to true
+
+
+    # DIAMOND ARMOR
+
+    else if {_kind} is diamond helmet:
+        set {_valid} to true
+
+    else if {_kind} is diamond chestplate:
+        set {_valid} to true
+
+    else if {_kind} is diamond leggings:
+        set {_valid} to true
+
+    else if {_kind} is diamond boots:
+        set {_valid} to true
+
+
+    if {_valid} is false:
+        stop
+
+
+    # =====================================================
+    # ЖДЁМ SKILLS.SK
+    # =====================================================
+
+    wait 6 ticks
+
+    if player is not online:
+        stop
+
+    set {_xp} to {skills.crafting.xp::%uuid of player%}
+
+    if {_xp} is not set:
+        stop
+
+    if {_xp} <= 0:
+        stop
+
+
+    # =====================================================
+    # ЗАСЧИТЫВАЕМ
+    # =====================================================
+
+    set {quests.skills.crafting::%uuid of player%} to true
+
+    send formatted "<yellow><bold>НАВЫКИ</bold> <dark gray>• <light green>✓ Получен опыт Крафта" to player
+
+    play sound "entity.experience_orb.pickup" with volume 0.8 and pitch 1.3 at player
+
+    questSkillsTryComplete(player)
+
+
+# =========================================================
+
+# КВЕСТ 3 — ДОБЫТЬ 4 ДУБОВЫХ БРЕВНА
+
+# =========================================================
+
+on break:
+
+    if event is cancelled:
+
+        stop
+
+    if {auth.logged-in::%name of player%} is not true:
+
+        stop
+
+    if {quests.done::%uuid of player%::3} is true:
+
+        stop
+
+
+
+    if type of event-block is not oak log:
+
+        stop
+
+
+
+    add 1 to {quests.oak::%uuid of player%}
+
+
+
+    set {_amount} to {quests.oak::%uuid of player%}
+
+
+
+    if {_amount} > 4:
+
+        set {_amount} to 4
+
+        set {quests.oak::%uuid of player%} to 4
+
+
+
+    send action bar "<gold>Дуб: <yellow>%{_amount}%<gray>/4" to player
+
+
+
+    if {_amount} >= 4:
+
+        questComplete(player, 3)
+
+# One welcome per login; one automatic introduction per player, never over another GUI.
+
+on join:
+
+    delete {quests.seen-this-session::%uuid of player%}
+
+    wait 1 second
+
+    loop 120 times:
+
+        if player is not online:
+
+            stop
+
+        if {auth.logged-in::%name of player%} is true:
+
+            stop loop
+
+        wait 1 second
+
+    if {auth.logged-in::%name of player%} is not true:
+
+        stop
+
+    wait 2 seconds
+
+    if player is not online:
+
+        stop
+
+    if {auth.logged-in::%name of player%} is not true:
+
+        stop
+
+    if questNext(player) is 0:
+
+        stop
+
+    send formatted "<gold><bold>ПЕРВЫЕ ШАГИ НА POLITARIA</bold><reset> <gray>{@quests-count} заданий помогут освоиться. Награды выдаются автоматически." to player
+
+    questShowNext(player)
+
+    if {quests.tutorial-shown::%uuid of player%} is not true:
+
+        if {quests.done::%uuid of player%::1} is not true:
+
+            # Personal crafting: player holder and 5 slots; do not replace another GUI.
+
+            if holder of player's current inventory is player:
+
+                if amount of slots of player's current inventory is 5:
+
+                    questsOpen(player)
+
+    # Only one reminder, and only if the player has not opened the quest menu.
+
+    wait 90 seconds
+
+    if player is not online:
+
+        stop
+
+    if {auth.logged-in::%name of player%} is not true:
+
+        stop
+
+    if {quests.seen-this-session::%uuid of player%} is true:
+
+        stop
+
+    if questNext(player) is not 0:
+
+        questShowNext(player)
+
+on quit:
+
+    delete {quests.seen-this-session::%uuid of player%}

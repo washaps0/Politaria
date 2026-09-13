@@ -1,0 +1,533 @@
+options:
+	menu-title: <dark gray>Взаимодействие
+	interaction-distance: 5
+	request-timeout: 30 seconds
+
+
+# =========================================================
+# СТРАНА
+# =========================================================
+
+function socialCountry(p: player) :: text:
+	if {country::%uuid of {_p}%} is set:
+		return {country::%uuid of {_p}%}
+	return "Без страны"
+
+
+# =========================================================
+# ЭФФЕКТ РУКОПОЖАТИЯ
+# =========================================================
+
+function socialHandshakeEffect(first: player, second: player):
+	# Звуки
+	play sound "entity.player.levelup" with volume 1.5 and pitch 1.2 at {_first}
+	play sound "entity.player.levelup" with volume 1.5 and pitch 1.2 at {_second}
+
+	play sound "block.amethyst_block.chime" with volume 1 and pitch 1.5 at {_first}
+	play sound "block.amethyst_block.chime" with volume 1 and pitch 1.5 at {_second}
+
+	# Первая волна
+	play 30 happy villager particles at location of {_first}
+	play 30 happy villager particles at location of {_second}
+
+	play 20 heart particles at location of {_first}
+	play 20 heart particles at location of {_second}
+
+	play 25 end rod particles at location of {_first}
+	play 25 end rod particles at location of {_second}
+
+	wait 3 ticks
+
+	# Вторая волна
+	play 35 happy villager particles at location of {_first}
+	play 35 happy villager particles at location of {_second}
+
+	play 15 heart particles at location of {_first}
+	play 15 heart particles at location of {_second}
+
+	wait 4 ticks
+
+	# Финальный звук
+	play sound "entity.experience_orb.pickup" with volume 1.5 and pitch 1.5 at {_first}
+	play sound "entity.experience_orb.pickup" with volume 1.5 and pitch 1.5 at {_second}
+
+
+# =========================================================
+# ЭФФЕКТ ЗАБЫВАНИЯ
+# =========================================================
+
+function socialForgetEffect(viewer: player, target: player):
+	# Звук
+	play sound "block.glass.break" with volume 1.5 and pitch 0.7 at {_viewer}
+	play sound "block.note_block.bass" with volume 1 and pitch 0.6 at {_viewer}
+
+	# Дым и облако
+	play 30 smoke particles at location of {_viewer}
+	play 20 cloud particles at location of {_viewer}
+
+	wait 3 ticks
+
+	# Вторая волна
+	play 25 smoke particles at location of {_viewer}
+	play 20 cloud particles at location of {_viewer}
+
+	wait 3 ticks
+
+	# Финальный звук
+	play sound "entity.item.break" with volume 1 and pitch 0.8 at {_viewer}
+
+
+# =========================================================
+# ЭФФЕКТ ПЕРЕДАЧИ ДЕНЕГ
+# =========================================================
+
+function socialMoneyEffect(sender: player, receiver: player):
+	# Отправитель
+	play sound "entity.experience_orb.pickup" with volume 1.5 and pitch 1.4 at {_sender}
+	play sound "block.amethyst_block.chime" with volume 1.2 and pitch 1.5 at {_sender}
+
+	play 30 end rod particles at location of {_sender}
+	play 20 happy villager particles at location of {_sender}
+
+	wait 3 ticks
+
+	# Получатель
+	play sound "entity.experience_orb.pickup" with volume 1.5 and pitch 1.8 at {_receiver}
+	play sound "block.amethyst_block.chime" with volume 1.5 and pitch 2 at {_receiver}
+
+	play 40 end rod particles at location of {_receiver}
+	play 25 happy villager particles at location of {_receiver}
+
+	wait 3 ticks
+
+	# Финальная волна
+	play 30 end rod particles at location of {_receiver}
+	play 20 happy villager particles at location of {_receiver}
+
+	play sound "entity.player.levelup" with volume 1 and pitch 1.5 at {_receiver}
+
+
+# =========================================================
+# ЗАВЕРШЕНИЕ РУКОПОЖАТИЯ
+# =========================================================
+
+function socialCompleteHandshake(first: player, second: player):
+
+    set {social.known::%uuid of {_first}%::%uuid of {_second}%} to true
+    set {social.known::%uuid of {_second}%::%uuid of {_first}%} to true
+
+    execute console command "identity know %uuid of {_first}% %uuid of {_second}%"
+    execute console command "identity know %uuid of {_second}% %uuid of {_first}%"
+
+    # =====================================================
+    # QUEST — HANDSHAKE
+    # =====================================================
+
+    execute console command "questcomplete %name of {_first}% 5"
+    execute console command "questcomplete %name of {_second}% 5"
+
+    # Эффект
+    socialHandshakeEffect({_first}, {_second})
+
+    # Первому игроку
+    send "" to {_first}
+    send formatted "<light green><bold>РУКОПОЖАТИЕ</bold> <dark gray>• <white>Вы познакомились!" to {_first}
+    send formatted "<gray>Имя: <white>%name of {_second}%" to {_first}
+    send formatted "<gray>Страна: <white>%socialCountry({_second})%" to {_first}
+    send "" to {_first}
+
+    # Второму игроку
+    send "" to {_second}
+    send formatted "<light green><bold>РУКОПОЖАТИЕ</bold> <dark gray>• <white>Вы познакомились!" to {_second}
+    send formatted "<gray>Имя: <white>%name of {_first}%" to {_second}
+    send formatted "<gray>Страна: <white>%socialCountry({_first})%" to {_second}
+    send "" to {_second}
+# =========================================================
+# ОТКРЫТИЕ МЕНЮ
+# =========================================================
+
+function socialOpenMenu(viewer: player, target: player):
+	set {_menu} to chest inventory with 5 rows named "{@menu-title}"
+
+	loop integers between 0 and 44:
+		set slot loop-value of {_menu} to gray stained glass pane named " "
+
+	set {_recognized} to false
+
+	if {social.known::%uuid of {_viewer}%::%uuid of {_target}%} is true:
+		set {_recognized} to true
+
+	set {_viewer-country} to countryId({_viewer})
+	set {_target-country} to countryId({_target})
+
+	if {_viewer-country} is not "":
+		if {_viewer-country} is {_target-country}:
+			set {_recognized} to true
+
+
+	# =====================================================
+	# ПРОФИЛЬ
+	# =====================================================
+
+	if {_recognized} is true:
+		set {_profile} to head of {_target}
+		set name of {_profile} to "<light blue><bold>%name of {_target}%"
+		set lore of {_profile} to "<gray>Страна: <white>%socialCountry({_target})%"
+		set slot 13 of {_menu} to {_profile}
+	else:
+		set {_profile} to gray dye named "<gray><bold>НЕИЗВЕСТНО"
+		set lore of {_profile} to "<dark gray>Имя и страна пока неизвестны" and "" and "<gray>Пожмите руку, чтобы познакомиться"
+		set slot 13 of {_menu} to {_profile}
+
+
+	# =====================================================
+	# РУКОПОЖАТИЕ / ЗАБЫТЬ
+	# =====================================================
+
+	if {social.known::%uuid of {_viewer}%::%uuid of {_target}%} is true:
+		set slot 20 of {_menu} to red dye named "<red><bold>ЗАБЫТЬ ИГРОКА" with lore "<gray>Удалить личное знакомство" and "<dark gray>Сограждане всё равно видят имена друг друга"
+	else:
+		set slot 20 of {_menu} to lime dye named "<light green><bold>ПОЖАТЬ РУКУ" with lore "<gray>Отправить запрос на знакомство" and "<dark gray>Игрок должен подтвердить рукопожатие"
+
+
+	# =====================================================
+	# ПЕРЕДАЧА ДЕНЕГ
+	# =====================================================
+
+	if {_recognized} is true:
+		set slot 22 of {_menu} to gold ingot named "<gold><bold>ПЕРЕДАТЬ ДЕНЬГИ" with lore "<gray>Указать сумму в чате" and "<gray>Ваш баланс: <white>%economyBalance({_viewer})% монет"
+
+
+	# =====================================================
+	# ПРИГЛАШЕНИЕ В СТРАНУ
+	# =====================================================
+
+	if {_viewer-country} is not "":
+		if {_target-country} is "":
+			if countryHasPermission({_viewer}, "INVITE") is true:
+				set slot 24 of {_menu} to writable book named "<yellow><bold>ПРИГЛАСИТЬ В СТРАНУ" with lore "<gray>Страна: %countryColor({_viewer-country})%%countryName({_viewer-country})%" and "<gray>Игрок должен принять приглашение"
+
+
+	# =====================================================
+	# ВЫДАЧА РОЛИ
+	# =====================================================
+
+		if {_viewer-country} is {_target-country}:
+			if countryHasPermission({_viewer}, "ASSIGN_ROLES") is true:
+				if {country.owner::%{_viewer-country}%} is not "%uuid of {_target}%":
+					set slot 31 of {_menu} to name tag named "<light purple><bold>ВЫДАТЬ РОЛЬ" with lore "<gray>Изменить роль согражданина"
+
+
+	set {social.menu-target::%uuid of {_viewer}%} to uuid of {_target}
+	set {social.menu-open::%uuid of {_viewer}%} to true
+
+	open {_menu} to {_viewer}
+
+
+# =========================================================
+# ВОССТАНОВЛЕНИЕ ПОСЛЕ РЕСТАРТА
+# =========================================================
+
+on join:
+	wait 10 ticks
+
+	loop all players:
+		if loop-player is not player:
+
+			if {social.known::%uuid of player%::%uuid of loop-player%} is true:
+				execute console command "identity know %uuid of player% %uuid of loop-player%"
+
+			if {social.known::%uuid of loop-player%::%uuid of player%} is true:
+				execute console command "identity know %uuid of loop-player% %uuid of player%"
+
+
+# =========================================================
+# SHIFT + F
+# =========================================================
+
+on swap hand items:
+	if {auth.logged-in::%name of player%} is not true:
+		stop
+
+	if player is not sneaking:
+		stop
+
+	cancel event
+
+	set {_target} to targeted player of player
+
+	if {_target} is not set:
+		send action bar "<gray>Посмотрите на игрока и нажмите <white>Shift + F" to player
+		stop
+
+	if {_target} is player:
+		stop
+
+	if distance between player and {_target} is greater than {@interaction-distance}:
+		send action bar "<red>Игрок находится слишком далеко" to player
+		stop
+
+	if {auth.logged-in::%name of {_target}%} is not true:
+		send action bar "<red>Этот игрок ещё не авторизовался" to player
+		stop
+
+	socialOpenMenu(player, {_target})
+
+
+# =========================================================
+# КЛИК ПО МЕНЮ
+# =========================================================
+
+on inventory click:
+	if {social.menu-open::%uuid of player%} is not true:
+		stop
+
+	cancel event
+
+	if {ui.click-until::%uuid of player%} is in the future:
+		stop
+
+	set {ui.click-until::%uuid of player%} to 8 ticks from now
+
+	if event-slot is not set:
+		stop
+
+	set {_slot} to raw index of event-slot
+
+	set {_target-uuid} to {social.menu-target::%uuid of player%}
+	set {_target} to player from {_target-uuid}
+
+	if {_target} is not set:
+		close player's inventory
+		send "<red>Игрок вышел с сервера." to player
+		stop
+
+	if distance between player and {_target} is greater than {@interaction-distance}:
+		close player's inventory
+		send "<red>Игрок отошёл слишком далеко." to player
+		stop
+
+	set {_viewer-country} to countryId(player)
+	set {_target-country} to countryId({_target})
+	set {_recognized} to false
+
+	if {social.known::%uuid of player%::%uuid of {_target}%} is true:
+		set {_recognized} to true
+
+	if {_viewer-country} is not "":
+		if {_viewer-country} is {_target-country}:
+			set {_recognized} to true
+
+
+	# =====================================================
+	# ПЕРЕДАЧА ДЕНЕГ
+	# =====================================================
+
+	if {_slot} is 22:
+		if {_recognized} is not true:
+			send "<red>Сначала познакомьтесь с игроком." to player
+			stop
+
+		# Эффект перед началом передачи
+		socialMoneyEffect(player, {_target})
+
+		economyStartTransfer(player, {_target})
+		stop
+
+
+	# =====================================================
+	# ПРИГЛАШЕНИЕ В СТРАНУ
+	# =====================================================
+
+	if {_slot} is 24:
+		if {_viewer-country} is "":
+			send "<red>Приглашение в страну сейчас недоступно." to player
+			stop
+
+		if {_target-country} is not "":
+			send "<red>Приглашение в страну сейчас недоступно." to player
+			stop
+
+		if countryHasPermission(player, "INVITE") is not true:
+			send "<red>У вашей роли нет права приглашать игроков." to player
+			stop
+
+		set {country.invite::%uuid of {_target}%} to {_viewer-country}
+		set {country.invite-until::%uuid of {_target}%} to 2 minutes from now
+
+		close player's inventory
+
+		send formatted "<green>Приглашение в страну отправлено игроку <white>%name of {_target}%<green>." to player
+
+		send "" to {_target}
+		send formatted "<yellow><bold>ПРИГЛАШЕНИЕ В СТРАНУ</bold> <dark gray>• %countryColor({_viewer-country})%%countryName({_viewer-country})%" to {_target}
+		send formatted "<command:/country><tooltip:Открыть меню страны><light green><bold>[  ОТКРЫТЬ МЕНЮ  ]" to {_target}
+		send "" to {_target}
+
+		stop
+
+
+	# =====================================================
+	# ВЫДАЧА РОЛИ
+	# =====================================================
+
+	if {_slot} is 31:
+		if {_viewer-country} is "":
+			send "<red>Роли можно выдавать только согражданам." to player
+			stop
+
+		if {_viewer-country} is not {_target-country}:
+			send "<red>Роли можно выдавать только согражданам." to player
+			stop
+
+		if countryHasPermission(player, "ASSIGN_ROLES") is not true:
+			send "<red>У вашей роли нет права выдавать роли." to player
+			stop
+
+		if {country.owner::%{_viewer-country}%} is "%uuid of {_target}%":
+			send "<red>Роль правителя нельзя изменить." to player
+			stop
+
+		set {country.selected-member::%uuid of player%} to "%uuid of {_target}%"
+		countryOpenRoleAssignment(player)
+
+		stop
+
+
+	# =====================================================
+	# ЗАБЫТЬ / ПОЖАТЬ РУКУ
+	# =====================================================
+
+	if {_slot} is not 20:
+		stop
+
+
+	# =====================================================
+	# ЗАБЫТЬ ИГРОКА
+	# =====================================================
+
+	if {social.known::%uuid of player%::%uuid of {_target}%} is true:
+
+		delete {social.known::%uuid of player%::%uuid of {_target}%}
+
+		execute console command "identity forget %uuid of player% %uuid of {_target}%"
+
+		# Эффект забывания
+		socialForgetEffect(player, {_target})
+
+		close player's inventory
+
+		if {_viewer-country} is not "":
+			if {_viewer-country} is {_target-country}:
+				send formatted "<gray>Личное знакомство удалено, но имя остаётся видимым, пока вы состоите в одной стране." to player
+				stop
+
+		send formatted "<gray>Вы забыли этого игрока. Теперь он снова отображается как <white>Неизвестно<gray>." to player
+		stop
+
+
+	# =====================================================
+	# НОВЫЙ ЗАПРОС
+	# =====================================================
+
+	if {social.request-from::%uuid of {_target}%} is set:
+		if {social.request-until::%uuid of {_target}%} is in the future:
+			close player's inventory
+			send "<yellow>Этот игрок уже рассматривает другой запрос на знакомство." to player
+			stop
+
+	set {social.request-from::%uuid of {_target}%} to uuid of player
+	set {social.request-until::%uuid of {_target}%} to {@request-timeout} from now
+
+	close player's inventory
+
+	send formatted "<gray>Запрос на знакомство отправлен. Ожидайте ответа <white>30 секунд<gray>." to player
+
+	send "" to {_target}
+	send formatted "<yellow><bold>ЗАПРОС НА ЗНАКОМСТВО</bold>" to {_target}
+	send formatted "<gray>Неизвестный игрок хочет пожать вам руку." to {_target}
+	send formatted "<command:/social-answer accept><tooltip:Принять запрос на знакомство><light green><bold>[  ПРИНЯТЬ  ]" to {_target}
+	send formatted "<command:/social-answer decline><tooltip:Отклонить запрос на знакомство><red><bold>[  ОТКЛОНИТЬ  ]" to {_target}
+	send "" to {_target}
+
+
+# =========================================================
+# ОТВЕТ НА ЗАПРОС
+# =========================================================
+
+command /social-answer <text>:
+	executable by: players
+
+	trigger:
+		if {auth.logged-in::%name of player%} is not true:
+			stop
+
+		if {social.request-from::%uuid of player%} is not set:
+			send "<gray>У вас нет активных запросов на знакомство." to player
+			stop
+
+		if {social.request-until::%uuid of player%} is not in the future:
+			delete {social.request-from::%uuid of player%}
+			delete {social.request-until::%uuid of player%}
+
+			send "<red>Время ожидания запроса истекло." to player
+			stop
+
+		set {_requester-uuid} to {social.request-from::%uuid of player%}
+		set {_requester} to player from {_requester-uuid}
+
+		delete {social.request-from::%uuid of player%}
+		delete {social.request-until::%uuid of player%}
+
+		if {_requester} is not set:
+			send "<red>Игрок, отправивший запрос, вышел с сервера." to player
+			stop
+
+		if distance between player and {_requester} is greater than {@interaction-distance}:
+			send "<red>Вы отошли слишком далеко друг от друга." to player
+			send "<red>Запрос отменён: игрок отошёл слишком далеко." to {_requester}
+			stop
+
+		if text-argument is "accept":
+			socialCompleteHandshake(player, {_requester})
+			stop
+
+		if text-argument is "decline":
+			send "<gray>Вы отклонили запрос на знакомство." to player
+			send "<red>Игрок отклонил ваш запрос на знакомство." to {_requester}
+			stop
+
+		send "<gray>Этот ответ неизвестен или запрос уже недействителен." to player
+
+
+# =========================================================
+# DRAG
+# =========================================================
+
+on inventory drag:
+	if {social.menu-open::%uuid of player%} is true:
+		cancel event
+
+
+# =========================================================
+# CLOSE
+# =========================================================
+
+on inventory close:
+	if {social.menu-open::%uuid of player%} is true:
+		delete {social.menu-open::%uuid of player%}
+		delete {social.menu-target::%uuid of player%}
+
+
+# =========================================================
+# QUIT
+# =========================================================
+
+on quit:
+	delete {social.menu-open::%uuid of player%}
+	delete {social.menu-target::%uuid of player%}
+
+	delete {social.request-from::%uuid of player%}
+	delete {social.request-until::%uuid of player%}
+
+	delete {ui.click-until::%uuid of player%}

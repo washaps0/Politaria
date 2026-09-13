@@ -1,0 +1,9 @@
+global:
+  commands:
+    - spawn
+groups:
+  examplegroup:
+    priority: 1
+    commands:
+      - tell
+      - msg

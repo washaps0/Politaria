@@ -1,0 +1,1883 @@
+package ru.politaria.identity;
+
+import ch.njol.skript.variables.Variables;
+import ch.njol.util.Pair;
+import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.ProtocolManager;
+import com.comphenix.protocol.events.PacketContainer;
+import com.comphenix.protocol.wrappers.EnumWrappers;
+import com.comphenix.protocol.wrappers.WrappedChatComponent;
+import com.comphenix.protocol.wrappers.WrappedTeamParameters;
+import me.neznamy.tab.api.TabAPI;
+import me.neznamy.tab.api.event.EventHandler;
+import me.neznamy.tab.api.event.plugin.TabLoadEvent;
+import me.neznamy.tab.api.placeholder.PlaceholderManager;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Color;
+import org.bukkit.GameMode;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.command.TabCompleter;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Display;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.TextDisplay;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerGameModeChangeEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.permissions.PermissionAttachment;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.Transformation;
+import org.joml.AxisAngle4f;
+import org.joml.Vector3f;
+
+import java.io.File;
+import java.io.IOException;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+
+public final class PolitariaIdentityPlugin extends JavaPlugin implements Listener, TabCompleter {
+
+    private static final String HIDDEN_TEAM = "pi_hidden";
+    private static final float LABEL_PASSENGER_OFFSET = 0.95f;
+
+    private static final ZoneId MOSCOW_TIME = ZoneId.of("Europe/Moscow");
+    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+
+    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
+
+    private static final Set<String> ALLOWED_COLORS = Set.of(
+            "<white>",
+            "<gray>",
+            "<dark_gray>",
+            "<black>",
+            "<red>",
+            "<gold>",
+            "<yellow>",
+            "<green>",
+            "<dark_green>",
+            "<dark_aqua>",
+            "<aqua>",
+            "<blue>",
+            "<dark_purple>",
+            "<light_purple>",
+            "<#FF7EB6>"
+    );
+
+    private final Map<UUID, Labels> labelsByPlayer = new HashMap<>();
+    private final Map<UUID, String> renderedLabelMarkup = new HashMap<>();
+
+    private final Set<String> knownRelations = new HashSet<>();
+    private final Map<UUID, String> playerCountries = new HashMap<>();
+
+    private final Map<UUID, LinkedHashSet<String>> playerTags = new HashMap<>();
+    private final LinkedHashMap<String, TagDefinition> tagDefinitions = new LinkedHashMap<>();
+    private final Map<UUID, PermissionAttachment> tagPermissionAttachments = new HashMap<>();
+
+    private ProtocolManager protocolManager;
+
+    private File relationsFile;
+    private YamlConfiguration relationsConfig;
+
+    private File tagsFile;
+    private YamlConfiguration tagsConfig;
+
+    private BukkitTask labelTask;
+    private BukkitTask tabPlaceholderTask;
+
+    private EventHandler<TabLoadEvent> tabLoadHandler;
+
+    private TeleportManager teleportManager;
+    private AuthTrustManager authTrustManager;
+
+    @Override
+    public void onEnable() {
+        protocolManager = ProtocolLibrary.getProtocolManager();
+
+        loadRelations();
+        loadTags();
+
+        Bukkit.getPluginManager().registerEvents(this, this);
+
+        authTrustManager = new AuthTrustManager(this);
+        Bukkit.getPluginManager().registerEvents(authTrustManager, this);
+
+        teleportManager = new TeleportManager(this);
+        Bukkit.getPluginManager().registerEvents(teleportManager, this);
+
+        for (String commandName : Set.of("tpa", "tpaccept", "tpdeny", "capital")) {
+            if (getCommand(commandName) != null) {
+                getCommand(commandName).setExecutor(teleportManager);
+                getCommand(commandName).setTabCompleter(teleportManager);
+            }
+        }
+
+        if (getCommand("identity") != null) {
+            getCommand("identity").setExecutor(this);
+        }
+
+        if (getCommand("tags") != null) {
+            getCommand("tags").setExecutor(this);
+            getCommand("tags").setTabCompleter(this);
+        }
+
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            createLabels(player);
+            refreshTagPermissions(player);
+        }
+
+        refreshEverything();
+
+        if (Bukkit.getPluginManager().getPlugin("TAB") != null) {
+            tabPlaceholderTask = Bukkit.getScheduler().runTaskLater(
+                    this,
+                    this::tryRegisterTabPlaceholders,
+                    1L
+            );
+
+            tabLoadHandler = event ->
+                    Bukkit.getScheduler().runTaskLater(
+                            this,
+                            this::tryRegisterTabPlaceholders,
+                            1L
+                    );
+
+            TabAPI.getInstance().getEventBus().register(TabLoadEvent.class, tabLoadHandler);
+        }
+
+        labelTask = Bukkit.getScheduler().runTaskTimer(
+                this,
+                this::maintainLabels,
+                20L,
+                20L
+        );
+
+        getLogger().info("Персональные имена игроков и теги включены.");
+    }
+
+    @Override
+    public void onDisable() {
+        if (labelTask != null) {
+            labelTask.cancel();
+        }
+
+        if (tabPlaceholderTask != null) {
+            tabPlaceholderTask.cancel();
+        }
+
+        if (tabLoadHandler != null && Bukkit.getPluginManager().getPlugin("TAB") != null) {
+            try {
+                TabAPI.getInstance().getEventBus().unregister(tabLoadHandler);
+            } catch (Exception ignored) {
+            }
+        }
+
+        if (teleportManager != null) {
+            teleportManager.shutdown();
+        }
+
+        if (authTrustManager != null) {
+            authTrustManager.shutdown();
+        }
+
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            sendRemoveHiddenTeam(player);
+            removeTagPermissionAttachment(player);
+        }
+
+        for (Labels labels : labelsByPlayer.values()) {
+            labels.remove();
+        }
+
+        labelsByPlayer.clear();
+        renderedLabelMarkup.clear();
+
+        saveRelations();
+        saveTags();
+    }
+
+    // =========================================================
+    // TAB
+    // =========================================================
+
+    private void registerTabPlaceholders() {
+        if (Bukkit.getPluginManager().getPlugin("TAB") == null
+                || Bukkit.getPluginManager().getPlugin("Skript") == null) {
+            return;
+        }
+
+        PlaceholderManager placeholders = TabAPI.getInstance().getPlaceholderManager();
+
+        unregisterTabPlaceholder(placeholders, "%politaria_balance%");
+        unregisterTabPlaceholder(placeholders, "%politaria_country%");
+        unregisterTabPlaceholder(placeholders, "%politaria_role%");
+        unregisterTabPlaceholder(placeholders, "%politaria_members%");
+        unregisterTabPlaceholder(placeholders, "%politaria_treasury%");
+        unregisterTabPlaceholder(placeholders, "%politaria_daily_tax%");
+        unregisterTabPlaceholder(placeholders, "%politaria_tags%");
+        unregisterTabPlaceholder(placeholders, "%politaria_maxplayers%");
+        unregisterTabPlaceholder(placeholders, "%politaria_time%");
+        unregisterTabPlaceholder(placeholders, "%politaria_date%");
+
+        placeholders.registerPlayerPlaceholder(
+                "%politaria_balance%",
+                1000,
+                tabPlayer -> formatNumber(
+                        variable("economy.balance::" + tabPlayer.getUniqueId()),
+                        "0"
+                )
+        );
+
+        placeholders.registerPlayerPlaceholder(
+                "%politaria_country%",
+                1000,
+                tabPlayer -> countryName(tabPlayer.getUniqueId())
+        );
+
+        placeholders.registerPlayerPlaceholder(
+                "%politaria_role%",
+                1000,
+                tabPlayer -> countryRole(tabPlayer.getUniqueId())
+        );
+
+        placeholders.registerPlayerPlaceholder(
+                "%politaria_members%",
+                1000,
+                tabPlayer -> countryMembers(tabPlayer.getUniqueId())
+        );
+
+        placeholders.registerPlayerPlaceholder(
+                "%politaria_treasury%",
+                1000,
+                tabPlayer -> countryTreasury(tabPlayer.getUniqueId())
+        );
+
+        placeholders.registerPlayerPlaceholder(
+                "%politaria_daily_tax%",
+                1000,
+                tabPlayer -> countryDailyTax(tabPlayer.getUniqueId())
+        );
+
+        placeholders.registerPlayerPlaceholder(
+                "%politaria_tags%",
+                1000,
+                tabPlayer -> tabTags(tabPlayer.getUniqueId())
+        );
+
+        placeholders.registerServerPlaceholder(
+                "%politaria_maxplayers%",
+                5000,
+                () -> Integer.toString(Bukkit.getMaxPlayers())
+        );
+
+        placeholders.registerServerPlaceholder(
+                "%politaria_time%",
+                1000,
+                () -> TIME_FORMAT.format(ZonedDateTime.now(MOSCOW_TIME))
+        );
+
+        placeholders.registerServerPlaceholder(
+                "%politaria_date%",
+                60000,
+                () -> DATE_FORMAT.format(ZonedDateTime.now(MOSCOW_TIME))
+        );
+
+        getLogger().info("Плейсхолдеры TAB включены.");
+    }
+
+    private void tryRegisterTabPlaceholders() {
+        try {
+            registerTabPlaceholders();
+        } catch (Exception exception) {
+            getLogger().warning("TAB placeholders will be retried: " + exception.getMessage());
+        }
+    }
+
+    private void unregisterTabPlaceholder(PlaceholderManager manager, String identifier) {
+        if (manager.getPlaceholder(identifier) != null) {
+            manager.unregisterPlaceholder(identifier);
+        }
+    }
+
+    // =========================================================
+    // SKRIPT VARIABLES / COUNTRY
+    // =========================================================
+
+    private Object variable(String name) {
+        return Variables.getVariable(name, null, false);
+    }
+
+    private String countryId(UUID playerId) {
+        Object value = variable("country.player::" + playerId);
+        return value == null ? null : value.toString();
+    }
+
+    private String countryName(UUID playerId) {
+        String countryId = countryId(playerId);
+
+        if (countryId == null) {
+            return "Нет страны";
+        }
+
+        Object name = variable("country.name::" + countryId);
+        return name == null ? "Нет страны" : name.toString();
+    }
+
+    private String countryRole(UUID playerId) {
+        String countryId = countryId(playerId);
+
+        if (countryId == null) {
+            return "Нет роли";
+        }
+
+        Object owner = variable("country.owner::" + countryId);
+
+        if (owner != null && owner.toString().equals(playerId.toString())) {
+            return "Правитель";
+        }
+
+        Object roleValue =
+                variable("country.role-of::" + countryId + "::" + playerId);
+
+        String roleId =
+                roleValue == null ? "citizen" : roleValue.toString();
+
+        Object roleName =
+                variable("country.role-name::" + countryId + "::" + roleId);
+
+        return roleName == null ? "Гражданин" : roleName.toString();
+    }
+
+    private String countryMembers(UUID playerId) {
+        String countryId = countryId(playerId);
+
+        if (countryId == null) {
+            return "0";
+        }
+
+        int count = 0;
+
+        Iterator<Pair<String, Object>> iterator =
+                Variables.getVariableIterator(
+                        "country.member::" + countryId + "::*",
+                        false,
+                        null
+                );
+
+        while (iterator.hasNext()) {
+            iterator.next();
+            count++;
+        }
+
+        return Integer.toString(count);
+    }
+
+    private String countryTreasury(UUID playerId) {
+        String countryId = countryId(playerId);
+
+        if (countryId == null) {
+            return "0";
+        }
+
+        return formatNumber(
+                variable("country.treasury::" + countryId),
+                "0"
+        );
+    }
+
+    private String countryDailyTax(UUID playerId) {
+        String countryId = countryId(playerId);
+
+        if (countryId == null) {
+            return "0";
+        }
+
+        int claims = 0;
+
+        Iterator<Pair<String, Object>> iterator =
+                Variables.getVariableIterator(
+                        "country.claims::" + countryId + "::*",
+                        false,
+                        null
+                );
+
+        while (iterator.hasNext()) {
+            iterator.next();
+            claims++;
+        }
+
+        Object taxValue = variable("country.tax-per-chunk");
+
+        if (!(taxValue instanceof Number taxPerChunk)) {
+            return "0";
+        }
+
+        return formatNumber(
+                claims * taxPerChunk.doubleValue(),
+                "0"
+        );
+    }
+
+    private String formatNumber(Object value, String fallback) {
+        if (value == null) {
+            return fallback;
+        }
+
+        if (value instanceof Number number) {
+            double amount = number.doubleValue();
+
+            if (amount == Math.rint(amount)) {
+                return Long.toString(number.longValue());
+            }
+        }
+
+        return value.toString();
+    }
+
+    // =========================================================
+    // EVENTS
+    // =========================================================
+
+    @org.bukkit.event.EventHandler
+    public void onJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+
+        Bukkit.getScheduler().runTaskLater(this, () -> {
+            if (!player.isOnline()) {
+                return;
+            }
+
+            createLabels(player);
+            refreshTagPermissions(player);
+            refreshEverything();
+        }, 5L);
+    }
+
+    @org.bukkit.event.EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+
+        Labels labels = labelsByPlayer.remove(player.getUniqueId());
+        renderedLabelMarkup.remove(player.getUniqueId());
+
+        if (labels != null) {
+            labels.remove();
+        }
+
+        removeTagPermissionAttachment(player);
+
+        Bukkit.getScheduler().runTask(this, this::refreshEverything);
+    }
+
+    @org.bukkit.event.EventHandler
+    public void onGameModeChange(PlayerGameModeChangeEvent event) {
+        Player player = event.getPlayer();
+
+        Bukkit.getScheduler().runTask(this, () -> {
+            if (player.isOnline()) {
+                refreshTarget(player);
+            }
+        });
+    }
+
+    @org.bukkit.event.EventHandler
+    public void onWorldChange(PlayerChangedWorldEvent event) {
+        Player player = event.getPlayer();
+
+        Bukkit.getScheduler().runTaskLater(
+                this,
+                () -> recreateLabels(player),
+                2L
+        );
+    }
+
+    @org.bukkit.event.EventHandler
+    public void onRespawn(PlayerRespawnEvent event) {
+        Player player = event.getPlayer();
+
+        Bukkit.getScheduler().runTaskLater(
+                this,
+                () -> recreateLabels(player),
+                2L
+        );
+    }
+
+    // =========================================================
+    // /identity
+    // =========================================================
+
+    @Override
+    public boolean onCommand(
+            CommandSender sender,
+            Command command,
+            String label,
+            String[] args
+    ) {
+        // =====================================================
+        // /tags <player> add/remove/list [tag]
+        // =====================================================
+        if (command.getName().equalsIgnoreCase("tags")) {
+            if (!(sender instanceof ConsoleCommandSender)
+                    && !sender.hasPermission("politaria.tags.manage")) {
+                sender.sendMessage(
+                        ChatColor.RED
+                                + "Эта команда доступна только администрации сервера."
+                );
+                return true;
+            }
+
+            return handleTagsCommand(sender, args);
+        }
+
+        // =====================================================
+        // /identity — старый внутренний bridge, без тегов
+        // =====================================================
+        if (!(sender instanceof ConsoleCommandSender)
+                && !sender.hasPermission("politaria.identity.manage")) {
+            sender.sendMessage(
+                    ChatColor.RED
+                            + "Эта команда доступна только администрации сервера."
+            );
+            return true;
+        }
+
+        // -----------------------------------------------------
+        // AUTH
+        // -----------------------------------------------------
+
+        if (args.length == 2
+                && args[0].equalsIgnoreCase("auth-trust")) {
+            try {
+                UUID playerId = UUID.fromString(args[1]);
+                Player player = Bukkit.getPlayer(playerId);
+
+                if (player != null && authTrustManager != null) {
+                    authTrustManager.trust(player);
+                }
+            } catch (IllegalArgumentException exception) {
+                sender.sendMessage(
+                        ChatColor.RED + "Указан неверный UUID игрока."
+                );
+            }
+
+            return true;
+        }
+
+        if (args.length == 2
+                && args[0].equalsIgnoreCase("auth-forget")) {
+            try {
+                if (authTrustManager != null) {
+                    authTrustManager.forget(UUID.fromString(args[1]));
+                }
+            } catch (IllegalArgumentException exception) {
+                sender.sendMessage(
+                        ChatColor.RED + "Указан неверный UUID игрока."
+                );
+            }
+
+            return true;
+        }
+
+        // -----------------------------------------------------
+        // EXISTING BRIDGE
+        // -----------------------------------------------------
+
+        if (args.length != 3
+                || (!args[0].equalsIgnoreCase("know")
+                && !args[0].equalsIgnoreCase("forget")
+                && !args[0].equalsIgnoreCase("country"))) {
+
+            sendIdentityUsage(sender);
+            return true;
+        }
+
+        try {
+            if (args[0].equalsIgnoreCase("country")) {
+                UUID playerId = UUID.fromString(args[1]);
+
+                if (args[2].equalsIgnoreCase("none")) {
+                    playerCountries.remove(playerId);
+                } else {
+                    playerCountries.put(playerId, args[2]);
+                }
+
+                saveRelations();
+                refreshEverything();
+
+                return true;
+            }
+
+            UUID viewerId = UUID.fromString(args[1]);
+            UUID targetId = UUID.fromString(args[2]);
+
+            String key = relationKey(viewerId, targetId);
+
+            if (args[0].equalsIgnoreCase("know")) {
+                knownRelations.add(key);
+            } else {
+                knownRelations.remove(key);
+            }
+
+            saveRelations();
+
+            Player viewer = Bukkit.getPlayer(viewerId);
+            Player target = Bukkit.getPlayer(targetId);
+
+            if (viewer != null && target != null) {
+                updateLabelFor(viewer, target);
+            }
+
+            return true;
+
+        } catch (IllegalArgumentException exception) {
+            sender.sendMessage(
+                    ChatColor.RED + "Указан неверный UUID игрока."
+            );
+            return true;
+        }
+    }
+
+    private void sendIdentityUsage(CommandSender sender) {
+    sender.sendMessage(ChatColor.YELLOW + "Использование:");
+    sender.sendMessage(ChatColor.GRAY + "/identity know <viewerUUID> <targetUUID>");
+    sender.sendMessage(ChatColor.GRAY + "/identity forget <viewerUUID> <targetUUID>");
+    sender.sendMessage(ChatColor.GRAY + "/identity country <UUID> <country|none>");
+}
+
+    private boolean handleTagsCommand(CommandSender sender, String[] args) {
+        if (args.length == 0) {
+            sendTagUsage(sender);
+            return true;
+        }
+
+        String root = args[0].toLowerCase(Locale.ROOT);
+
+        // /tags create <name> <color>
+        if (root.equals("create")) {
+            if (args.length != 3) {
+                sender.sendMessage(ChatColor.GRAY + "/tags create <название> <цвет>");
+                sender.sendMessage(ChatColor.DARK_GRAY + "Пример: /tags create VIP gold");
+                return true;
+            }
+
+            String displayName = args[1];
+            String key = tagKey(displayName);
+
+            if (!displayName.matches("[A-Za-z0-9_-]{1,24}")) {
+                sender.sendMessage(ChatColor.RED + "Название: только A-Z, 0-9, _ и -, максимум 24 символа.");
+                return true;
+            }
+
+            if (tagDefinitions.containsKey(key)) {
+                sender.sendMessage(ChatColor.RED + "Такой тег уже существует.");
+                return true;
+            }
+
+            String miniColor = normalizeMiniColor(args[2]);
+            if (miniColor == null) {
+                sender.sendMessage(ChatColor.RED + "Неизвестный цвет. Примеры: red, gold, aqua, light_purple, #55FFAA");
+                return true;
+            }
+
+            TagDefinition definition = new TagDefinition(
+                    key,
+                    displayName,
+                    miniColor,
+                    tabColorFromMini(miniColor),
+                    false,
+                    true,
+                    new LinkedHashSet<>()
+            );
+
+            tagDefinitions.put(key, definition);
+            saveTags();
+            refreshAllTagPermissionsAndLabels();
+
+            sender.sendMessage(ChatColor.GREEN + "Создан тег " + displayName + ChatColor.GRAY + ". Теперь: /tags <ник> add " + displayName);
+            return true;
+        }
+
+        // /tags delete <tag>
+        if (root.equals("delete")) {
+            if (args.length != 2) {
+                sender.sendMessage(ChatColor.GRAY + "/tags delete <тег>");
+                return true;
+            }
+
+            String key = tagKey(args[1]);
+            TagDefinition definition = tagDefinitions.get(key);
+
+            if (definition == null) {
+                sender.sendMessage(ChatColor.RED + "Такого тега нет.");
+                return true;
+            }
+
+            if (definition.automaticOp()) {
+                sender.sendMessage(ChatColor.RED + "Автоматический OP-тег удалить нельзя.");
+                return true;
+            }
+
+            tagDefinitions.remove(key);
+            for (LinkedHashSet<String> tags : playerTags.values()) {
+                tags.remove(key);
+            }
+            playerTags.entrySet().removeIf(entry -> entry.getValue().isEmpty());
+            saveTags();
+            refreshAllTagPermissionsAndLabels();
+
+            sender.sendMessage(ChatColor.GREEN + "Тег удалён: " + definition.displayName());
+            return true;
+        }
+
+        // /tags permission <tag> add|remove <permission>
+        if (root.equals("permission") || root.equals("permissions")) {
+            if (args.length != 4) {
+                sender.sendMessage(ChatColor.GRAY + "/tags permission <тег> <add|remove> <permission>");
+                return true;
+            }
+
+            String key = tagKey(args[1]);
+            TagDefinition definition = tagDefinitions.get(key);
+            if (definition == null) {
+                sender.sendMessage(ChatColor.RED + "Такого тега нет.");
+                return true;
+            }
+
+            String action = args[2].toLowerCase(Locale.ROOT);
+            String permission = args[3];
+            boolean changed;
+
+            if (action.equals("add")) {
+                changed = definition.permissions().add(permission);
+            } else if (action.equals("remove")) {
+                changed = definition.permissions().remove(permission);
+            } else {
+                sender.sendMessage(ChatColor.GRAY + "/tags permission <тег> <add|remove> <permission>");
+                return true;
+            }
+
+            if (!changed) {
+                sender.sendMessage(ChatColor.YELLOW + "Ничего не изменилось.");
+                return true;
+            }
+
+            saveTags();
+            refreshAllTagPermissionsAndLabels();
+            sender.sendMessage(ChatColor.GREEN + "Permissions тега обновлены.");
+            return true;
+        }
+
+        if (root.equals("reload")) {
+            loadTags();
+            refreshAllTagPermissionsAndLabels();
+            sender.sendMessage(ChatColor.GREEN + "tags.yml перезагружен.");
+            return true;
+        }
+
+        // /tags <player|UUID> list
+        // /tags <player|UUID> add <tag>
+        // /tags <player|UUID> remove <tag>
+        if (args.length < 2) {
+            sendTagUsage(sender);
+            return true;
+        }
+
+        UUID targetId = resolvePlayerUuid(args[0]);
+        if (targetId == null) {
+            sender.sendMessage(ChatColor.RED + "Игрок не найден. Для офлайн-игрока используй UUID.");
+            return true;
+        }
+
+        String action = args[1].toLowerCase(Locale.ROOT);
+
+        if (action.equals("list")) {
+            if (args.length != 2) {
+                sendTagUsage(sender);
+                return true;
+            }
+            sender.sendMessage(ChatColor.AQUA + "Теги " + displayName(targetId) + ": " + ChatColor.WHITE + plainTags(targetId));
+            return true;
+        }
+
+        if (!action.equals("add") && !action.equals("remove")) {
+            sendTagUsage(sender);
+            return true;
+        }
+
+        if (args.length != 3) {
+            sendTagUsage(sender);
+            return true;
+        }
+
+        String key = tagKey(args[2]);
+        TagDefinition definition = tagDefinitions.get(key);
+        if (definition == null) {
+            sender.sendMessage(ChatColor.RED + "Неизвестный тег. Используй Tab или /tags create <название> <цвет>.");
+            return true;
+        }
+
+        if (!definition.assignable()) {
+            sender.sendMessage(ChatColor.RED + "Этот тег нельзя выдавать вручную.");
+            return true;
+        }
+
+        LinkedHashSet<String> tags = playerTags.computeIfAbsent(targetId, ignored -> new LinkedHashSet<>());
+        boolean changed;
+        if (action.equals("add")) {
+            changed = tags.add(key);
+        } else {
+            changed = tags.remove(key);
+            if (tags.isEmpty()) playerTags.remove(targetId);
+        }
+
+        if (!changed) {
+            sender.sendMessage(ChatColor.YELLOW + (action.equals("add") ? "У игрока уже есть этот тег." : "У игрока нет этого тега."));
+            return true;
+        }
+
+        saveTags();
+        Player online = Bukkit.getPlayer(targetId);
+        if (online != null) {
+            refreshTagPermissions(online);
+            recreateLabels(online);
+        }
+
+        sender.sendMessage(ChatColor.GREEN + (action.equals("add") ? "Тег добавлен: " : "Тег удалён: ")
+                + definition.displayName() + ChatColor.GRAY + " -> " + displayName(targetId));
+        return true;
+    }
+
+    @Override
+    public java.util.List<String> onTabComplete(
+            CommandSender sender,
+            Command command,
+            String alias,
+            String[] args
+    ) {
+        if (!command.getName().equalsIgnoreCase("tags")) {
+            return java.util.Collections.emptyList();
+        }
+
+        if (!(sender instanceof ConsoleCommandSender) && !sender.hasPermission("politaria.tags.manage")) {
+            return java.util.Collections.emptyList();
+        }
+
+        if (args.length == 1) {
+            java.util.List<String> values = new ArrayList<>();
+            for (Player player : Bukkit.getOnlinePlayers()) values.add(player.getName());
+            values.addAll(java.util.List.of("create", "delete", "permission", "reload"));
+            return filterCompletions(values, args[0]);
+        }
+
+        if (args[0].equalsIgnoreCase("create")) {
+            if (args.length == 3) {
+                return filterCompletions(java.util.List.of(
+                        "white", "gray", "dark_gray", "red", "gold", "yellow", "green", "dark_green",
+                        "aqua", "dark_aqua", "blue", "dark_purple", "light_purple"
+                ), args[2]);
+            }
+            return java.util.Collections.emptyList();
+        }
+
+        if (args[0].equalsIgnoreCase("delete")) {
+            if (args.length == 2) return filterCompletions(assignableTagNames(), args[1]);
+            return java.util.Collections.emptyList();
+        }
+
+        if (args[0].equalsIgnoreCase("permission") || args[0].equalsIgnoreCase("permissions")) {
+            if (args.length == 2) return filterCompletions(allTagNames(), args[1]);
+            if (args.length == 3) return filterCompletions(java.util.List.of("add", "remove"), args[2]);
+            return java.util.Collections.emptyList();
+        }
+
+        if (args.length == 2) {
+            return filterCompletions(java.util.List.of("add", "remove", "list"), args[1]);
+        }
+
+        if (args.length == 3 && (args[1].equalsIgnoreCase("add") || args[1].equalsIgnoreCase("remove"))) {
+            UUID targetId = resolvePlayerUuid(args[0]);
+            java.util.List<String> tags = new ArrayList<>();
+
+            for (TagDefinition definition : tagDefinitions.values()) {
+                if (!definition.assignable()) continue;
+                boolean has = targetId != null && hasStoredTag(targetId, definition.key());
+                if ((args[1].equalsIgnoreCase("add") && !has) || (args[1].equalsIgnoreCase("remove") && has)) {
+                    tags.add(definition.displayName());
+                }
+            }
+            return filterCompletions(tags, args[2]);
+        }
+
+        return java.util.Collections.emptyList();
+    }
+
+    private java.util.List<String> filterCompletions(java.util.Collection<String> values, String input) {
+        String lower = input == null ? "" : input.toLowerCase(Locale.ROOT);
+        java.util.List<String> result = new ArrayList<>();
+        for (String value : values) {
+            if (value.toLowerCase(Locale.ROOT).startsWith(lower)) result.add(value);
+        }
+        result.sort(String.CASE_INSENSITIVE_ORDER);
+        return result;
+    }
+
+    private void sendTagUsage(CommandSender sender) {
+        sender.sendMessage(ChatColor.YELLOW + "Теги:");
+        sender.sendMessage(ChatColor.GRAY + "/tags <игрок|UUID> add <тег>");
+        sender.sendMessage(ChatColor.GRAY + "/tags <игрок|UUID> remove <тег>");
+        sender.sendMessage(ChatColor.GRAY + "/tags <игрок|UUID> list");
+        sender.sendMessage(ChatColor.GRAY + "/tags create <название> <цвет>");
+        sender.sendMessage(ChatColor.GRAY + "/tags delete <тег>");
+        sender.sendMessage(ChatColor.GRAY + "/tags permission <тег> <add|remove> <permission>");
+        sender.sendMessage(ChatColor.GRAY + "/tags reload");
+    }
+
+    private UUID resolvePlayerUuid(String input) {
+        Player player = Bukkit.getPlayerExact(input);
+
+        if (player != null) {
+            return player.getUniqueId();
+        }
+
+        try {
+            return UUID.fromString(input);
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
+    private String displayName(UUID playerId) {
+        Player player = Bukkit.getPlayer(playerId);
+
+        if (player != null) {
+            return player.getName();
+        }
+
+        return playerId.toString();
+    }
+
+    // =========================================================
+    // TAGS
+    // =========================================================
+
+    private String tagKey(String name) {
+        return name == null ? "" : name.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private LinkedHashSet<String> visibleTagKeys(Player player) {
+        LinkedHashSet<String> result = new LinkedHashSet<>();
+        Set<String> stored = playerTags.get(player.getUniqueId());
+
+        for (TagDefinition definition : tagDefinitions.values()) {
+            if (definition.automaticOp()) {
+                if (player.isOp()) result.add(definition.key());
+            } else if (stored != null && stored.contains(definition.key())) {
+                result.add(definition.key());
+            }
+        }
+        return result;
+    }
+
+    private String tagMarkup(Player player) {
+        StringBuilder builder = new StringBuilder();
+        for (String key : visibleTagKeys(player)) {
+            TagDefinition definition = tagDefinitions.get(key);
+            if (definition == null) continue;
+            builder.append(definition.miniColor())
+                    .append("[").append(MINI_MESSAGE.escapeTags(definition.displayName())).append("]")
+                    .append("<reset> ");
+        }
+        return builder.toString();
+    }
+
+    private String tabTags(UUID playerId) {
+        Player online = Bukkit.getPlayer(playerId);
+        if (online == null) return "";
+
+        StringBuilder builder = new StringBuilder();
+        for (String key : visibleTagKeys(online)) {
+            TagDefinition definition = tagDefinitions.get(key);
+            if (definition == null) continue;
+            builder.append(definition.tabColor())
+                    .append("[").append(definition.displayName()).append("]")
+                    .append("&r ");
+        }
+        return builder.toString();
+    }
+
+    private String plainTags(UUID playerId) {
+        Player online = Bukkit.getPlayer(playerId);
+        java.util.List<String> names = new ArrayList<>();
+        Set<String> stored = playerTags.get(playerId);
+
+        for (TagDefinition definition : tagDefinitions.values()) {
+            if (definition.automaticOp()) {
+                if (online != null && online.isOp()) names.add(definition.displayName());
+            } else if (stored != null && stored.contains(definition.key())) {
+                names.add(definition.displayName());
+            }
+        }
+        return names.isEmpty() ? "Нет" : String.join(", ", names);
+    }
+
+    private boolean hasStoredTag(UUID playerId, String key) {
+        Set<String> tags = playerTags.get(playerId);
+        return tags != null && tags.contains(key);
+    }
+
+    private java.util.List<String> allTagNames() {
+        java.util.List<String> result = new ArrayList<>();
+        for (TagDefinition definition : tagDefinitions.values()) result.add(definition.displayName());
+        return result;
+    }
+
+    private java.util.List<String> assignableTagNames() {
+        java.util.List<String> result = new ArrayList<>();
+        for (TagDefinition definition : tagDefinitions.values()) {
+            if (definition.assignable()) result.add(definition.displayName());
+        }
+        return result;
+    }
+
+    private void refreshTagPermissions(Player player) {
+        removeTagPermissionAttachment(player);
+        LinkedHashSet<String> keys = visibleTagKeys(player);
+        LinkedHashSet<String> permissions = new LinkedHashSet<>();
+
+        for (String key : keys) {
+            TagDefinition definition = tagDefinitions.get(key);
+            if (definition != null) permissions.addAll(definition.permissions());
+        }
+
+        if (permissions.isEmpty()) return;
+
+        PermissionAttachment attachment = player.addAttachment(this);
+        for (String permission : permissions) attachment.setPermission(permission, true);
+        tagPermissionAttachments.put(player.getUniqueId(), attachment);
+        player.recalculatePermissions();
+    }
+
+    private void removeTagPermissionAttachment(Player player) {
+        PermissionAttachment old = tagPermissionAttachments.remove(player.getUniqueId());
+        if (old == null) return;
+        try {
+            player.removeAttachment(old);
+        } catch (IllegalArgumentException ignored) {
+        }
+        player.recalculatePermissions();
+    }
+
+    private void refreshAllTagPermissionsAndLabels() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            refreshTagPermissions(player);
+            recreateLabels(player);
+        }
+    }
+
+    private void ensureDefaultTagDefinitions() {
+        if (!tagDefinitions.isEmpty()) return;
+
+        tagDefinitions.put("creator", new TagDefinition("creator", "Creator", "<light_purple>", "&d", false, true, new LinkedHashSet<>()));
+        tagDefinitions.put("dev", new TagDefinition("dev", "Dev", "<aqua>", "&b", false, true, new LinkedHashSet<>()));
+        tagDefinitions.put("admin", new TagDefinition("admin", "Admin", "<red>", "&c", true, false, new LinkedHashSet<>()));
+
+        LinkedHashSet<String> mediaPermissions = new LinkedHashSet<>();
+        mediaPermissions.add("minecraft.command.teleport");
+        mediaPermissions.add("minecraft.command.give");
+        mediaPermissions.add("minecraft.command.gamemode");
+        mediaPermissions.add("minecraft.command.time");
+        mediaPermissions.add("minecraft.command.weather");
+        tagDefinitions.put("media", new TagDefinition("media", "Media", "<gold>", "&6", false, true, mediaPermissions));
+    }
+
+    private void loadTags() {
+        if (!getDataFolder().exists() && !getDataFolder().mkdirs()) {
+            getLogger().warning("Не удалось создать папку данных плагина.");
+        }
+
+        tagsFile = new File(getDataFolder(), "tags.yml");
+        tagsConfig = YamlConfiguration.loadConfiguration(tagsFile);
+        playerTags.clear();
+        tagDefinitions.clear();
+
+        ConfigurationSection definitions = tagsConfig.getConfigurationSection("definitions");
+        if (definitions != null) {
+            for (String rawKey : definitions.getKeys(false)) {
+                String key = tagKey(rawKey);
+                String path = "definitions." + rawKey;
+                String displayName = tagsConfig.getString(path + ".display", rawKey);
+                String miniColor = tagsConfig.getString(path + ".color", "<white>");
+                String tabColor = tagsConfig.getString(path + ".tab-color", tabColorFromMini(miniColor));
+                boolean automaticOp = tagsConfig.getBoolean(path + ".automatic-op", false);
+                boolean assignable = tagsConfig.getBoolean(path + ".assignable", !automaticOp);
+                LinkedHashSet<String> permissions = new LinkedHashSet<>(tagsConfig.getStringList(path + ".permissions"));
+
+                tagDefinitions.put(key, new TagDefinition(key, displayName, miniColor, tabColor, automaticOp, assignable, permissions));
+            }
+        }
+
+        ensureDefaultTagDefinitions();
+
+        ConfigurationSection players = tagsConfig.getConfigurationSection("players");
+        if (players != null) {
+            for (String uuidString : players.getKeys(false)) {
+                UUID uuid;
+                try {
+                    uuid = UUID.fromString(uuidString);
+                } catch (IllegalArgumentException ignored) {
+                    getLogger().warning("Пропущен неверный UUID в tags.yml: " + uuidString);
+                    continue;
+                }
+
+                LinkedHashSet<String> tags = new LinkedHashSet<>();
+                for (String tagString : tagsConfig.getStringList("players." + uuidString)) {
+                    String key = tagKey(tagString);
+                    TagDefinition definition = tagDefinitions.get(key);
+                    if (definition != null && definition.assignable()) tags.add(key);
+                }
+                if (!tags.isEmpty()) playerTags.put(uuid, tags);
+            }
+        }
+
+        saveTags();
+    }
+
+    private void saveTags() {
+        if (tagsConfig == null || tagsFile == null) return;
+
+        tagsConfig.set("definitions", null);
+        for (TagDefinition definition : tagDefinitions.values()) {
+            String path = "definitions." + definition.key();
+            tagsConfig.set(path + ".display", definition.displayName());
+            tagsConfig.set(path + ".color", definition.miniColor());
+            tagsConfig.set(path + ".tab-color", definition.tabColor());
+            tagsConfig.set(path + ".automatic-op", definition.automaticOp());
+            tagsConfig.set(path + ".assignable", definition.assignable());
+            tagsConfig.set(path + ".permissions", new ArrayList<>(definition.permissions()));
+        }
+
+        tagsConfig.set("players", null);
+        for (Map.Entry<UUID, LinkedHashSet<String>> entry : playerTags.entrySet()) {
+            java.util.List<String> names = new ArrayList<>();
+            for (String key : entry.getValue()) {
+                TagDefinition definition = tagDefinitions.get(key);
+                if (definition != null && definition.assignable()) names.add(definition.displayName());
+            }
+            if (!names.isEmpty()) tagsConfig.set("players." + entry.getKey(), names);
+        }
+
+        try {
+            tagsConfig.save(tagsFile);
+        } catch (IOException exception) {
+            getLogger().severe("Не удалось сохранить tags.yml: " + exception.getMessage());
+        }
+    }
+
+    private String normalizeMiniColor(String input) {
+        if (input == null) return null;
+        String value = input.trim().toLowerCase(Locale.ROOT);
+        if (value.matches("#[0-9a-f]{6}")) return "<" + value.toUpperCase(Locale.ROOT) + ">";
+        if (value.startsWith("<") && value.endsWith(">")) value = value.substring(1, value.length() - 1);
+        String mini = "<" + value + ">";
+        return ALLOWED_COLORS.contains(mini) ? mini : null;
+    }
+
+    private String tabColorFromMini(String miniColor) {
+        if (miniColor == null) return "&f";
+        return switch (miniColor.toLowerCase(Locale.ROOT)) {
+            case "<white>" -> "&f";
+            case "<gray>" -> "&7";
+            case "<dark_gray>" -> "&8";
+            case "<black>" -> "&0";
+            case "<red>" -> "&c";
+            case "<gold>" -> "&6";
+            case "<yellow>" -> "&e";
+            case "<green>" -> "&a";
+            case "<dark_green>" -> "&2";
+            case "<dark_aqua>" -> "&3";
+            case "<aqua>" -> "&b";
+            case "<blue>" -> "&9";
+            case "<dark_purple>" -> "&5";
+            case "<light_purple>" -> "&d";
+            default -> {
+                if (miniColor.matches("<#[0-9A-Fa-f]{6}>") ) yield "&#" + miniColor.substring(2, 8);
+                yield "&f";
+            }
+        };
+    }
+
+    // =========================================================
+    // LABELS
+    // =========================================================
+
+    private String realLabelMarkup(Player target) {
+        String playerName =
+                MINI_MESSAGE.escapeTags(target.getName());
+
+        String tags = tagMarkup(target);
+
+        String countryId =
+                playerCountries.get(target.getUniqueId());
+
+        if (countryId == null) {
+            return tags + "<white>" + playerName;
+        }
+
+        Object countryNameValue =
+                variable("country.name::" + countryId);
+
+        if (countryNameValue == null) {
+            return tags + "<white>" + playerName;
+        }
+
+        String countryName =
+                MINI_MESSAGE.escapeTags(
+                        countryNameValue.toString()
+                );
+
+        String countryColor =
+                labelColor(
+                        variable("country.color::" + countryId),
+                        "<white>"
+                );
+
+        Object ownerValue =
+                variable("country.owner::" + countryId);
+
+        String roleName;
+        String roleColor;
+
+        if (ownerValue != null
+                && ownerValue.toString().equals(
+                target.getUniqueId().toString())) {
+
+            roleName = "Правитель";
+            roleColor = "<gold>";
+
+        } else {
+            Object roleValue =
+                    variable(
+                            "country.role-of::"
+                                    + countryId
+                                    + "::"
+                                    + target.getUniqueId()
+                    );
+
+            String roleId =
+                    roleValue == null
+                            ? "citizen"
+                            : roleValue.toString();
+
+            Object roleNameValue =
+                    variable(
+                            "country.role-name::"
+                                    + countryId
+                                    + "::"
+                                    + roleId
+                    );
+
+            roleName =
+                    roleNameValue == null
+                            ? "Гражданин"
+                            : roleNameValue.toString();
+
+            roleName =
+                    MINI_MESSAGE.escapeTags(roleName);
+
+            roleColor =
+                    labelColor(
+                            variable(
+                                    "country.role-color::"
+                                            + countryId
+                                            + "::"
+                                            + roleId
+                            ),
+                            "<white>"
+                    );
+        }
+
+        return tags
+                + "<white>"
+                + playerName
+                + " <dark_gray>• "
+                + countryColor
+                + countryName
+                + " <dark_gray>• "
+                + roleColor
+                + roleName;
+    }
+
+    private String labelColor(
+            Object value,
+            String fallback
+    ) {
+        if (value == null) {
+            return fallback;
+        }
+
+        String color =
+                value.toString().replace(' ', '_');
+
+        if (!color.startsWith("<")) {
+            color = "<" + color + ">";
+        }
+
+        if (color.equalsIgnoreCase("<light_green>")) {
+            color = "<green>";
+        }
+
+        return ALLOWED_COLORS.contains(color)
+                ? color
+                : fallback;
+    }
+
+    private void createLabels(Player target) {
+        Labels previous =
+                labelsByPlayer.remove(
+                        target.getUniqueId()
+                );
+
+        if (previous != null) {
+            previous.remove();
+        }
+
+        String realMarkup =
+                realLabelMarkup(target);
+
+        TextDisplay real =
+                createLabel(
+                        target,
+                        MINI_MESSAGE.deserialize(
+                                String.valueOf(realMarkup)
+                        )
+                );
+
+        TextDisplay unknown =
+                createLabel(
+                        target,
+                        MINI_MESSAGE.deserialize(
+                                String.valueOf(
+                                        "<gray>Неизвестно"
+                                )
+                        )
+                );
+
+        labelsByPlayer.put(
+                target.getUniqueId(),
+                new Labels(real, unknown)
+        );
+
+        renderedLabelMarkup.put(
+                target.getUniqueId(),
+                realMarkup
+        );
+    }
+
+    private TextDisplay createLabel(
+            Player target,
+            Component text
+    ) {
+        TextDisplay display =
+                target.getWorld().spawn(
+                        target.getLocation(),
+                        TextDisplay.class,
+                        entity -> {
+                            entity.text(text);
+
+                            entity.setBillboard(
+                                    Display.Billboard.CENTER
+                            );
+
+                            entity.setBackgroundColor(
+                                    Color.fromARGB(
+                                            0,
+                                            0,
+                                            0,
+                                            0
+                                    )
+                            );
+
+                            entity.setShadowed(true);
+                            entity.setSeeThrough(false);
+
+                            entity.setAlignment(
+                                    TextDisplay.TextAlignment.CENTER
+                            );
+
+                            entity.setLineWidth(300);
+                            entity.setViewRange(1.0f);
+                            entity.setDisplayWidth(4.0f);
+                            entity.setDisplayHeight(1.0f);
+
+                            entity.setGravity(false);
+                            entity.setInvulnerable(true);
+                            entity.setSilent(true);
+                            entity.setPersistent(false);
+                            entity.setVisibleByDefault(false);
+
+                            entity.setTransformation(
+                                    new Transformation(
+                                            new Vector3f(
+                                                    0.0f,
+                                                    LABEL_PASSENGER_OFFSET,
+                                                    0.0f
+                                            ),
+                                            new AxisAngle4f(),
+                                            new Vector3f(
+                                                    1.0f,
+                                                    1.0f,
+                                                    1.0f
+                                            ),
+                                            new AxisAngle4f()
+                                    )
+                            );
+                        }
+                );
+
+        target.addPassenger(display);
+
+        return display;
+    }
+
+    private void recreateLabels(Player target) {
+        if (!target.isOnline()) {
+            return;
+        }
+
+        createLabels(target);
+        refreshTarget(target);
+    }
+
+    private void refreshEverything() {
+        for (Player target : Bukkit.getOnlinePlayers()) {
+            Labels labels =
+                    labelsByPlayer.get(
+                            target.getUniqueId()
+                    );
+
+            if (labels == null || !labels.isValid()) {
+                createLabels(target);
+            }
+        }
+
+        for (Player viewer : Bukkit.getOnlinePlayers()) {
+            sendHiddenTeam(viewer);
+
+            for (Player target :
+                    Bukkit.getOnlinePlayers()) {
+
+                updateLabelFor(
+                        viewer,
+                        target
+                );
+            }
+        }
+    }
+
+    private void maintainLabels() {
+        for (Player target : Bukkit.getOnlinePlayers()) {
+            Labels labels =
+                    labelsByPlayer.get(
+                            target.getUniqueId()
+                    );
+
+            if (labels == null
+                    || !labels.isValid()
+                    || labels.real().getVehicle() != target
+                    || labels.unknown().getVehicle() != target) {
+
+                createLabels(target);
+                refreshTarget(target);
+                continue;
+            }
+
+            String markup =
+                    realLabelMarkup(target);
+
+            if (!markup.equals(
+                    renderedLabelMarkup.get(
+                            target.getUniqueId()))) {
+
+                labels.real().text(
+                        MINI_MESSAGE.deserialize(
+                                String.valueOf(markup)
+                        )
+                );
+
+                renderedLabelMarkup.put(
+                        target.getUniqueId(),
+                        markup
+                );
+
+                refreshTarget(target);
+            }
+        }
+    }
+
+    private void refreshTarget(Player target) {
+        for (Player viewer :
+                Bukkit.getOnlinePlayers()) {
+
+            updateLabelFor(
+                    viewer,
+                    target
+            );
+        }
+    }
+
+    private void updateLabelFor(
+            Player viewer,
+            Player target
+    ) {
+        Labels labels =
+                labelsByPlayer.get(
+                        target.getUniqueId()
+                );
+
+        if (labels == null || !labels.isValid()) {
+            return;
+        }
+
+        viewer.hideEntity(this, labels.real());
+        viewer.hideEntity(this, labels.unknown());
+
+        if (target.getGameMode() == GameMode.SPECTATOR
+                || viewer.getUniqueId().equals(
+                target.getUniqueId())) {
+
+            return;
+        }
+
+        if (knows(
+                viewer.getUniqueId(),
+                target.getUniqueId())) {
+
+            viewer.showEntity(
+                    this,
+                    labels.real()
+            );
+
+        } else {
+            viewer.showEntity(
+                    this,
+                    labels.unknown()
+            );
+        }
+    }
+
+    // =========================================================
+    // VANILLA NAMETAG HIDING
+    // =========================================================
+
+    private void sendHiddenTeam(Player viewer) {
+        sendRemoveHiddenTeam(viewer);
+
+        if (protocolManager == null) {
+            return;
+        }
+
+        try {
+            PacketContainer packet =
+                    protocolManager.createPacket(
+                            PacketType.Play.Server.SCOREBOARD_TEAM
+                    );
+
+            packet.getStrings().write(
+                    0,
+                    HIDDEN_TEAM
+            );
+
+            packet.getIntegers().write(
+                    0,
+                    0
+            );
+
+            WrappedTeamParameters parameters =
+                    WrappedTeamParameters
+                            .newBuilder()
+                            .displayName(
+                                    WrappedChatComponent.fromText("")
+                            )
+                            .prefix(
+                                    WrappedChatComponent.fromText("")
+                            )
+                            .suffix(
+                                    WrappedChatComponent.fromText("")
+                            )
+                            .nametagVisibility(
+                                    EnumWrappers.TeamVisibility.NEVER
+                            )
+                            .collisionRule(
+                                    EnumWrappers.TeamCollisionRule.ALWAYS
+                            )
+                            .color(
+                                    EnumWrappers.ChatFormatting.RESET
+                            )
+                            .options(0)
+                            .build();
+
+            packet.getOptionalTeamParameters().write(
+                    0,
+                    Optional.of(parameters)
+            );
+
+            Collection<String> entries =
+                    new ArrayList<>();
+
+            for (Player player :
+                    Bukkit.getOnlinePlayers()) {
+
+                entries.add(
+                        player.getName()
+                );
+            }
+
+            packet
+                    .getSpecificModifier(Collection.class)
+                    .write(0, entries);
+
+            protocolManager.sendServerPacket(
+                    viewer,
+                    packet
+            );
+
+        } catch (Exception exception) {
+            getLogger().warning(
+                    "Не удалось скрыть стандартные ники для "
+                            + viewer.getName()
+                            + ": "
+                            + exception.getMessage()
+            );
+        }
+    }
+
+    private void sendRemoveHiddenTeam(Player viewer) {
+        if (protocolManager == null) {
+            return;
+        }
+
+        try {
+            PacketContainer packet =
+                    protocolManager.createPacket(
+                            PacketType.Play.Server.SCOREBOARD_TEAM
+                    );
+
+            packet.getStrings().write(
+                    0,
+                    HIDDEN_TEAM
+            );
+
+            packet.getIntegers().write(
+                    0,
+                    1
+            );
+
+            protocolManager.sendServerPacket(
+                    viewer,
+                    packet
+            );
+
+        } catch (Exception ignored) {
+        }
+    }
+
+    // =========================================================
+    // RELATIONS
+    // =========================================================
+
+    private boolean knows(
+            UUID viewerId,
+            UUID targetId
+    ) {
+        if (knownRelations.contains(
+                relationKey(
+                        viewerId,
+                        targetId
+                ))) {
+
+            return true;
+        }
+
+        String viewerCountry =
+                playerCountries.get(viewerId);
+
+        String targetCountry =
+                playerCountries.get(targetId);
+
+        return viewerCountry != null
+                && viewerCountry.equals(targetCountry);
+    }
+
+    private String relationKey(
+            UUID viewerId,
+            UUID targetId
+    ) {
+        return viewerId + "." + targetId;
+    }
+
+    private void loadRelations() {
+        if (!getDataFolder().exists()
+                && !getDataFolder().mkdirs()) {
+
+            getLogger().warning(
+                    "Не удалось создать папку данных плагина."
+            );
+        }
+
+        relationsFile =
+                new File(
+                        getDataFolder(),
+                        "known.yml"
+                );
+
+        relationsConfig =
+                YamlConfiguration.loadConfiguration(
+                        relationsFile
+                );
+
+        knownRelations.clear();
+
+        knownRelations.addAll(
+                relationsConfig.getStringList(
+                        "relations"
+                )
+        );
+
+        playerCountries.clear();
+
+        ConfigurationSection countries =
+                relationsConfig.getConfigurationSection(
+                        "countries"
+                );
+
+        if (countries == null) {
+            return;
+        }
+
+        for (String playerId :
+                countries.getKeys(false)) {
+
+            try {
+                String country =
+                        relationsConfig.getString(
+                                "countries."
+                                        + playerId
+                        );
+
+                if (country != null) {
+                    playerCountries.put(
+                            UUID.fromString(playerId),
+                            country
+                    );
+                }
+
+            } catch (IllegalArgumentException ignored) {
+                getLogger().warning(
+                        "Пропущен неверный UUID страны в known.yml: "
+                                + playerId
+                );
+            }
+        }
+    }
+
+    private void saveRelations() {
+        if (relationsConfig == null
+                || relationsFile == null) {
+
+            return;
+        }
+
+        relationsConfig.set(
+                "relations",
+                new ArrayList<>(knownRelations)
+        );
+
+        relationsConfig.set(
+                "countries",
+                null
+        );
+
+        for (Map.Entry<UUID, String> entry :
+                playerCountries.entrySet()) {
+
+            relationsConfig.set(
+                    "countries."
+                            + entry.getKey(),
+                    entry.getValue()
+            );
+        }
+
+        try {
+            relationsConfig.save(
+                    relationsFile
+            );
+
+        } catch (IOException exception) {
+            getLogger().severe(
+                    "Не удалось сохранить знакомства: "
+                            + exception.getMessage()
+            );
+        }
+    }
+
+    // =========================================================
+    // INNER TYPES
+    // =========================================================
+
+    private record TagDefinition(
+            String key,
+            String displayName,
+            String miniColor,
+            String tabColor,
+            boolean automaticOp,
+            boolean assignable,
+            LinkedHashSet<String> permissions
+    ) {
+    }
+
+    private record Labels(
+            TextDisplay real,
+            TextDisplay unknown
+    ) {
+        private boolean isValid() {
+            return real != null
+                    && unknown != null
+                    && real.isValid()
+                    && unknown.isValid();
+        }
+
+        private void remove() {
+            if (real != null && real.isValid()) {
+                real.remove();
+            }
+
+            if (unknown != null && unknown.isValid()) {
+                unknown.remove();
+            }
+        }
+    }
+}

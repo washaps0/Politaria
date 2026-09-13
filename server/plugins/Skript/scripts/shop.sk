@@ -1,0 +1,428 @@
+# POLITARIA — почасовая скупка предметов. Требуется economy.sk.
+# /shop — магазин. /shoprefresh — немедленно обновить ассортимент (только OP).
+# ЛКМ: 1 предмет. Shift + ЛКМ: до одного стака, но не больше остатка личного лимита.
+# Лимиты ЛИЧНЫЕ для каждого игрока и сбрасываются при обновлении ассортимента.
+
+options:
+    shop-title: <dark gray>Скупка предметов
+    shop-rotation-time: 1 hour
+
+# =========================================================
+# НАСТРОЙКА ТОВАРОВ
+# shopRegister("уникальный_id", предмет, "Название", цена_за_1, лимит_на_игрока_за_час)
+# =========================================================
+
+function shopConfigure():
+    delete {shop.catalogue::*}
+    delete {shop.catalogue-ids::*}
+
+    # ДЕРЕВО
+    shopRegister("oak", oak log, "Дубовые брёвна", 2, 512)
+    shopRegister("birch", birch log, "Берёзовые брёвна", 2, 512)
+    shopRegister("spruce", spruce log, "Еловые брёвна", 2, 512)
+    shopRegister("dark_oak", dark oak log, "Брёвна тёмного дуба", 2, 512)
+
+    # СТРОИТЕЛЬНЫЕ РЕСУРСЫ
+    shopRegister("cobblestone", cobblestone, "Булыжник", 0.25, 1024)
+    shopRegister("stone", stone, "Камень", 0.5, 1024)
+    shopRegister("sand", sand, "Песок", 0.5, 512)
+    shopRegister("gravel", gravel, "Гравий", 0.5, 512)
+    shopRegister("clay", clay ball, "Глина", 0.75, 512)
+
+    # ШАХТА
+    shopRegister("coal", coal, "Уголь", 2, 256)
+    shopRegister("iron", iron ingot, "Железные слитки", 5, 128)
+    shopRegister("copper", copper ingot, "Медные слитки", 1, 512)
+    shopRegister("gold", gold ingot, "Золотые слитки", 8, 128)
+    shopRegister("redstone", redstone, "Редстоун", 1, 512)
+    shopRegister("lapis", lapis lazuli, "Лазурит", 2, 256)
+    shopRegister("diamond", diamond, "Алмазы", 20, 32)
+    shopRegister("emerald", emerald, "Изумруды", 15, 32)
+
+    # ФЕРМЕРСТВО
+    shopRegister("wheat", wheat, "Пшеница", 1, 512)
+    shopRegister("carrot", carrot, "Морковь", 0.5, 512)
+    shopRegister("potato", potato, "Картофель", 0.5, 512)
+    shopRegister("sugar_cane", sugar cane, "Сахарный тростник", 0.5, 512)
+    shopRegister("pumpkin", pumpkin, "Тыквы", 1, 256)
+    shopRegister("melon", melon slice, "Арбуз", 0.5, 512)
+    shopRegister("cactus", cactus, "Кактусы", 0.5, 256)
+
+    # МОБЫ
+    shopRegister("rotten_flesh", rotten flesh, "Гнилая плоть", 0.5, 256)
+    shopRegister("bone", bone, "Кости", 1, 256)
+    shopRegister("string", string, "Нити", 1, 256)
+    shopRegister("gunpowder", gunpowder, "Порох", 2, 128)
+    shopRegister("leather", leather, "Кожа", 1.5, 256)
+    shopRegister("slime_ball", slime ball, "Сгустки слизи", 3, 128)
+
+    # НИЖНИЙ МИР / ЭНД
+    shopRegister("quartz", quartz, "Кварц", 2, 256)
+    shopRegister("blaze_rod", blaze rod, "Огненные стержни", 5, 64)
+    shopRegister("ender_pearl", ender pearl, "Эндер-жемчуг", 5, 64)
+
+# =========================================================
+# ПРОВЕРКА КАТАЛОГА
+# =========================================================
+
+function shopRegister(id: text, product: item, label: text, price: number, limit: number):
+    if {_product} is air:
+        send "[Shop] Пропущен товар %{_id}%: нельзя продавать воздух." to console
+        stop
+
+    if {_price} is not between 0.01 and 1000000:
+        send "[Shop] Пропущен товар %{_id}%: цена должна быть от 0.01 до 1000000." to console
+        stop
+
+    if {_limit} is not between 1 and 100000000:
+        send "[Shop] Пропущен товар %{_id}%: неверный лимит." to console
+        stop
+
+    if {shop.catalogue::%{_id}%::item} is set:
+        send "[Shop] Пропущен повторный ID: %{_id}%." to console
+        stop
+
+    loop {shop.catalogue-ids::*}:
+        if {_product} is {shop.catalogue::%loop-value%::item}:
+            send "[Shop] Пропущен повторный предмет: %{_id}%." to console
+            stop
+
+    add {_id} to {shop.catalogue-ids::*}
+    set {shop.catalogue::%{_id}%::item} to {_product}
+    set {shop.catalogue::%{_id}%::name} to {_label}
+    set {shop.catalogue::%{_id}%::price} to round({_price} * 100) / 100
+    set {shop.catalogue::%{_id}%::limit} to floor({_limit})
+
+# =========================================================
+# ОБНОВЛЕНИЕ АССОРТИМЕНТА
+# =========================================================
+
+function shopRotate():
+    loop all players:
+        if {shop.menu-cycle::%uuid of loop-player%} is set:
+            close loop-player's inventory
+            send "<yellow>Ассортимент скупки обновился. Откройте /shop заново." to loop-player
+
+    delete {shop.menu-cycle::*}
+    delete {shop.active::*}
+
+    # Сбрасываем личные лимиты всех игроков на новый час.
+    delete {shop.sold::*}
+
+    set {shop.cycle} to "%random uuid%"
+
+    set {_pool::*} to {shop.catalogue-ids::*}
+    set {_count} to size of {_pool::*}
+
+    if {_count} > 10:
+        set {_count} to 10
+
+    if {_count} < 10:
+        send "[Shop] В каталоге меньше 10 товаров. Сейчас доступно: %{_count}%." to console
+
+    set {shop.active-count} to {_count}
+
+    loop {_count} times:
+        set {_id} to random element out of {_pool::*}
+        remove {_id} from {_pool::*}
+
+        set {shop.active::%loop-number%::id} to {_id}
+        set {shop.active::%loop-number%::item} to {shop.catalogue::%{_id}%::item}
+        set {shop.active::%loop-number%::name} to {shop.catalogue::%{_id}%::name}
+        set {shop.active::%loop-number%::price} to {shop.catalogue::%{_id}%::price}
+        set {shop.active::%loop-number%::limit} to {shop.catalogue::%{_id}%::limit}
+
+    set {shop.next-rotation} to {@shop-rotation-time} from now
+
+    broadcast ""
+    broadcast "<gold><bold>СКУПКА ОБНОВЛЕНА!"
+    broadcast "<yellow>Появились 10 новых случайных товаров."
+    broadcast "<gray>Откройте <white>/shop <gray>чтобы посмотреть ассортимент."
+    broadcast ""
+
+function shopEnsureRotation() :: boolean:
+    if {shop.cycle} is not set:
+        shopRotate()
+        return true
+
+    if {shop.next-rotation} is not in the future:
+        shopRotate()
+        return true
+
+    return false
+
+function shopOfferAtSlot(slot: number) :: number:
+    set {_slots::*} to 11, 12, 13, 14, 15, 20, 21, 22, 23 and 24
+
+    loop {_slots::*}:
+        if loop-value is {_slot}:
+            return loop-index parsed as number
+
+    return 0
+
+# Конкретные предметы должны совпадать полностью.
+# Именованные/зачарованные/custom-предметы не подходят вместо обычных.
+
+function shopMatches(candidate: item, wanted: item) :: boolean:
+    set {_left} to 1 of {_candidate}
+    set {_right} to 1 of {_wanted}
+
+    if {_left} is {_right}:
+        return true
+
+    return false
+
+# =========================================================
+# МЕНЮ
+# =========================================================
+
+function shopRender(p: player, menu: inventory):
+    set {_slots::*} to 11, 12, 13, 14, 15, 20, 21, 22, 23 and 24
+
+    loop {_slots::*}:
+        set {_offer} to loop-index parsed as number
+        set {_slot} to loop-value
+
+        if {shop.active::%{_offer}%::item} is not set:
+            set slot {_slot} of {_menu} to gray stained glass pane named " "
+        else:
+            set {_item} to {shop.active::%{_offer}%::item}
+            set {_name} to {shop.active::%{_offer}%::name}
+            set {_price} to {shop.active::%{_offer}%::price}
+            set {_limit} to {shop.active::%{_offer}%::limit}
+
+            set {_sold} to {shop.sold::%uuid of {_p}%::%{_offer}%}
+            if {_sold} is not set:
+                set {_sold} to 0
+
+            set {_remaining} to {_limit} - {_sold}
+
+            if {_remaining} < 0:
+                set {_remaining} to 0
+
+            if {_remaining} > 0:
+                set slot {_slot} of {_menu} to {_item} named "<yellow><bold>%{_name}%" with lore "<gray>Цена за 1: <gold>%{_price}% монет" and "<gray>Можно продать: <white>%{_remaining}% / %{_limit}%" and "<dark gray>Ваш личный лимит на этот час" and "" and "<light green>ЛКМ — продать 1" and "<light green>Shift + ЛКМ — продать до стака" and "<gray>Предметы берутся из вашего инвентаря"
+            else:
+                set slot {_slot} of {_menu} to {_item} named "<red><bold>%{_name}% — ЛИМИТ ИСЧЕРПАН" with lore "<gray>Вы продали за этот час: %{_limit}% шт." and "<gray>Дождитесь обновления ассортимента"
+
+    set {_time} to difference between {shop.next-rotation} and now
+
+    set slot 4 of {_menu} to clock named "<gold><bold>ОБНОВЛЕНИЕ ЧЕРЕЗ %{_time}%" with lore "<gray>Каждый час — 10 случайных товаров" and "<gray>Следующий набор может частично повторяться"
+
+    set slot 30 of {_menu} to gold nugget named "<gold>БАЛАНС: %economyBalance({_p})% монет"
+
+    set slot 31 of {_menu} to book named "<yellow>КАК ПРОДАВАТЬ" with lore "<gray>Нажмите на товар, который есть у вас" and "<gray>ЛКМ — 1 шт.; Shift + ЛКМ — до стака" and "<gray>Если предметов или лимита меньше — продастся остаток" and "<gray>У каждого игрока свой лимит продажи" and "<gray>Лимиты обновляются каждый час" and "<gray>Броня, вторая рука и предмет на курсоре не продаются" and "<gray>Особые предметы не принимаются вместо обычных"
+
+    set slot 32 of {_menu} to barrier named "<red>Закрыть"
+
+function shopOpen(p: player):
+    if {auth.logged-in::%name of {_p}%} is not true:
+        send "<red>Сначала войдите в аккаунт." to {_p}
+        stop
+
+    set {_rotated} to shopEnsureRotation()
+
+    economyEnsure({_p})
+
+    set {_menu} to chest inventory with 4 rows named "{@shop-title}"
+
+    loop integers between 0 and 35:
+        set slot loop-value of {_menu} to gray stained glass pane named " "
+
+    shopRender({_p}, {_menu})
+
+    open {_menu} to {_p}
+
+    set {shop.menu-cycle::%uuid of {_p}%} to {shop.cycle}
+
+# =========================================================
+# ПРОДАЖА
+# =========================================================
+
+function shopSell(p: player, offer: number, stack: boolean):
+    if {auth.logged-in::%name of {_p}%} is not true:
+        close {_p}'s inventory
+        stop
+
+    set {_rotated} to shopEnsureRotation()
+
+    if {_rotated} is true:
+        stop
+
+    if {shop.menu-cycle::%uuid of {_p}%} is not {shop.cycle}:
+        close {_p}'s inventory
+        send "<yellow>Меню устарело. Откройте /shop заново." to {_p}
+        stop
+
+    set {_wanted} to {shop.active::%{_offer}%::item}
+    set {_price} to {shop.active::%{_offer}%::price}
+    set {_limit} to {shop.active::%{_offer}%::limit}
+
+    if {_wanted} is not set:
+        stop
+
+    if {_price} is not set:
+        stop
+
+    if {_limit} is not set:
+        stop
+
+    set {_already-sold} to {shop.sold::%uuid of {_p}%::%{_offer}%}
+
+    if {_already-sold} is not set:
+        set {_already-sold} to 0
+
+    set {_remaining} to {_limit} - {_already-sold}
+
+    if {_remaining} <= 0:
+        send "<red>Вы уже исчерпали лимит этого товара на текущий час." to {_p}
+        stop
+
+    set {_requested} to 1
+
+    if {_stack} is true:
+        set {_requested} to max stack size of {_wanted}
+
+    if {_requested} > {_remaining}:
+        set {_requested} to {_remaining}
+
+    economyEnsure({_p})
+
+    set {_sold} to 0
+
+    loop integers between 0 and 35:
+        if {_sold} >= {_requested}:
+            stop loop
+
+        set {_index} to loop-value
+        set {_candidate} to slot {_index} of {_p}'s inventory
+
+        if {_candidate} is not air:
+            if shopMatches({_candidate}, {_wanted}) is true:
+                set {_amount} to item amount of slot {_index} of {_p}'s inventory
+
+                set {_take} to {_requested} - {_sold}
+
+                if {_take} > {_amount}:
+                    set {_take} to {_amount}
+
+                set {_left} to {_amount} - {_take}
+
+                if {_left} <= 0:
+                    set slot {_index} of {_p}'s inventory to air
+                else:
+                    set item amount of slot {_index} of {_p}'s inventory to {_left}
+
+                add {_take} to {_sold}
+
+    if {_sold} <= 0:
+        send "<red>У вас нет подходящих предметов в инвентаре." to {_p}
+        stop
+
+    # Записываем продажу только этому игроку.
+    add {_sold} to {shop.sold::%uuid of {_p}%::%{_offer}%}
+
+    set {_payment} to round({_sold} * {_price} * 100) / 100
+    add {_payment} to {economy.balance::%uuid of {_p}%}
+
+    send formatted "<light green>Продано: <white>%{shop.active::%{_offer}%::name}% x%{_sold}% <dark gray>• <gold>+%{_payment}% монет" to {_p}
+
+    # Изменился только личный лимит игрока, поэтому обновляем только его меню.
+    if {shop.menu-cycle::%uuid of {_p}%} is {shop.cycle}:
+        shopRender({_p}, {_p}'s current inventory)
+
+# =========================================================
+# КОМАНДЫ
+# =========================================================
+
+command /shop:
+    aliases: /магазин
+    executable by: players
+    trigger:
+        shopOpen(player)
+
+command /shoprefresh:
+    permission: op
+    trigger:
+        shopRotate()
+        send "<green>Выбраны новые товары. Личные лимиты игроков обновлены." to sender
+
+# =========================================================
+# ЗАГРУЗКА / ОБНОВЛЕНИЕ
+# =========================================================
+
+on load:
+    delete {shop.menu-cycle::*}
+    delete {shop.click-until::*}
+
+    shopConfigure()
+
+    set {_rotated} to shopEnsureRotation()
+
+every 5 seconds:
+    set {_rotated} to shopEnsureRotation()
+
+    loop all players:
+        if {shop.menu-cycle::%uuid of loop-player%} is {shop.cycle}:
+            shopRender(loop-player, loop-player's current inventory)
+
+# =========================================================
+# ОБРАБОТКА GUI
+# =========================================================
+
+on inventory click:
+    if {shop.menu-cycle::%uuid of player%} is not set:
+        stop
+
+    cancel event
+
+    if {auth.logged-in::%name of player%} is not true:
+        close player's inventory
+        stop
+
+    if event-slot is not set:
+        stop
+
+    set {_slot} to raw index of event-slot
+
+    if {_slot} is 32:
+        close player's inventory
+        stop
+
+    set {_offer} to shopOfferAtSlot({_slot})
+
+    if {_offer} is 0:
+        stop
+
+    if click type is left mouse button:
+        set {_stack} to false
+    else if click type is left mouse button with shift:
+        set {_stack} to true
+    else:
+        stop
+
+    if {shop.click-until::%uuid of player%} is in the future:
+        stop
+
+    set {shop.click-until::%uuid of player%} to 4 ticks from now
+
+    shopSell(player, {_offer}, {_stack})
+
+on inventory drag:
+    if {shop.menu-cycle::%uuid of player%} is set:
+        cancel event
+
+on inventory close:
+    delete {shop.menu-cycle::%uuid of player%}
+
+on quit:
+    delete {shop.menu-cycle::%uuid of player%}
+    delete {shop.click-until::%uuid of player%}
+
+on unload:
+    loop all players:
+        if {shop.menu-cycle::%uuid of loop-player%} is set:
+            close loop-player's inventory
+
+    delete {shop.menu-cycle::*}
+    delete {shop.click-until::*}

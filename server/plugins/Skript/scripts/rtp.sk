@@ -1,0 +1,378 @@
+# =========================================================
+# RANDOM TELEPORT
+# Politaria
+# Purpur 1.21.1
+# =========================================================
+
+options:
+
+	# Отступ от края WorldBorder
+	rtp-border-margin: 10
+
+	# Сколько раз пробовать найти нормальное место
+	rtp-max-attempts: 20
+
+	# Кулдаун между RTP
+	rtp-cooldown: 5 seconds
+
+	# Время ожидания перед телепортацией
+	rtp-wait-time: 5
+
+
+# =========================================================
+# /SPAWN
+# =========================================================
+
+# =========================================================
+# /SPAWN
+# =========================================================
+
+command /spawn:
+	executable by: players
+	trigger:
+		if {auth.logged-in::%name of player%} is not true:
+			send "&cСначала войдите в аккаунт." to player
+			stop
+
+		if {spawn.pending::%uuid of player%} is set:
+			send "&eТелепортация на спавн уже ожидается." to player
+			stop
+
+		# Проверяем основной мир
+		set {_world} to world "world"
+
+		if {_world} is not set:
+			send "&cНе найден мир world." to player
+			stop
+
+		# Фиксированная точка спавна
+		# Блок под ногами: 28 69 528
+		# Игрок стоит на нём: 28.5 70 528.5
+		set {_x} to 28.5
+		set {_y} to 69
+		set {_z} to 528.5
+
+		# Уникальный токен телепортации
+		set {_spawn-request} to "%random uuid%"
+		set {spawn.pending::%uuid of player%} to {_spawn-request}
+
+		send "&eТелепортация на спавн через &f5 секунд&e. Урон отменит телепортацию." to player
+
+		# Обратный отсчёт
+		loop 5 times:
+			if player is not online:
+				delete {spawn.pending::%uuid of player%}
+				stop
+
+			if {spawn.pending::%uuid of player%} is not {_spawn-request}:
+				stop
+
+			set {_seconds} to 6 - loop-number
+			send action bar "&eНа спавн через &f%{_seconds}% &eсек." to player
+
+			wait 1 second
+
+		# Проверяем игрока после таймера
+		if player is not online:
+			delete {spawn.pending::%uuid of player%}
+			stop
+
+		if {spawn.pending::%uuid of player%} is not {_spawn-request}:
+			stop
+
+		delete {spawn.pending::%uuid of player%}
+
+		# Повторно проверяем авторизацию
+		if {auth.logged-in::%name of player%} is not true:
+			stop
+
+		# Телепортация строго в Overworld на 28.5 70 528.5
+		execute console command "minecraft:execute in minecraft:overworld run minecraft:tp %player% 28.5 70 528.5"
+
+		questComplete(player, 4)
+
+		send "&aТы телепортирован на спавн." to player
+		play sound "entity.enderman.teleport" with volume 1 and pitch 1 at player
+
+
+# =========================================================
+# /RTP
+# =========================================================
+
+command /rtp:
+	trigger:
+
+		# -------------------------------------------------
+		# УЖЕ ИДЁТ RTP
+		# -------------------------------------------------
+
+		if {rtp.pending::%uuid of player%} is set:
+			send action bar "&cRTP уже запущен." to player
+			stop
+
+
+		# -------------------------------------------------
+		# КУЛДАУН
+		# -------------------------------------------------
+
+		if {rtp.cooldown::%uuid of player%} is set:
+
+			set {_passed} to difference between now and {rtp.cooldown::%uuid of player%}
+
+			if {_passed} is less than {@rtp-cooldown}:
+
+				set {_remaining} to {@rtp-cooldown} - {_passed}
+
+				send action bar "&cПодожди %{_remaining}% перед следующим RTP." to player
+				stop
+
+
+		# -------------------------------------------------
+		# WORLD BORDER
+		# -------------------------------------------------
+
+		set {_world} to player's world
+		set {_border} to world border of {_world}
+
+		set {_center} to world border center of {_border}
+		set {_size} to world border size of {_border}
+
+		set {_radius} to {_size} / 2
+		remove {@rtp-border-margin} from {_radius}
+
+		if {_radius} <= 10:
+			send "&cWorldBorder слишком маленький для RTP." to player
+			stop
+
+
+		set {_centerX} to x-coordinate of {_center}
+		set {_centerZ} to z-coordinate of {_center}
+
+
+		# -------------------------------------------------
+		# СОХРАНЯЕМ СТАРУЮ ПОЗИЦИЮ
+		# -------------------------------------------------
+
+		set {_oldX} to x-coordinate of player
+		set {_oldY} to y-coordinate of player
+		set {_oldZ} to z-coordinate of player
+
+
+		# -------------------------------------------------
+		# ЗАПУСК ОЖИДАНИЯ
+		# -------------------------------------------------
+
+		set {rtp.pending::%uuid of player%} to true
+
+		send "&eRTP начнётся через &f5 секунд&e." to player
+		send "&7Получение урона отменит телепортацию." to player
+
+
+		# -------------------------------------------------
+		# 5 СЕКУНД
+		# -------------------------------------------------
+
+		loop {@rtp-wait-time} times:
+
+			if {rtp.pending::%uuid of player%} is not set:
+				stop
+
+			set {_seconds} to 6 - loop-number
+
+			send action bar "&eТелепортация через &f%{_seconds}% &eсек." to player
+
+			play sound "block.note_block.hat" with volume 0.5 and pitch 1.2 at player
+
+			wait 1 second
+
+
+		# RTP мог отмениться во время последней секунды
+		if {rtp.pending::%uuid of player%} is not set:
+			stop
+
+
+		# -------------------------------------------------
+		# ПОИСК МЕСТА
+		# -------------------------------------------------
+
+		send action bar "&eИщем безопасное место..." to player
+
+
+		loop {@rtp-max-attempts} times:
+
+			# ---------------------------------------------
+			# VANILLA RANDOM TELEPORT
+			#
+			# spreadplayers:
+			# центр X/Z
+			# минимальное расстояние = 0
+			# максимальный радиус = WorldBorder
+			# ---------------------------------------------
+
+			execute console command "spreadplayers %{_centerX}% %{_centerZ}% 0 %{_radius}% false %player%"
+
+			# Даём серверу применить телепортацию
+			wait 2 ticks
+
+
+			# ---------------------------------------------
+			# ПРОВЕРКА БЛОКА ПОД ИГРОКОМ
+			# ---------------------------------------------
+
+			set {_below} to block below player
+			set {_belowType} to "%type of {_below}%"
+
+
+			# ---------------------------------------------
+			# ДЕРЕВЬЯ / ЛИСТВА
+			# ---------------------------------------------
+
+			if {_belowType} contains "leaves":
+				continue
+
+			if {_belowType} contains "log":
+				continue
+
+			if {_belowType} contains "wood":
+				continue
+
+			if {_belowType} contains "stem":
+				continue
+
+			if {_belowType} contains "hyphae":
+				continue
+
+
+			# ---------------------------------------------
+			# ВОДА / ЛАВА
+			# ---------------------------------------------
+
+			if {_belowType} is "water":
+				continue
+
+			if {_belowType} is "lava":
+				continue
+
+
+			# ---------------------------------------------
+			# ОПАСНЫЕ БЛОКИ
+			# ---------------------------------------------
+
+			if {_belowType} is "magma block":
+				continue
+
+			if {_belowType} is "cactus":
+				continue
+
+			if {_belowType} is "campfire":
+				continue
+
+			if {_belowType} is "soul campfire":
+				continue
+
+			if {_belowType} is "fire":
+				continue
+
+			if {_belowType} is "soul fire":
+				continue
+
+			if {_belowType} is "sweet berry bush":
+				continue
+
+			if {_belowType} is "powder snow":
+				continue
+
+
+			# ---------------------------------------------
+			# ПРОВЕРКА, ЧТО ИГРОК НЕ В БЛОКЕ
+			# ---------------------------------------------
+
+			set {_feetType} to "%type of block at player%"
+
+			set {_headLoc} to location of player
+			add 1 to y-coordinate of {_headLoc}
+
+			set {_headType} to "%type of block at {_headLoc}%"
+
+
+			if {_feetType} is not "air":
+				if {_feetType} is not "cave air":
+					continue
+
+			if {_headType} is not "air":
+				if {_headType} is not "cave air":
+					continue
+
+
+			# ---------------------------------------------
+			# УСПЕХ
+			# ---------------------------------------------
+
+			delete {rtp.pending::%uuid of player%}
+
+			set {rtp.cooldown::%uuid of player%} to now
+
+			set {_x} to round(x-coordinate of player)
+			set {_y} to round(y-coordinate of player)
+			set {_z} to round(z-coordinate of player)
+
+			questComplete(player, 2)
+			send "&aТелепортация выполнена." to player
+			send action bar "&aRTP &8» &fX: %{_x}% Y: %{_y}% Z: %{_z}%" to player
+
+			play sound "entity.enderman.teleport" with volume 1 and pitch 1 at player
+
+			stop
+
+
+		# -------------------------------------------------
+		# НЕ НАШЛИ МЕСТО
+		# -------------------------------------------------
+
+		delete {rtp.pending::%uuid of player%}
+
+		send "&cНе удалось найти безопасное место." to player
+		send "&7Возвращаем тебя назад." to player
+
+		execute console command "minecraft:tp %player% %{_oldX}% %{_oldY}% %{_oldZ}%"
+
+
+# =========================================================
+# УРОН ОТМЕНЯЕТ ОЖИДАНИЕ RTP
+# =========================================================
+
+on damage:
+
+	if victim is a player:
+
+		set {_p} to victim
+		if {spawn.pending::%uuid of {_p}%} is set:
+			delete {spawn.pending::%uuid of {_p}%}
+			send "&cТелепортация на спавн отменена — ты получил урон." to {_p}
+			send action bar "&cТелепортация на спавн отменена" to {_p}
+
+		if {rtp.pending::%uuid of {_p}%} is set:
+
+			delete {rtp.pending::%uuid of {_p}%}
+
+			send "&cRTP отменён — ты получил урон." to {_p}
+			send action bar "&c✖ Телепортация отменена" to {_p}
+
+			play sound "block.note_block.bass" with volume 1 and pitch 0.7 at {_p}
+
+
+# =========================================================
+# ВЫХОД
+# =========================================================
+
+on quit:
+	delete {spawn.pending::%uuid of player%}
+
+	delete {rtp.pending::%uuid of player%}
+
+# Clear unfinished spawn requests when this script is reloaded.
+on load:
+	delete {spawn.pending::*}
+
+on unload:
+	delete {spawn.pending::*}

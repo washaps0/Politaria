@@ -1,0 +1,17 @@
+on join:
+	wait 10 ticks
+	if player is not online:
+		stop
+
+	set {_messages::*} to "&b&lPOLITARIA&r &8» &f%player% &7присоединился к серверу. &8Добро пожаловать!"
+	add "&b&lPOLITARIA&r &8» &f%player% &7вошёл в мир &fPOLITARIA&7." to {_messages::*}
+	add "&b&lPOLITARIA&r &8» &7Игрок &f%player% &7снова с нами." to {_messages::*}
+	add "&b&lPOLITARIA&r &8» &7На сервере появился &f%player%&7." to {_messages::*}
+	add "&b&lPOLITARIA&r &8» &7К нам присоединился &f%player%&7. Приятной игры!" to {_messages::*}
+	add "&b&lPOLITARIA&r &8» &f%player% &7подключился. Желаем приятной игры!" to {_messages::*}
+	add "&b&lPOLITARIA&r &8» &7Новый игрок в сети: &f%player%&7." to {_messages::*}
+	add "&b&lPOLITARIA&r &8» &7Добро пожаловать, &f%player%&7." to {_messages::*}
+	add "&b&lPOLITARIA&r &8» &f%player% &7успешно подключился к POLITARIA." to {_messages::*}
+	add "&b&lPOLITARIA&r &8» &7Игрок &f%player% &7теперь с нами!" to {_messages::*}
+
+	broadcast colored random element out of {_messages::*}

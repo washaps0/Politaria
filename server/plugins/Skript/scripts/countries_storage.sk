@@ -1,0 +1,1447 @@
+# =========================================================
+# POLITARIA COUNTRY STORAGE + PROGRESSION
+# Extension for countries.sk
+# =========================================================
+# Country levels:
+#   I   - 45 storage slots, Mine and Farm
+#   II  - 90 storage slots, Sawmill and Quarry, building level II
+#   III - Ranch, building level III
+#
+# Role permissions stored in the existing country role system:
+#   STORAGE_DEPOSIT     - put items into country storage
+#   STORAGE_WITHDRAW    - take items from country storage
+#   MANAGE_DEVELOPMENT  - upgrade country and buildings
+# =========================================================
+
+function countryLevel(id: text) :: number:
+	if {country.level::%{_id}%} is set:
+		return {country.level::%{_id}%}
+	return 1
+
+function countryStoragePages(id: text) :: number:
+	if countryLevel({_id}) is greater than or equal to 2:
+		return 2
+	return 1
+
+function countryStorageMaxSlots(id: text) :: number:
+	set {_pages} to countryStoragePages({_id})
+	return {_pages} * 45
+
+function countryStorageCanDeposit(p: player) :: boolean:
+	set {_id} to countryId({_p})
+	if {_id} is "":
+		return false
+	if countryIsAdmin({_p}) is true:
+		return true
+	if {country.owner::%{_id}%} is "%uuid of {_p}%":
+		return true
+	if countryHasPermission({_p}, "STORAGE_DEPOSIT") is true:
+		return true
+	return false
+
+function countryStorageCanWithdraw(p: player) :: boolean:
+	set {_id} to countryId({_p})
+	if {_id} is "":
+		return false
+	if countryIsAdmin({_p}) is true:
+		return true
+	if {country.owner::%{_id}%} is "%uuid of {_p}%":
+		return true
+	if countryHasPermission({_p}, "STORAGE_WITHDRAW") is true:
+		return true
+	return false
+
+function countryCanManageDevelopment(p: player) :: boolean:
+	set {_id} to countryId({_p})
+	if {_id} is "":
+		return false
+	if countryIsAdmin({_p}) is true:
+		return true
+	if {country.owner::%{_id}%} is "%uuid of {_p}%":
+		return true
+	if countryHasPermission({_p}, "MANAGE_DEVELOPMENT") is true:
+		return true
+	return false
+
+function countryStorageGlobalSlot(page: number, localSlot: number) :: number:
+	return ({_page} - 1) * 45 + {_localSlot}
+
+function countryStorageFindFreeSlot(id: text, page: number) :: number:
+	set {_pages} to countryStoragePages({_id})
+	if {_page} is greater than {_pages}:
+		return -1
+	loop integers between 0 and 44:
+		set {_global} to countryStorageGlobalSlot({_page}, loop-value)
+		if {country.storage::%{_id}%::%{_global}%} is not set:
+			return loop-value
+	return -1
+
+function countryStorageMaterialCount(id: text, materialName: text) :: number:
+	set {_type} to {_materialName} parsed as item type
+	if {_type} is not set:
+		return 0
+	set {_count} to 0
+	set {_slots} to countryStorageMaxSlots({_id})
+	set {_max} to {_slots} - 1
+	loop integers between 0 and {_max}:
+		set {_item} to {country.storage::%{_id}%::%loop-value%}
+		if {_item} is set:
+			if type of {_item} is {_type}:
+				add amount of {_item} to {_count}
+	return {_count}
+
+function countryStorageTakeMaterial(id: text, materialName: text, wanted: number) :: boolean:
+	if {_wanted} is less than or equal to 0:
+		return true
+	set {_have} to countryStorageMaterialCount({_id}, {_materialName})
+	if {_have} is less than {_wanted}:
+		return false
+	set {_type} to {_materialName} parsed as item type
+	set {_left} to {_wanted}
+	set {_slots} to countryStorageMaxSlots({_id})
+	set {_max} to {_slots} - 1
+	loop integers between 0 and {_max}:
+		if {_left} is less than or equal to 0:
+			return true
+		set {_item} to {country.storage::%{_id}%::%loop-value%}
+		if {_item} is set:
+			if type of {_item} is {_type}:
+				set {_amount} to amount of {_item}
+				if {_amount} is less than or equal to {_left}:
+					subtract {_amount} from {_left}
+					delete {country.storage::%{_id}%::%loop-value%}
+				else:
+					set {_new-amount} to {_amount} - {_left}
+					set amount of {_item} to {_new-amount}
+					set {country.storage::%{_id}%::%loop-value%} to {_item}
+					return true
+	return true
+
+function countryStorageAddMaterial(id: text, materialName: text, amountToAdd: number) :: number:
+	set {_type} to {_materialName} parsed as item type
+	if {_type} is not set:
+		return {_amountToAdd}
+	set {_left} to {_amountToAdd}
+	if {_left} is less than or equal to 0:
+		return 0
+	set {_slots} to countryStorageMaxSlots({_id})
+	set {_max} to {_slots} - 1
+	loop integers between 0 and {_max}:
+		if {_left} is less than or equal to 0:
+			return 0
+		set {_item} to {country.storage::%{_id}%::%loop-value%}
+		if {_item} is set:
+			if type of {_item} is {_type}:
+				set {_current} to amount of {_item}
+				if {_current} is less than 64:
+					set {_space} to 64 - {_current}
+					set {_put} to {_left}
+					if {_put} is greater than {_space}:
+						set {_put} to {_space}
+					add {_put} to {_current}
+					set amount of {_item} to {_current}
+					set {country.storage::%{_id}%::%loop-value%} to {_item}
+					subtract {_put} from {_left}
+	loop integers between 0 and {_max}:
+		if {_left} is less than or equal to 0:
+			return 0
+		if {country.storage::%{_id}%::%loop-value%} is not set:
+			set {_put} to {_left}
+			if {_put} is greater than 64:
+				set {_put} to 64
+			set {_stack} to {_type}
+			set amount of {_stack} to {_put}
+			set {country.storage::%{_id}%::%loop-value%} to {_stack}
+			subtract {_put} from {_left}
+	return {_left}
+
+function countryBuildingLevel(id: text, kind: text) :: number:
+	if {country.building::%{_id}%::%{_kind}%} is set:
+		return {country.building::%{_id}%::%{_kind}%}
+	return 0
+
+function countryBuildingName(kind: text) :: text:
+	if {_kind} is "mine":
+		return "Шахта"
+	if {_kind} is "farm":
+		return "Ферма"
+	if {_kind} is "sawmill":
+		return "Лесопилка"
+	if {_kind} is "quarry":
+		return "Карьер"
+	if {_kind} is "ranch":
+		return "Животноводство"
+	return {_kind}
+
+function countryBuildingUnlockLevel(kind: text) :: number:
+	if {_kind} is "mine":
+		return 1
+	if {_kind} is "farm":
+		return 1
+	if {_kind} is "sawmill":
+		return 2
+	if {_kind} is "quarry":
+		return 2
+	if {_kind} is "ranch":
+		return 3
+	return 3
+
+function countryBuildingProductionText(kind: text, level: number) :: text:
+	if {_level} is less than 1:
+		return "Не построено"
+	if {_kind} is "mine":
+		if {_level} is 1:
+			return "16 угля + 4 сырого железа / час"
+		if {_level} is 2:
+			return "24 угля + 8 железа + 2 золота / час"
+		return "32 угля + 12 железа + 4 золота + 6 редстоуна / час"
+	if {_kind} is "farm":
+		if {_level} is 1:
+			return "24 пшеницы + 8 картофеля / час"
+		if {_level} is 2:
+			return "36 пшеницы + 16 картофеля + 8 моркови / час"
+		return "48 пшеницы + 24 картофеля + 16 моркови + 8 свёклы / час"
+	if {_kind} is "sawmill":
+		if {_level} is 1:
+			return "24 дубовых брёвен / час"
+		if {_level} is 2:
+			return "32 дуба + 12 ели / час"
+		return "40 дуба + 20 ели + 12 берёзы / час"
+	if {_kind} is "quarry":
+		if {_level} is 1:
+			return "32 булыжника + 8 камня / час"
+		if {_level} is 2:
+			return "48 булыжника + 16 камня + 8 песка / час"
+		return "64 булыжника + 24 камня + 16 песка + 8 глины / час"
+	if {_kind} is "ranch":
+		if {_level} is 1:
+			return "4 кожи + 6 белой шерсти / час"
+		if {_level} is 2:
+			return "8 кожи + 8 шерсти + 4 пера / час"
+		return "12 кожи + 12 шерсти + 8 пера + 4 кроличьих шкурки / час"
+	return ""
+
+function countryBuildingCostText(kind: text, nextLevel: number) :: text:
+	if {_kind} is "mine":
+		if {_nextLevel} is 1:
+			return "1200 монет • 48 железа • 8 золота"
+		if {_nextLevel} is 2:
+			return "3000 монет • 96 железа • 20 золота • 4 алмаза"
+		return "6000 монет • 128 железа • 40 золота • 10 алмазов"
+	if {_kind} is "farm":
+		if {_nextLevel} is 1:
+			return "700 монет • 96 пшеницы • 48 дуба"
+		if {_nextLevel} is 2:
+			return "1600 монет • 160 пшеницы • 64 дуба • 20 железа"
+		return "3200 монет • 256 пшеницы • 96 дуба • 40 железа • 4 алмаза"
+	if {_kind} is "sawmill":
+		if {_nextLevel} is 1:
+			return "1000 монет • 96 дуба • 20 железа"
+		if {_nextLevel} is 2:
+			return "2200 монет • 128 дуба • 40 железа • 8 золота"
+		return "4500 монет • 192 дуба • 64 железа • 4 алмаза"
+	if {_kind} is "quarry":
+		if {_nextLevel} is 1:
+			return "1200 монет • 160 камня • 20 железа"
+		if {_nextLevel} is 2:
+			return "2500 монет • 256 камня • 40 железа • 8 золота"
+		return "5000 монет • 384 камня • 80 железа • 4 алмаза"
+	if {_kind} is "ranch":
+		if {_nextLevel} is 1:
+			return "1200 монет • 40 сена • 48 дуба"
+		if {_nextLevel} is 2:
+			return "2800 монет • 80 сена • 64 дуба • 20 железа"
+		return "5500 монет • 128 сена • 96 дуба • 40 железа • 8 золота"
+	return ""
+
+function countryLevelUpgradeCostText(nextLevel: number) :: text:
+	if {_nextLevel} is 2:
+		return "3500 монет • 96 железа • 24 золота • 8 алмазов • 160 камня"
+	if {_nextLevel} is 3:
+		return "9000 монет • 160 железа • 64 золота • 20 алмазов • 16 изумрудов"
+	return "Максимальный уровень"
+
+function countryProductionAdd(id: text, materialName: text, amountToAdd: number):
+	if {_amountToAdd} is greater than 0:
+		add {_amountToAdd} to {country.production::%{_id}%::%{_materialName}%}
+
+function countryProduce(id: text, hours: number):
+	if {_hours} is less than 1:
+		stop
+	set {_level} to countryBuildingLevel({_id}, "mine")
+	if {_level} is 1:
+		set {_a} to 16 * {_hours}
+		countryProductionAdd({_id}, "coal", {_a})
+		set {_a} to 4 * {_hours}
+		countryProductionAdd({_id}, "raw iron", {_a})
+	else if {_level} is 2:
+		set {_a} to 24 * {_hours}
+		countryProductionAdd({_id}, "coal", {_a})
+		set {_a} to 8 * {_hours}
+		countryProductionAdd({_id}, "raw iron", {_a})
+		set {_a} to 2 * {_hours}
+		countryProductionAdd({_id}, "raw gold", {_a})
+	else if {_level} is 3:
+		set {_a} to 32 * {_hours}
+		countryProductionAdd({_id}, "coal", {_a})
+		set {_a} to 12 * {_hours}
+		countryProductionAdd({_id}, "raw iron", {_a})
+		set {_a} to 4 * {_hours}
+		countryProductionAdd({_id}, "raw gold", {_a})
+		set {_a} to 6 * {_hours}
+		countryProductionAdd({_id}, "redstone", {_a})
+	set {_level} to countryBuildingLevel({_id}, "farm")
+	if {_level} is 1:
+		set {_a} to 24 * {_hours}
+		countryProductionAdd({_id}, "wheat", {_a})
+		set {_a} to 8 * {_hours}
+		countryProductionAdd({_id}, "potato", {_a})
+	else if {_level} is 2:
+		set {_a} to 36 * {_hours}
+		countryProductionAdd({_id}, "wheat", {_a})
+		set {_a} to 16 * {_hours}
+		countryProductionAdd({_id}, "potato", {_a})
+		set {_a} to 8 * {_hours}
+		countryProductionAdd({_id}, "carrot", {_a})
+	else if {_level} is 3:
+		set {_a} to 48 * {_hours}
+		countryProductionAdd({_id}, "wheat", {_a})
+		set {_a} to 24 * {_hours}
+		countryProductionAdd({_id}, "potato", {_a})
+		set {_a} to 16 * {_hours}
+		countryProductionAdd({_id}, "carrot", {_a})
+		set {_a} to 8 * {_hours}
+		countryProductionAdd({_id}, "beetroot", {_a})
+	set {_level} to countryBuildingLevel({_id}, "sawmill")
+	if {_level} is 1:
+		set {_a} to 24 * {_hours}
+		countryProductionAdd({_id}, "oak log", {_a})
+	else if {_level} is 2:
+		set {_a} to 32 * {_hours}
+		countryProductionAdd({_id}, "oak log", {_a})
+		set {_a} to 12 * {_hours}
+		countryProductionAdd({_id}, "spruce log", {_a})
+	else if {_level} is 3:
+		set {_a} to 40 * {_hours}
+		countryProductionAdd({_id}, "oak log", {_a})
+		set {_a} to 20 * {_hours}
+		countryProductionAdd({_id}, "spruce log", {_a})
+		set {_a} to 12 * {_hours}
+		countryProductionAdd({_id}, "birch log", {_a})
+	set {_level} to countryBuildingLevel({_id}, "quarry")
+	if {_level} is 1:
+		set {_a} to 32 * {_hours}
+		countryProductionAdd({_id}, "cobblestone", {_a})
+		set {_a} to 8 * {_hours}
+		countryProductionAdd({_id}, "stone", {_a})
+	else if {_level} is 2:
+		set {_a} to 48 * {_hours}
+		countryProductionAdd({_id}, "cobblestone", {_a})
+		set {_a} to 16 * {_hours}
+		countryProductionAdd({_id}, "stone", {_a})
+		set {_a} to 8 * {_hours}
+		countryProductionAdd({_id}, "sand", {_a})
+	else if {_level} is 3:
+		set {_a} to 64 * {_hours}
+		countryProductionAdd({_id}, "cobblestone", {_a})
+		set {_a} to 24 * {_hours}
+		countryProductionAdd({_id}, "stone", {_a})
+		set {_a} to 16 * {_hours}
+		countryProductionAdd({_id}, "sand", {_a})
+		set {_a} to 8 * {_hours}
+		countryProductionAdd({_id}, "clay", {_a})
+	set {_level} to countryBuildingLevel({_id}, "ranch")
+	if {_level} is 1:
+		set {_a} to 4 * {_hours}
+		countryProductionAdd({_id}, "leather", {_a})
+		set {_a} to 6 * {_hours}
+		countryProductionAdd({_id}, "white wool", {_a})
+	else if {_level} is 2:
+		set {_a} to 8 * {_hours}
+		countryProductionAdd({_id}, "leather", {_a})
+		set {_a} to 8 * {_hours}
+		countryProductionAdd({_id}, "white wool", {_a})
+		set {_a} to 4 * {_hours}
+		countryProductionAdd({_id}, "feather", {_a})
+	else if {_level} is 3:
+		set {_a} to 12 * {_hours}
+		countryProductionAdd({_id}, "leather", {_a})
+		set {_a} to 12 * {_hours}
+		countryProductionAdd({_id}, "white wool", {_a})
+		set {_a} to 8 * {_hours}
+		countryProductionAdd({_id}, "feather", {_a})
+		set {_a} to 4 * {_hours}
+		countryProductionAdd({_id}, "rabbit hide", {_a})
+
+function countryProcessProduction():
+	loop {country.name::*}:
+		set {_id} to loop-index
+		if {country.level::%{_id}%} is not set:
+			set {country.level::%{_id}%} to 1
+		if {country.production-next::%{_id}%} is not set:
+			set {country.production-next::%{_id}%} to 1 hour from now
+		else:
+			set {_hours} to 0
+			while {country.production-next::%{_id}%} is in the past:
+				add 1 to {_hours}
+				add 1 hour to {country.production-next::%{_id}%}
+				if {_hours} is greater than or equal to 720:
+					stop loop
+			if {_hours} is greater than 0:
+				countryProduce({_id}, {_hours})
+
+function countryPendingProduction(id: text) :: number:
+	set {_count} to 0
+	loop {country.production::%{_id}%::*}:
+		add loop-value to {_count}
+	return {_count}
+
+function countryCollectProduction(p: player):
+	set {_id} to countryId({_p})
+	if {_id} is "":
+		stop
+	countryProcessProduction()
+	set {_moved} to 0
+	loop {country.production::%{_id}%::*}:
+		set {_material} to loop-index
+		set {_amount} to loop-value
+		if {_amount} is greater than 0:
+			set {_left} to countryStorageAddMaterial({_id}, {_material}, {_amount})
+			set {_added} to {_amount} - {_left}
+			add {_added} to {_moved}
+			if {_left} is less than or equal to 0:
+				delete {country.production::%{_id}%::%{_material}%}
+			else:
+				set {country.production::%{_id}%::%{_material}%} to {_left}
+	if {_moved} is greater than 0:
+		send formatted "<light green>В хранилище перенесено <white>%{_moved}% <light green>единиц продукции." to {_p}
+	else:
+		set {_pending} to countryPendingProduction({_id})
+		if {_pending} is greater than 0:
+			send "<red>В хранилище нет места. Освободите несколько ячеек." to {_p}
+		else:
+			send "<gray>Накопленной продукции пока нет." to {_p}
+
+function countryOpenStorage2(p: player, page: number):
+	set {_id} to countryId({_p})
+	if {_id} is "":
+		send "<red>Вы не состоите в стране." to {_p}
+		stop
+	set {_pages} to countryStoragePages({_id})
+	if {_page} is less than 1:
+		set {_page} to 1
+	if {_page} is greater than {_pages}:
+		set {_page} to {_pages}
+	set {_menu} to chest inventory with 6 rows named "<dark gray>Хранилище страны • %{_page}%/%{_pages}%"
+	loop integers between 0 and 53:
+		set slot loop-value of {_menu} to gray stained glass pane named " "
+	loop integers between 0 and 44:
+		set {_global} to countryStorageGlobalSlot({_page}, loop-value)
+		if {country.storage::%{_id}%::%{_global}%} is set:
+			set slot loop-value of {_menu} to {country.storage::%{_id}%::%{_global}%}
+		else:
+			set slot loop-value of {_menu} to air
+	if {_page} is greater than 1:
+		set slot 45 of {_menu} to arrow named "<yellow>Предыдущая страница"
+	else:
+		set slot 45 of {_menu} to gray dye named "<dark gray>Предыдущая страница"
+	set slot 48 of {_menu} to barrier named "<red>Назад"
+	set {_deposit-text} to "<red>НЕТ"
+	if countryStorageCanDeposit({_p}) is true:
+		set {_deposit-text} to "<light green>ДА"
+	set {_withdraw-text} to "<red>НЕТ"
+	if countryStorageCanWithdraw({_p}) is true:
+		set {_withdraw-text} to "<light green>ДА"
+	set slot 49 of {_menu} to chest named "<gold><bold>ХРАНИЛИЩЕ СТРАНЫ" with lore "<gray>Страниц: <white>%{_pages}%/2" and "<gray>Пополнять: %{_deposit-text}%" and "<gray>Забирать: %{_withdraw-text}%" and "" and "<gray>II уровень страны открывает" and "<gray>вторую страницу хранилища."
+	if {_page} is less than {_pages}:
+		set slot 53 of {_menu} to arrow named "<yellow>Следующая страница"
+	else if {_pages} is 1:
+		set slot 53 of {_menu} to barrier named "<red>ВТОРАЯ СТРАНИЦА ЗАКРЫТА" with lore "<gray>Открывается на II уровне страны"
+	else:
+		set slot 53 of {_menu} to gray dye named "<dark gray>Следующая страница"
+	set {country.storage-page::%uuid of {_p}%} to {_page}
+	open {_menu} to {_p}
+	set {country.menu::%uuid of {_p}%} to "storage2"
+
+function countryOpenDevelopment2(p: player):
+	set {_id} to countryId({_p})
+	if {_id} is "":
+		stop
+	countryProcessProduction()
+	set {_country-level} to countryLevel({_id})
+	set {_pending} to countryPendingProduction({_id})
+	set {_menu} to chest inventory with 6 rows named "<dark gray>Развитие страны"
+	loop integers between 0 and 53:
+		set slot loop-value of {_menu} to gray stained glass pane named " "
+	if {_country-level} is less than 3:
+		set {_next-level} to {_country-level} + 1
+		set {_level-cost} to countryLevelUpgradeCostText({_next-level})
+		set slot 4 of {_menu} to beacon named "<aqua><bold>УРОВЕНЬ СТРАНЫ: %{_country-level}%/3" with lore "<gray>Следующий уровень: <white>%{_next-level}%" and "<gray>Цена: <gold>%{_level-cost}%" and "" and "<yellow>Нажмите для повышения"
+	else:
+		set slot 4 of {_menu} to beacon named "<light green><bold>УРОВЕНЬ СТРАНЫ: III/III" with lore "<gray>Достигнут максимальный уровень"
+	delete {country.building-menu::%uuid of {_p}%::*}
+	set {_kinds::*} to "mine", "farm", "sawmill", "quarry" and "ranch"
+	set {_slots::*} to 10, 12, 14, 16 and 22
+	set {_icons::*} to iron pickaxe, wheat, iron axe, stone and leather
+	loop {_kinds::*}:
+		set {_kind} to loop-value
+		set {_slot} to {_slots::%loop-index%}
+		set {_icon} to {_icons::%loop-index%}
+		set {_name} to countryBuildingName({_kind})
+		set {_building-level} to countryBuildingLevel({_id}, {_kind})
+		set {_unlock} to countryBuildingUnlockLevel({_kind})
+		set {_production} to countryBuildingProductionText({_kind}, {_building-level})
+		if {_country-level} is less than {_unlock}:
+			set slot {_slot} of {_menu} to barrier named "<red><bold>%{_name}%" with lore "<gray>Открывается на <white>%{_unlock}% уровне страны"
+		else if {_building-level} is greater than or equal to 3:
+			set slot {_slot} of {_menu} to {_icon} named "<light green><bold>%{_name}% • III" with lore "<gray>%{_production}%" and "" and "<green>МАКСИМАЛЬНЫЙ УРОВЕНЬ"
+		else:
+			set {_next-building} to {_building-level} + 1
+			set {_cost} to countryBuildingCostText({_kind}, {_next-building})
+			if {_next-building} is greater than {_country-level}:
+				set slot {_slot} of {_menu} to {_icon} named "<yellow><bold>%{_name}% • %{_building-level}%/3" with lore "<gray>Производство: <white>%{_production}%" and "" and "<red>Для следующего уровня нужен" and "<red>%{_next-building}% уровень страны"
+			else:
+				set slot {_slot} of {_menu} to {_icon} named "<yellow><bold>%{_name}% • %{_building-level}%/3" with lore "<gray>Производство: <white>%{_production}%" and "" and "<gray>Следующий уровень: <white>%{_next-building}%" and "<gray>Цена: <gold>%{_cost}%" and "" and "<yellow>Нажмите, чтобы построить/улучшить"
+		set {country.building-menu::%uuid of {_p}%::%{_slot}%} to {_kind}
+	set slot 31 of {_menu} to hopper named "<gold><bold>ЗАБРАТЬ ПРОДУКЦИЮ" with lore "<gray>Накоплено: <white>%{_pending}% предметов" and "<gray>Здания производят ресурсы каждый" and "<gray>реальный час, даже без игроков онлайн." and "" and "<yellow>Нажмите, чтобы перенести в хранилище"
+	set slot 40 of {_menu} to arrow named "<yellow>Назад"
+	open {_menu} to {_p}
+	set {country.menu::%uuid of {_p}%} to "development2"
+
+function countryTryUpgradeLevel2(p: player):
+	set {_id} to countryId({_p})
+	if {_id} is "":
+		stop
+	if countryCanManageDevelopment({_p}) is not true:
+		send "<red>У вашей роли нет права управлять развитием страны." to {_p}
+		stop
+	set {_level} to countryLevel({_id})
+	if {_level} is greater than or equal to 3:
+		send "<yellow>У страны уже максимальный уровень." to {_p}
+		stop
+	set {_next} to {_level} + 1
+	if {_next} is 2:
+		set {_money} to 3500
+		set {_m1} to "iron ingot"
+		set {_a1} to 96
+		set {_m2} to "gold ingot"
+		set {_a2} to 24
+		set {_m3} to "diamond"
+		set {_a3} to 8
+		set {_m4} to "stone"
+		set {_a4} to 160
+	else:
+		set {_money} to 9000
+		set {_m1} to "iron ingot"
+		set {_a1} to 160
+		set {_m2} to "gold ingot"
+		set {_a2} to 64
+		set {_m3} to "diamond"
+		set {_a3} to 20
+		set {_m4} to "emerald"
+		set {_a4} to 16
+	if {country.treasury::%{_id}%} is not set:
+		set {country.treasury::%{_id}%} to 0
+	if {country.treasury::%{_id}%} is less than {_money}:
+		send formatted "<red>В казне недостаточно денег. Нужно <gold>%{_money}% монет<red>." to {_p}
+		stop
+	if countryStorageMaterialCount({_id}, {_m1}) is less than {_a1}:
+		send formatted "<red>Не хватает <white>%{_a1}% %{_m1}% <red>в хранилище." to {_p}
+		stop
+	if countryStorageMaterialCount({_id}, {_m2}) is less than {_a2}:
+		send formatted "<red>Не хватает <white>%{_a2}% %{_m2}% <red>в хранилище." to {_p}
+		stop
+	if countryStorageMaterialCount({_id}, {_m3}) is less than {_a3}:
+		send formatted "<red>Не хватает <white>%{_a3}% %{_m3}% <red>в хранилище." to {_p}
+		stop
+	if countryStorageMaterialCount({_id}, {_m4}) is less than {_a4}:
+		send formatted "<red>Не хватает <white>%{_a4}% %{_m4}% <red>в хранилище." to {_p}
+		stop
+	countryStorageTakeMaterial({_id}, {_m1}, {_a1})
+	countryStorageTakeMaterial({_id}, {_m2}, {_a2})
+	countryStorageTakeMaterial({_id}, {_m3}, {_a3})
+	countryStorageTakeMaterial({_id}, {_m4}, {_a4})
+	remove {_money} from {country.treasury::%{_id}%}
+	set {country.level::%{_id}%} to {_next}
+	if {_next} is 2:
+		send "<light green><bold>Страна достигла II уровня!</bold> <gray>Открыты вторая страница хранилища, лесопилка и карьер." to {_p}
+	else:
+		send "<light green><bold>Страна достигла III уровня!</bold> <gray>Открыто животноводство и III уровни зданий." to {_p}
+
+function countryTryUpgradeBuilding2(p: player, kind: text):
+	set {_id} to countryId({_p})
+	if {_id} is "":
+		stop
+	if countryCanManageDevelopment({_p}) is not true:
+		send "<red>У вашей роли нет права управлять развитием страны." to {_p}
+		stop
+	set {_country-level} to countryLevel({_id})
+	set {_unlock} to countryBuildingUnlockLevel({_kind})
+	if {_country-level} is less than {_unlock}:
+		send formatted "<red>Это здание открывается на <white>%{_unlock}% уровне страны<red>." to {_p}
+		stop
+	set {_current} to countryBuildingLevel({_id}, {_kind})
+	set {_next} to {_current} + 1
+	if {_next} is greater than 3:
+		send "<yellow>Здание уже максимального уровня." to {_p}
+		stop
+	if {_next} is greater than {_country-level}:
+		send formatted "<red>Сначала повысьте уровень страны до <white>%{_next}%<red>." to {_p}
+		stop
+	set {_money} to 0
+	set {_m1} to ""
+	set {_a1} to 0
+	set {_m2} to ""
+	set {_a2} to 0
+	set {_m3} to ""
+	set {_a3} to 0
+	set {_m4} to ""
+	set {_a4} to 0
+	if {_kind} is "mine":
+		if {_next} is 1:
+			set {_money} to 1200
+			set {_m1} to "iron ingot"
+			set {_a1} to 48
+			set {_m2} to "gold ingot"
+			set {_a2} to 8
+		else if {_next} is 2:
+			set {_money} to 3000
+			set {_m1} to "iron ingot"
+			set {_a1} to 96
+			set {_m2} to "gold ingot"
+			set {_a2} to 20
+			set {_m3} to "diamond"
+			set {_a3} to 4
+		else:
+			set {_money} to 6000
+			set {_m1} to "iron ingot"
+			set {_a1} to 128
+			set {_m2} to "gold ingot"
+			set {_a2} to 40
+			set {_m3} to "diamond"
+			set {_a3} to 10
+	else if {_kind} is "farm":
+		if {_next} is 1:
+			set {_money} to 700
+			set {_m1} to "wheat"
+			set {_a1} to 96
+			set {_m2} to "oak log"
+			set {_a2} to 48
+		else if {_next} is 2:
+			set {_money} to 1600
+			set {_m1} to "wheat"
+			set {_a1} to 160
+			set {_m2} to "oak log"
+			set {_a2} to 64
+			set {_m3} to "iron ingot"
+			set {_a3} to 20
+		else:
+			set {_money} to 3200
+			set {_m1} to "wheat"
+			set {_a1} to 256
+			set {_m2} to "oak log"
+			set {_a2} to 96
+			set {_m3} to "iron ingot"
+			set {_a3} to 40
+			set {_m4} to "diamond"
+			set {_a4} to 4
+	else if {_kind} is "sawmill":
+		if {_next} is 1:
+			set {_money} to 1000
+			set {_m1} to "oak log"
+			set {_a1} to 96
+			set {_m2} to "iron ingot"
+			set {_a2} to 20
+		else if {_next} is 2:
+			set {_money} to 2200
+			set {_m1} to "oak log"
+			set {_a1} to 128
+			set {_m2} to "iron ingot"
+			set {_a2} to 40
+			set {_m3} to "gold ingot"
+			set {_a3} to 8
+		else:
+			set {_money} to 4500
+			set {_m1} to "oak log"
+			set {_a1} to 192
+			set {_m2} to "iron ingot"
+			set {_a2} to 64
+			set {_m3} to "diamond"
+			set {_a3} to 4
+	else if {_kind} is "quarry":
+		if {_next} is 1:
+			set {_money} to 1200
+			set {_m1} to "stone"
+			set {_a1} to 160
+			set {_m2} to "iron ingot"
+			set {_a2} to 20
+		else if {_next} is 2:
+			set {_money} to 2500
+			set {_m1} to "stone"
+			set {_a1} to 256
+			set {_m2} to "iron ingot"
+			set {_a2} to 40
+			set {_m3} to "gold ingot"
+			set {_a3} to 8
+		else:
+			set {_money} to 5000
+			set {_m1} to "stone"
+			set {_a1} to 384
+			set {_m2} to "iron ingot"
+			set {_a2} to 80
+			set {_m3} to "diamond"
+			set {_a3} to 4
+	else if {_kind} is "ranch":
+		if {_next} is 1:
+			set {_money} to 1200
+			set {_m1} to "hay bale"
+			set {_a1} to 40
+			set {_m2} to "oak log"
+			set {_a2} to 48
+		else if {_next} is 2:
+			set {_money} to 2800
+			set {_m1} to "hay bale"
+			set {_a1} to 80
+			set {_m2} to "oak log"
+			set {_a2} to 64
+			set {_m3} to "iron ingot"
+			set {_a3} to 20
+		else:
+			set {_money} to 5500
+			set {_m1} to "hay bale"
+			set {_a1} to 128
+			set {_m2} to "oak log"
+			set {_a2} to 96
+			set {_m3} to "iron ingot"
+			set {_a3} to 40
+			set {_m4} to "gold ingot"
+			set {_a4} to 8
+	if {country.treasury::%{_id}%} is not set:
+		set {country.treasury::%{_id}%} to 0
+	if {country.treasury::%{_id}%} is less than {_money}:
+		send formatted "<red>В казне недостаточно денег. Нужно <gold>%{_money}% монет<red>." to {_p}
+		stop
+	if {_a1} is greater than 0:
+		if countryStorageMaterialCount({_id}, {_m1}) is less than {_a1}:
+			send formatted "<red>Не хватает <white>%{_a1}% %{_m1}% <red>в хранилище." to {_p}
+			stop
+	if {_a2} is greater than 0:
+		if countryStorageMaterialCount({_id}, {_m2}) is less than {_a2}:
+			send formatted "<red>Не хватает <white>%{_a2}% %{_m2}% <red>в хранилище." to {_p}
+			stop
+	if {_a3} is greater than 0:
+		if countryStorageMaterialCount({_id}, {_m3}) is less than {_a3}:
+			send formatted "<red>Не хватает <white>%{_a3}% %{_m3}% <red>в хранилище." to {_p}
+			stop
+	if {_a4} is greater than 0:
+		if countryStorageMaterialCount({_id}, {_m4}) is less than {_a4}:
+			send formatted "<red>Не хватает <white>%{_a4}% %{_m4}% <red>в хранилище." to {_p}
+			stop
+	if {_a1} is greater than 0:
+		countryStorageTakeMaterial({_id}, {_m1}, {_a1})
+	if {_a2} is greater than 0:
+		countryStorageTakeMaterial({_id}, {_m2}, {_a2})
+	if {_a3} is greater than 0:
+		countryStorageTakeMaterial({_id}, {_m3}, {_a3})
+	if {_a4} is greater than 0:
+		countryStorageTakeMaterial({_id}, {_m4}, {_a4})
+	remove {_money} from {country.treasury::%{_id}%}
+	set {country.building::%{_id}%::%{_kind}%} to {_next}
+	set {_building-name} to countryBuildingName({_kind})
+	send formatted "<light green>%{_building-name}% улучшено до <white>%{_next}% уровня<light green>." to {_p}
+
+command /cstorage:
+	aliases: /cstore, /cwarehouse
+	executable by: players
+	trigger:
+		if {auth.logged-in::%name of player%} is not true:
+			send "<red>Сначала войдите в аккаунт." to player
+			stop
+		if countryId(player) is "":
+			send "<red>Вы не состоите в стране." to player
+			stop
+		countryOpenStorageHub(player)
+
+command /cdevelopment:
+	aliases: /cdev, /cbuildings
+	executable by: players
+	trigger:
+		if {auth.logged-in::%name of player%} is not true:
+			send "<red>Сначала войдите в аккаунт." to player
+			stop
+		if countryId(player) is "":
+			send "<red>Вы не состоите в стране." to player
+			stop
+		countryOpenDevelopment2(player)
+
+on inventory open:
+	wait 1 tick
+	if player is not online:
+		stop
+	set {_menu-state} to {country.menu::%uuid of player%}
+	set {_inv} to player's current inventory
+	if {_menu-state} is "main":
+		set {_id} to countryId(player)
+		if {_id} is "":
+			stop
+		set {_level} to countryLevel({_id})
+		set {_pages} to countryStoragePages({_id})
+		set slot 36 of {_inv} to chest named "<gold><bold>ХРАНИЛИЩЕ СТРАНЫ" with lore "<gray>Категории и быстрый склад" and "<gray>Занятые слоты общие для всех категорий" and "<gray>Страниц: <white>%{_pages}%/2" and "" and "<yellow>Нажмите, чтобы открыть"
+		set slot 37 of {_inv} to beacon named "<aqua><bold>РАЗВИТИЕ СТРАНЫ" with lore "<gray>Уровень страны: <white>%{_level}%/3" and "<gray>Виртуальные здания производят" and "<gray>ресурсы каждый реальный час" and "" and "<yellow>Нажмите, чтобы открыть"
+		stop
+	if {_menu-state} is "role-editor":
+		set {_id} to countryId(player)
+		set {_role} to {country.selected-role::%uuid of player%}
+		if {_id} is "":
+			stop
+		if {_role} is not set:
+			stop
+		if {country.role-perm::%{_id}%::%{_role}%::MANAGE_DEVELOPMENT} is true:
+			set slot 44 of {_inv} to lime dye named "<light green><bold>РАЗВИТИЕ СТРАНЫ" with lore "<green>РАЗРЕШЕНО" and "<gray>Строить и улучшать здания" and "<gray>и повышать уровень страны."
+		else:
+			set slot 44 of {_inv} to gray dye named "<gray><bold>РАЗВИТИЕ СТРАНЫ" with lore "<red>ЗАПРЕЩЕНО" and "<gray>Строить и улучшать здания" and "<gray>и повышать уровень страны."
+		if {country.role-perm::%{_id}%::%{_role}%::STORAGE_DEPOSIT} is true:
+			set slot 46 of {_inv} to lime dye named "<light green><bold>ПОПОЛНЯТЬ ХРАНИЛИЩЕ" with lore "<green>РАЗРЕШЕНО" and "<gray>Класть предметы в склад страны"
+		else:
+			set slot 46 of {_inv} to gray dye named "<gray><bold>ПОПОЛНЯТЬ ХРАНИЛИЩЕ" with lore "<red>ЗАПРЕЩЕНО" and "<gray>Класть предметы в склад страны"
+		if {country.role-perm::%{_id}%::%{_role}%::STORAGE_WITHDRAW} is true:
+			set slot 47 of {_inv} to lime dye named "<light green><bold>ЗАБИРАТЬ ИЗ ХРАНИЛИЩА" with lore "<green>РАЗРЕШЕНО" and "<gray>Забирать предметы из склада страны"
+		else:
+			set slot 47 of {_inv} to gray dye named "<gray><bold>ЗАБИРАТЬ ИЗ ХРАНИЛИЩА" with lore "<red>ЗАПРЕЩЕНО" and "<gray>Забирать предметы из склада страны"
+
+on inventory click:
+	if event-slot is not set:
+		stop
+	set {_menu-state} to {country.menu::%uuid of player%}
+	set {_slot} to raw index of event-slot
+	if {_menu-state} is "main":
+		if {_slot} is 36:
+			cancel event
+			countryOpenStorageHub(player)
+			stop
+		if {_slot} is 37:
+			cancel event
+			countryOpenDevelopment2(player)
+			stop
+	if {_menu-state} is "role-editor":
+		if {_slot} is not 44:
+			if {_slot} is not 46:
+				if {_slot} is not 47:
+					stop
+		cancel event
+		set {_id} to countryId(player)
+		set {_role} to {country.selected-role::%uuid of player%}
+		if {_id} is "":
+			stop
+		if {_role} is not set:
+			stop
+		if countryHasPermission(player, "MANAGE_ROLES") is not true:
+			send "<red>У вас нет права настраивать роли." to player
+			stop
+		if {_slot} is 44:
+			if {country.role-perm::%{_id}%::%{_role}%::MANAGE_DEVELOPMENT} is true:
+				delete {country.role-perm::%{_id}%::%{_role}%::MANAGE_DEVELOPMENT}
+			else:
+				set {country.role-perm::%{_id}%::%{_role}%::MANAGE_DEVELOPMENT} to true
+		else if {_slot} is 46:
+			if {country.role-perm::%{_id}%::%{_role}%::STORAGE_DEPOSIT} is true:
+				delete {country.role-perm::%{_id}%::%{_role}%::STORAGE_DEPOSIT}
+			else:
+				set {country.role-perm::%{_id}%::%{_role}%::STORAGE_DEPOSIT} to true
+		else:
+			if {country.role-perm::%{_id}%::%{_role}%::STORAGE_WITHDRAW} is true:
+				delete {country.role-perm::%{_id}%::%{_role}%::STORAGE_WITHDRAW}
+			else:
+				set {country.role-perm::%{_id}%::%{_role}%::STORAGE_WITHDRAW} to true
+		countryOpenRoleEditor(player, {_role})
+		stop
+	if {_menu-state} is "storage2":
+		cancel event
+		set {_id} to countryId(player)
+		if {_id} is "":
+			close player's inventory
+			stop
+		set {_page} to {country.storage-page::%uuid of player%}
+		if {_page} is not set:
+			set {_page} to 1
+		if {_slot} is 45:
+			if {_page} is greater than 1:
+				countryOpenStorage2(player, {_page} - 1)
+			stop
+		if {_slot} is 48:
+			countryOpenMain(player)
+			stop
+		if {_slot} is 49:
+			stop
+		if {_slot} is 53:
+			set {_pages} to countryStoragePages({_id})
+			if {_page} is less than {_pages}:
+				countryOpenStorage2(player, {_page} + 1)
+			else if {_pages} is 1:
+				send "<yellow>Вторая страница хранилища откроется на II уровне страны." to player
+			stop
+		if {_slot} is between 0 and 44:
+			if countryStorageCanWithdraw(player) is not true:
+				send action bar "<red>У вашей роли нет права забирать вещи из хранилища." to player
+				stop
+			set {_global} to countryStorageGlobalSlot({_page}, {_slot})
+			set {_stored} to {country.storage::%{_id}%::%{_global}%}
+			if {_stored} is not set:
+				stop
+			give {_stored} to player
+			delete {country.storage::%{_id}%::%{_global}%}
+			set {_inv} to player's current inventory
+			set slot {_slot} of {_inv} to air
+			stop
+		if {_slot} is greater than or equal to 54:
+			if countryStorageCanDeposit(player) is not true:
+				send action bar "<red>У вашей роли нет права пополнять хранилище." to player
+				stop
+			set {_clicked} to event-item
+			if {_clicked} is not set:
+				stop
+			if {_clicked} is air:
+				stop
+			set {_free} to countryStorageFindFreeSlot({_id}, {_page})
+			if {_free} is less than 0:
+				send action bar "<red>На этой странице нет свободных ячеек." to player
+				stop
+			set {_global} to countryStorageGlobalSlot({_page}, {_free})
+			set {country.storage::%{_id}%::%{_global}%} to {_clicked}
+			set {_inv} to player's current inventory
+			set slot {_free} of {_inv} to {_clicked}
+			set event-slot to air
+			stop
+		stop
+	if {_menu-state} is "development2":
+		cancel event
+		if {_slot} is 40:
+			delete {country.building-menu::%uuid of player%::*}
+			countryOpenMain(player)
+			stop
+		if {_slot} is 4:
+			countryTryUpgradeLevel2(player)
+			countryOpenDevelopment2(player)
+			stop
+		if {_slot} is 31:
+			if countryStorageCanDeposit(player) is not true:
+				send "<red>Нужно право пополнять хранилище, чтобы собрать продукцию." to player
+				stop
+			countryCollectProduction(player)
+			countryOpenDevelopment2(player)
+			stop
+		set {_kind} to {country.building-menu::%uuid of player%::%{_slot}%}
+		if {_kind} is set:
+			countryTryUpgradeBuilding2(player, {_kind})
+			countryOpenDevelopment2(player)
+		stop
+
+on load:
+	loop {country.name::*}:
+		if {country.level::%loop-index%} is not set:
+			set {country.level::%loop-index%} to 1
+	countryProcessProduction()
+
+every 5 minutes:
+	countryProcessProduction()
+
+on quit:
+	delete {country.storage-page::%uuid of player%}
+	delete {country.building-menu::%uuid of player%::*}
+
+
+# =========================================================
+# COUNTRY STORAGE CATEGORIES V2
+# Categories are virtual chests. They DO NOT add capacity:
+# country level I = 45 total occupied slots
+# country level II = 90 total occupied slots
+# Existing untagged items automatically belong to "general".
+# =========================================================
+
+function countryStorageCanManageCategories(p: player) :: boolean:
+	set {_id} to countryId({_p})
+	if {_id} is "":
+		return false
+	if countryIsAdmin({_p}) is true:
+		return true
+	if {country.owner::%{_id}%} is "%uuid of {_p}%":
+		return true
+	if countryHasPermission({_p}, "MANAGE_DEVELOPMENT") is true:
+		return true
+	return false
+
+function countryStorageCategoryName(id: text, category: text) :: text:
+	if {_category} is "general":
+		return "Общее"
+	if {country.storage-category-name::%{_id}%::%{_category}%} is set:
+		return {country.storage-category-name::%{_id}%::%{_category}%}
+	return "Категория"
+
+function countryStorageCategoryOfSlot(id: text, globalSlot: number) :: text:
+	if {country.storage-category::%{_id}%::%{_globalSlot}%} is set:
+		return {country.storage-category::%{_id}%::%{_globalSlot}%}
+	return "general"
+
+function countryStorageUsedSlots(id: text) :: number:
+	set {_used} to 0
+	set {_max} to countryStorageMaxSlots({_id}) - 1
+	loop integers between 0 and {_max}:
+		if {country.storage::%{_id}%::%loop-value%} is set:
+			add 1 to {_used}
+	return {_used}
+
+function countryStorageCategorySlots(id: text, category: text) :: number:
+	set {_used} to 0
+	set {_max} to countryStorageMaxSlots({_id}) - 1
+	loop integers between 0 and {_max}:
+		if {country.storage::%{_id}%::%loop-value%} is set:
+			set {_cat} to countryStorageCategoryOfSlot({_id}, loop-value)
+			if {_cat} is {_category}:
+				add 1 to {_used}
+	return {_used}
+
+function countryStorageCategoryCount(id: text) :: number:
+	set {_count} to 1
+	loop {country.storage-category-name::%{_id}%::*}:
+		add 1 to {_count}
+	return {_count}
+
+function countryStorageFindFreeGlobalSlot(id: text) :: number:
+	set {_max} to countryStorageMaxSlots({_id}) - 1
+	loop integers between 0 and {_max}:
+		if {country.storage::%{_id}%::%loop-value%} is not set:
+			return loop-value
+	return -1
+
+function countryStorageCategoryKnowsType(id: text, category: text, typeText: text) :: boolean:
+	if {country.storage-category-type::%{_id}%::%{_category}%::%{_typeText}%} is true:
+		return true
+	return false
+
+function countryStoragePutItemInCategory(id: text, category: text, itemToStore: item) :: boolean:
+	set {_free} to countryStorageFindFreeGlobalSlot({_id})
+	if {_free} is less than 0:
+		return false
+	set {country.storage::%{_id}%::%{_free}%} to {_itemToStore}
+	if {_category} is "general":
+		delete {country.storage-category::%{_id}%::%{_free}%}
+	else:
+		set {country.storage-category::%{_id}%::%{_free}%} to {_category}
+	set {_type-text} to "%type of {_itemToStore}%"
+	set {country.storage-category-type::%{_id}%::%{_category}%::%{_type-text}%} to true
+	return true
+
+function countryStoragePutOneInCategory(id: text, category: text, itemToStore: item) :: boolean:
+	set {_one} to {_itemToStore}
+	set amount of {_one} to 1
+	set {_max} to countryStorageMaxSlots({_id}) - 1
+	loop integers between 0 and {_max}:
+		set {_stored} to {country.storage::%{_id}%::%loop-value%}
+		if {_stored} is set:
+			set {_stored-category} to countryStorageCategoryOfSlot({_id}, loop-value)
+			if {_stored-category} is {_category}:
+				set {_stored-one} to {_stored}
+				set amount of {_stored-one} to 1
+				if {_stored-one} is {_one}:
+					set {_stored-type} to type of {_stored}
+					set {_limit} to maximum stack size of {_stored-type}
+					set {_current} to amount of {_stored}
+					if {_current} is less than {_limit}:
+						add 1 to {_current}
+						set amount of {_stored} to {_current}
+						set {country.storage::%{_id}%::%loop-value%} to {_stored}
+						set {_type-text} to "%type of {_one}%"
+						set {country.storage-category-type::%{_id}%::%{_category}%::%{_type-text}%} to true
+						return true
+	return countryStoragePutItemInCategory({_id}, {_category}, {_one})
+
+function countryStorageQuickDeposit(p: player, category: text, mode: text) :: number:
+	set {_id} to countryId({_p})
+	if {_id} is "":
+		return 0
+	set {_moved} to 0
+	loop integers between 0 and 35:
+		set {_item} to slot loop-value of {_p}'s inventory
+		if {_item} is set:
+			if {_item} is not air:
+				set {_allowed} to true
+				if {_mode} is "MATCHING":
+					set {_type-text} to "%type of {_item}%"
+					if countryStorageCategoryKnowsType({_id}, {_category}, {_type-text}) is not true:
+						set {_allowed} to false
+				if {_allowed} is true:
+					if countryStoragePutItemInCategory({_id}, {_category}, {_item}) is true:
+						set slot loop-value of {_p}'s inventory to air
+						add 1 to {_moved}
+					else:
+						return {_moved}
+	return {_moved}
+
+function countryStorageAutoSortPlayer(p: player) :: number:
+	set {_id} to countryId({_p})
+	if {_id} is "":
+		return 0
+	set {_moved} to 0
+	loop integers between 0 and 35:
+		set {_item} to slot loop-value of {_p}'s inventory
+		if {_item} is set:
+			if {_item} is not air:
+				set {_type-text} to "%type of {_item}%"
+				set {_target} to ""
+				if countryStorageCategoryKnowsType({_id}, "general", {_type-text}) is true:
+					set {_target} to "general"
+				if {_target} is "":
+					loop {country.storage-category-name::%{_id}%::*}:
+						set {_cat} to loop-index
+						if countryStorageCategoryKnowsType({_id}, {_cat}, {_type-text}) is true:
+							set {_target} to {_cat}
+							stop loop
+				if {_target} is not "":
+					if countryStoragePutItemInCategory({_id}, {_target}, {_item}) is true:
+						set slot loop-value of {_p}'s inventory to air
+						add 1 to {_moved}
+					else:
+						return {_moved}
+	return {_moved}
+
+function countryOpenStorageHub(p: player):
+	set {_id} to countryId({_p})
+	if {_id} is "":
+		send "<red>Вы не состоите в стране." to {_p}
+		stop
+	set {_menu} to chest inventory with 6 rows named "<dark gray>Хранилище страны"
+	loop integers between 0 and 53:
+		set slot loop-value of {_menu} to gray stained glass pane named " "
+	delete {country.storage-menu-category::%uuid of {_p}%::*}
+	set {_used} to countryStorageUsedSlots({_id})
+	set {_capacity} to countryStorageMaxSlots({_id})
+	set slot 4 of {_menu} to chest named "<gold><bold>ХРАНИЛИЩЕ СТРАНЫ" with lore "<gray>Занято: <white>%{_used}%/%{_capacity}% слотов" and "<gray>Категории используют общий лимит" and "" and "<gray>Категория запоминает типы предметов," and "<gray>которые вы в неё складываете."
+
+	set {_general-used} to countryStorageCategorySlots({_id}, "general")
+	set slot 10 of {_menu} to chest named "<white><bold>ОБЩЕЕ" with lore "<gray>Занято: <white>%{_general-used}% слотов" and "<gray>Сюда попадают старые предметы" and "<gray>и продукция зданий." and "" and "<yellow>Нажмите, чтобы открыть"
+	set {country.storage-menu-category::%uuid of {_p}%::10} to "general"
+
+	set {_slots::*} to 11, 12, 13, 14, 15, 16, 19 and 20
+	set {_pos} to 1
+	loop {country.storage-category-name::%{_id}%::*}:
+		if {_pos} is greater than size of {_slots::*}:
+			stop loop
+		set {_cat} to loop-index
+		set {_slot} to {_slots::%{_pos}%}
+		set {_cat-used} to countryStorageCategorySlots({_id}, {_cat})
+		set slot {_slot} of {_menu} to barrel named "<yellow><bold>%loop-value%" with lore "<gray>Занято: <white>%{_cat-used}% слотов" and "" and "<yellow>Нажмите, чтобы открыть"
+		set {country.storage-menu-category::%uuid of {_p}%::%{_slot}%} to {_cat}
+		add 1 to {_pos}
+
+	set {_cat-count} to countryStorageCategoryCount({_id})
+	if {_cat-count} is less than 9:
+		set slot 31 of {_menu} to name tag named "<light green><bold>СОЗДАТЬ КАТЕГОРИЮ" with lore "<gray>Категорий: <white>%{_cat-count}%/9" and "<gray>Название вводится в чат" and "" and "<yellow>Нажмите, чтобы создать"
+	else:
+		set slot 31 of {_menu} to barrier named "<red><bold>ЛИМИТ КАТЕГОРИЙ" with lore "<gray>Максимум: <white>9 категорий"
+	set slot 32 of {_menu} to hopper named "<aqua><bold>АВТОСОРТИРОВКА" with lore "<gray>Разложить предметы из инвентаря" and "<gray>по категориям, которые уже знают" and "<gray>эти типы предметов." and "" and "<yellow>Нажмите, чтобы разложить"
+	set slot 33 of {_menu} to chest named "<gold><bold>СЛОЖИТЬ ВСЁ В ОБЩЕЕ" with lore "<gray>Быстро перенести весь основной" and "<gray>инвентарь в категорию «Общее»." and "" and "<yellow>Нажмите, чтобы сложить"
+	set slot 45 of {_menu} to arrow named "<yellow>Назад"
+	open {_menu} to {_p}
+	set {country.menu::%uuid of {_p}%} to "storage-hub"
+
+function countryOpenStorageCategory(p: player, category: text, page: number):
+	set {_id} to countryId({_p})
+	if {_id} is "":
+		stop
+	set {_name} to countryStorageCategoryName({_id}, {_category})
+	set {_count} to countryStorageCategorySlots({_id}, {_category})
+	set {_pages} to 1
+	if {_count} is greater than 45:
+		set {_pages} to 2
+	if {_page} is less than 1:
+		set {_page} to 1
+	if {_page} is greater than {_pages}:
+		set {_page} to {_pages}
+	set {_menu} to chest inventory with 6 rows named "<dark gray>%{_name}% • %{_page}%/%{_pages}%"
+	loop integers between 0 and 53:
+		set slot loop-value of {_menu} to gray stained glass pane named " "
+	delete {country.storage-view::%uuid of {_p}%::*}
+	set {_start} to ({_page} - 1) * 45
+	set {_finish} to {_start} + 44
+	set {_position} to 0
+	set {_max} to countryStorageMaxSlots({_id}) - 1
+	loop integers between 0 and {_max}:
+		set {_global} to loop-value
+		if {country.storage::%{_id}%::%{_global}%} is set:
+			set {_cat} to countryStorageCategoryOfSlot({_id}, {_global})
+			if {_cat} is {_category}:
+				if {_position} is between {_start} and {_finish}:
+					set {_view} to {_position} - {_start}
+					set slot {_view} of {_menu} to {country.storage::%{_id}%::%{_global}%}
+					set {country.storage-view::%uuid of {_p}%::%{_view}%} to {_global}
+				add 1 to {_position}
+	set slot 45 of {_menu} to arrow named "<yellow>К категориям"
+	if {_page} is greater than 1:
+		set slot 46 of {_menu} to arrow named "<yellow>Предыдущая страница"
+	else:
+		set slot 46 of {_menu} to gray dye named "<dark gray>Предыдущая страница"
+	if {_category} is not "general":
+		set slot 47 of {_menu} to name tag named "<yellow><bold>ПЕРЕИМЕНОВАТЬ" with lore "<gray>Текущее имя: <white>%{_name}%"
+		if {_count} is 0:
+			set slot 48 of {_menu} to barrier named "<red><bold>УДАЛИТЬ КАТЕГОРИЮ" with lore "<gray>Можно удалить только пустую категорию"
+		else:
+			set slot 48 of {_menu} to gray dye named "<dark gray>Удалить категорию" with lore "<gray>Сначала заберите все предметы"
+	else:
+		set slot 47 of {_menu} to gray dye named "<dark gray>Системная категория"
+		set slot 48 of {_menu} to gray dye named "<dark gray>Нельзя удалить «Общее»"
+	set slot 49 of {_menu} to barrel named "<gold><bold>%{_name}%" with lore "<gray>Предметов-стаков: <white>%{_count}%" and "<gray>Общий лимит склада не меняется." and "" and "<gray>ЛКМ снизу — положить весь стак." and "<gray>ПКМ снизу — положить 1 предмет." and "<gray>ЛКМ сверху — забрать весь стак." and "<gray>ПКМ сверху — забрать 1 предмет."
+	set slot 51 of {_menu} to hopper named "<aqua><bold>СЛОЖИТЬ ПОХОЖЕЕ" with lore "<gray>Перенести из инвентаря только" and "<gray>те типы, которые эта категория" and "<gray>уже запомнила."
+	set slot 52 of {_menu} to chest named "<light green><bold>СЛОЖИТЬ ВСЁ" with lore "<gray>Перенести весь основной инвентарь" and "<gray>в эту категорию."
+	if {_page} is less than {_pages}:
+		set slot 53 of {_menu} to arrow named "<yellow>Следующая страница"
+	else:
+		set slot 53 of {_menu} to gray dye named "<dark gray>Следующая страница"
+	set {country.storage-current-category::%uuid of {_p}%} to {_category}
+	set {country.storage-category-page::%uuid of {_p}%} to {_page}
+	open {_menu} to {_p}
+	set {country.menu::%uuid of {_p}%} to "storage-category"
+
+on chat:
+	if {country.storage-input::%uuid of player%} is not set:
+		stop
+	cancel event
+	set {_mode} to {country.storage-input::%uuid of player%}
+	delete {country.storage-input::%uuid of player%}
+	set {_id} to countryId(player)
+	if {_id} is "":
+		stop
+	set {_input} to message
+	if length of {_input} is greater than 20:
+		send "<red>Название категории не должно быть длиннее 20 символов." to player
+		stop
+	if length of {_input} is less than 1:
+		send "<red>Название не может быть пустым." to player
+		stop
+	if {_mode} is "create":
+		if countryStorageCanManageCategories(player) is not true:
+			send "<red>У вас нет права создавать категории." to player
+			stop
+		if countryStorageCategoryCount({_id}) is greater than or equal to 9:
+			send "<red>Достигнут лимит категорий." to player
+			stop
+		if {country.storage-category-seq::%{_id}%} is not set:
+			set {country.storage-category-seq::%{_id}%} to 0
+		add 1 to {country.storage-category-seq::%{_id}%}
+		set {_seq} to {country.storage-category-seq::%{_id}%}
+		set {_cat} to "c%{_seq}%"
+		set {country.storage-category-name::%{_id}%::%{_cat}%} to {_input}
+		send formatted "<light green>Создана категория <white>%{_input}%<light green>." to player
+		wait 1 tick
+		countryOpenStorageHub(player)
+		stop
+	if {_mode} is "rename":
+		set {_cat} to {country.storage-current-category::%uuid of player%}
+		if {_cat} is not set:
+			stop
+		if {_cat} is "general":
+			stop
+		if countryStorageCanManageCategories(player) is not true:
+			send "<red>У вас нет права переименовывать категории." to player
+			stop
+		set {country.storage-category-name::%{_id}%::%{_cat}%} to {_input}
+		send formatted "<light green>Категория переименована в <white>%{_input}%<light green>." to player
+		wait 1 tick
+		countryOpenStorageCategory(player, {_cat}, 1)
+
+on inventory click:
+	if event-slot is not set:
+		stop
+	set {_state} to {country.menu::%uuid of player%}
+	set {_raw} to raw index of event-slot
+
+	if {_state} is "storage-hub":
+		cancel event
+		set {_id} to countryId(player)
+		if {_id} is "":
+			close player's inventory
+			stop
+		set {_cat} to {country.storage-menu-category::%uuid of player%::%{_raw}%}
+		if {_cat} is set:
+			countryOpenStorageCategory(player, {_cat}, 1)
+			stop
+		if {_raw} is 31:
+			if countryStorageCanManageCategories(player) is not true:
+				send "<red>У вас нет права создавать категории хранилища." to player
+				stop
+			if countryStorageCategoryCount({_id}) is greater than or equal to 9:
+				send "<red>Достигнут лимит в 9 категорий." to player
+				stop
+			set {country.storage-input::%uuid of player%} to "create"
+			close player's inventory
+			send "<yellow>Введите название новой категории в чат. Максимум 20 символов." to player
+			stop
+		if {_raw} is 32:
+			if countryStorageCanDeposit(player) is not true:
+				send "<red>У вашей роли нет права пополнять хранилище." to player
+				stop
+			set {_moved} to countryStorageAutoSortPlayer(player)
+			if {_moved} is greater than 0:
+				send formatted "<light green>Автосортировка переместила <white>%{_moved}% <light green>стаков." to player
+			else:
+				send "<gray>Не найдено предметов, для которых категории уже запомнили тип." to player
+			countryOpenStorageHub(player)
+			stop
+		if {_raw} is 33:
+			if countryStorageCanDeposit(player) is not true:
+				send "<red>У вашей роли нет права пополнять хранилище." to player
+				stop
+			set {_moved} to countryStorageQuickDeposit(player, "general", "ALL")
+			send formatted "<light green>В «Общее» перенесено <white>%{_moved}% <light green>стаков." to player
+			countryOpenStorageHub(player)
+			stop
+		if {_raw} is 45:
+			countryOpenMain(player)
+			stop
+		stop
+
+	if {_state} is "storage-category":
+		cancel event
+		set {_id} to countryId(player)
+		if {_id} is "":
+			close player's inventory
+			stop
+		set {_cat} to {country.storage-current-category::%uuid of player%}
+		if {_cat} is not set:
+			countryOpenStorageHub(player)
+			stop
+		set {_page} to {country.storage-category-page::%uuid of player%}
+		if {_page} is not set:
+			set {_page} to 1
+		if {_raw} is between 0 and 44:
+			if countryStorageCanWithdraw(player) is not true:
+				send action bar "<red>У вашей роли нет права забирать вещи из хранилища." to player
+				stop
+			set {_global} to {country.storage-view::%uuid of player%::%{_raw}%}
+			if {_global} is not set:
+				stop
+			set {_stored} to {country.storage::%{_id}%::%{_global}%}
+			if {_stored} is not set:
+				stop
+			set {_right-click} to false
+			if click type is right mouse button:
+				set {_right-click} to true
+			if click type is right mouse button with shift:
+				set {_right-click} to true
+			if {_right-click} is true:
+				set {_one} to {_stored}
+				set amount of {_one} to 1
+				give {_one} to player
+				set {_amount} to amount of {_stored}
+				if {_amount} is less than or equal to 1:
+					delete {country.storage::%{_id}%::%{_global}%}
+					delete {country.storage-category::%{_id}%::%{_global}%}
+				else:
+					subtract 1 from {_amount}
+					set amount of {_stored} to {_amount}
+					set {country.storage::%{_id}%::%{_global}%} to {_stored}
+			else:
+				give {_stored} to player
+				delete {country.storage::%{_id}%::%{_global}%}
+				delete {country.storage-category::%{_id}%::%{_global}%}
+			countryOpenStorageCategory(player, {_cat}, {_page})
+			stop
+		if {_raw} is greater than or equal to 54:
+			if countryStorageCanDeposit(player) is not true:
+				send action bar "<red>У вашей роли нет права пополнять хранилище." to player
+				stop
+			set {_item} to event-item
+			if {_item} is not set:
+				stop
+			if {_item} is air:
+				stop
+			set {_right-click} to false
+			if click type is right mouse button:
+				set {_right-click} to true
+			if click type is right mouse button with shift:
+				set {_right-click} to true
+			if {_right-click} is true:
+				if countryStoragePutOneInCategory({_id}, {_cat}, {_item}) is not true:
+					send action bar "<red>Хранилище заполнено." to player
+					stop
+				set {_remaining} to {_item}
+				set {_amount} to amount of {_remaining}
+				if {_amount} is less than or equal to 1:
+					set event-slot to air
+				else:
+					subtract 1 from {_amount}
+					set amount of {_remaining} to {_amount}
+					set event-slot to {_remaining}
+			else:
+				if countryStoragePutItemInCategory({_id}, {_cat}, {_item}) is not true:
+					send action bar "<red>Хранилище заполнено." to player
+					stop
+				set event-slot to air
+			countryOpenStorageCategory(player, {_cat}, {_page})
+			stop
+		if {_raw} is 45:
+			countryOpenStorageHub(player)
+			stop
+		if {_raw} is 46:
+			if {_page} is greater than 1:
+				countryOpenStorageCategory(player, {_cat}, {_page} - 1)
+			stop
+		if {_raw} is 47:
+			if {_cat} is "general":
+				stop
+			if countryStorageCanManageCategories(player) is not true:
+				send "<red>У вас нет права переименовывать категории." to player
+				stop
+			set {country.storage-input::%uuid of player%} to "rename"
+			close player's inventory
+			send "<yellow>Введите новое название категории в чат." to player
+			stop
+		if {_raw} is 48:
+			if {_cat} is "general":
+				stop
+			if countryStorageCanManageCategories(player) is not true:
+				send "<red>У вас нет права удалять категории." to player
+				stop
+			if countryStorageCategorySlots({_id}, {_cat}) is greater than 0:
+				send "<red>Сначала освободите категорию." to player
+				stop
+			delete {country.storage-category-name::%{_id}%::%{_cat}%}
+			delete {country.storage-category-type::%{_id}%::%{_cat}%::*}
+			send "<yellow>Категория удалена." to player
+			countryOpenStorageHub(player)
+			stop
+		if {_raw} is 51:
+			if countryStorageCanDeposit(player) is not true:
+				send "<red>У вашей роли нет права пополнять хранилище." to player
+				stop
+			set {_moved} to countryStorageQuickDeposit(player, {_cat}, "MATCHING")
+			send formatted "<light green>Перенесено похожих стаков: <white>%{_moved}%<light green>." to player
+			countryOpenStorageCategory(player, {_cat}, {_page})
+			stop
+		if {_raw} is 52:
+			if countryStorageCanDeposit(player) is not true:
+				send "<red>У вашей роли нет права пополнять хранилище." to player
+				stop
+			set {_moved} to countryStorageQuickDeposit(player, {_cat}, "ALL")
+			send formatted "<light green>В категорию перенесено <white>%{_moved}% <light green>стаков." to player
+			countryOpenStorageCategory(player, {_cat}, {_page})
+			stop
+		if {_raw} is 53:
+			if countryStorageCategorySlots({_id}, {_cat}) is greater than 45:
+				if {_page} is 1:
+					countryOpenStorageCategory(player, {_cat}, 2)
+			stop
+		stop
+
+on inventory drag:
+	set {_state} to {country.menu::%uuid of player%}
+	if {_state} is "storage-hub":
+		cancel event
+	if {_state} is "storage-category":
+		cancel event
+
+on quit:
+	delete {country.storage-menu-category::%uuid of player%::*}
+	delete {country.storage-view::%uuid of player%::*}
+	delete {country.storage-current-category::%uuid of player%}
+	delete {country.storage-category-page::%uuid of player%}
+	delete {country.storage-input::%uuid of player%}
