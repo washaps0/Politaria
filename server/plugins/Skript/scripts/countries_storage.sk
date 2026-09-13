@@ -1268,10 +1268,6 @@ function countryOpenStorageCategory(p: player, category: text, page: number):
 	set {country.storage5-current-page::%uuid of {_p}%} to {_page}
 	set {country.menu::%uuid of {_p}%} to "storage-category"
 
-# Compatibility for older callers.
-function countryOpenStorage2(p: player, page: number):
-	countryOpenStorageCategory({_p}, "general", {_page})
-
 on chat:
 	if {country.storage5-input::%uuid of player%} is not set:
 		stop
