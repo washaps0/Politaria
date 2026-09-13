@@ -22,7 +22,12 @@ function countryStoragePages(id: text) :: number:
 	return 1
 
 function countryStorageMaxSlots(id: text) :: number:
-	return countryStoragePages({_id}) * 45
+	if countryLevel({_id}) is greater than or equal to 2:
+		return 90
+	return 45
+
+function countryStorageMaxItems(id: text) :: number:
+	return countryStorageMaxSlots({_id}) * 64
 
 function countryStorageCanDeposit(p: player) :: boolean:
 	set {_id} to countryId({_p})
@@ -105,6 +110,28 @@ function countryStorageCategorySlots(id: text, category: text) :: number:
 		add 1 to {_page}
 	return {_used}
 
+function countryStorageCategoryItems(id: text, category: text) :: number:
+	set {_count} to 0
+	set {_page} to 1
+	set {_pages} to countryStoragePages({_id})
+	while {_page} is less than or equal to {_pages}:
+		set {_slot} to 0
+		while {_slot} is less than or equal to 44:
+			set {_item} to {country.storage5::%{_id}%::%{_category}%::%{_page}%::%{_slot}%}
+			if {_item} is set:
+				if {_item} is not air:
+					add amount of {_item} to {_count}
+			add 1 to {_slot}
+		add 1 to {_page}
+	return {_count}
+
+function countryStorageUsedItems(id: text) :: number:
+	set {_used} to countryStorageCategoryItems({_id}, "general")
+	loop {country.storage-category-name::%{_id}%::*}:
+		set {_cat} to loop-index
+		add countryStorageCategoryItems({_id}, {_cat}) to {_used}
+	return {_used}
+
 function countryStorageUsedSlots(id: text) :: number:
 	set {_used} to countryStorageCategorySlots({_id}, "general")
 	loop {country.storage-category-name::%{_id}%::*}:
@@ -136,7 +163,13 @@ function countryStorageInsertAmount(id: text, category: text, stack: item) :: nu
 	if {_item} is air:
 		return 0
 	set {_original} to amount of {_item}
-	set {_remaining} to {_original}
+	set {_freeItems} to countryStorageMaxItems({_id}) - countryStorageUsedItems({_id})
+	if {_freeItems} is less than or equal to 0:
+		return 0
+	set {_toStore} to {_original}
+	if {_toStore} is greater than {_freeItems}:
+		set {_toStore} to {_freeItems}
+	set {_remaining} to {_toStore}
 	set {_one} to {_item}
 	set amount of {_one} to 1
 	set {_item-type} to type of {_item}
@@ -170,7 +203,7 @@ function countryStorageInsertAmount(id: text, category: text, stack: item) :: nu
 	# Then occupy new slots while the shared country capacity allows it.
 	while {_remaining} is greater than 0:
 		if countryStorageUsedSlots({_id}) is greater than or equal to countryStorageMaxSlots({_id}):
-			return {_original} - {_remaining}
+			return {_toStore} - {_remaining}
 		set {_placed} to false
 		set {_page} to 1
 		while {_page} is less than or equal to {_pages}:
@@ -190,8 +223,8 @@ function countryStorageInsertAmount(id: text, category: text, stack: item) :: nu
 					add 1 to {_slot}
 			add 1 to {_page}
 		if {_placed} is false:
-			return {_original} - {_remaining}
-	return {_original}
+			return {_toStore} - {_remaining}
+	return {_toStore}
 
 function countryStoragePutItemInCategory(id: text, category: text, itemToStore: item) :: boolean:
 	countryStorageMigrate({_id})
@@ -1205,33 +1238,65 @@ function countryStorageSyncInventory(p: player, id: text, category: text, page: 
 	if {_page} is less than 1:
 		stop
 
-	# Enforce the shared country slot limit without deleting previously stored items.
-	set {_oldPageUsed} to countryStoragePageSlots({_id}, {_category}, {_page})
-	set {_otherUsed} to countryStorageUsedSlots({_id}) - {_oldPageUsed}
-	set {_allowedOnPage} to countryStorageMaxSlots({_id}) - {_otherUsed}
-	if {_allowedOnPage} is less than {_oldPageUsed}:
-		set {_allowedOnPage} to {_oldPageUsed}
-	set {_shownUsed} to 0
+	# Capacity uses item units: 64 items = 1 storage stack.
+	# A sword/armor piece therefore uses only 1/64 of a capacity stack.
+	set {_oldPageItems} to 0
+	set {_slot} to 0
+	while {_slot} is less than or equal to 44:
+		set {_old} to {country.storage5::%{_id}%::%{_category}%::%{_page}%::%{_slot}%}
+		if {_old} is set:
+			if {_old} is not air:
+				add amount of {_old} to {_oldPageItems}
+		add 1 to {_slot}
+
+	set {_otherItems} to countryStorageUsedItems({_id}) - {_oldPageItems}
+	set {_allowedOnPage} to countryStorageMaxItems({_id}) - {_otherItems}
+	if {_allowedOnPage} is less than {_oldPageItems}:
+		set {_allowedOnPage} to {_oldPageItems}
+
+	set {_shownItems} to 0
 	set {_slot} to 0
 	while {_slot} is less than or equal to 44:
 		set {_shown} to slot {_slot} of {_inventoryToSync}
 		if {_shown} is set:
 			if {_shown} is not air:
-				add 1 to {_shownUsed}
+				add amount of {_shown} to {_shownItems}
 		add 1 to {_slot}
 
-	if {_shownUsed} is greater than {_allowedOnPage}:
+	set {_overflow} to {_shownItems} - {_allowedOnPage}
+	if {_overflow} is greater than 0:
 		set {_slot} to 44
 		while {_slot} is greater than or equal to 0:
-			if {_shownUsed} is greater than {_allowedOnPage}:
+			if {_overflow} is greater than 0:
 				set {_shown} to slot {_slot} of {_inventoryToSync}
 				set {_old} to {country.storage5::%{_id}%::%{_category}%::%{_page}%::%{_slot}%}
 				if {_shown} is set:
 					if {_shown} is not air:
-						if {_old} is not set:
-							give {_shown} to {_p}
-							set slot {_slot} of {_inventoryToSync} to air
-							subtract 1 from {_shownUsed}
+						set {_added} to amount of {_shown}
+						if {_old} is set:
+							if {_old} is not air:
+								set {_shownOne} to {_shown}
+								set {_oldOne} to {_old}
+								set amount of {_shownOne} to 1
+								set amount of {_oldOne} to 1
+								if {_shownOne} is {_oldOne}:
+									set {_added} to amount of {_shown} - amount of {_old}
+									if {_added} is less than 0:
+										set {_added} to 0
+						if {_added} is greater than 0:
+							set {_returnAmount} to {_added}
+							if {_returnAmount} is greater than {_overflow}:
+								set {_returnAmount} to {_overflow}
+							set {_leftAmount} to amount of {_shown} - {_returnAmount}
+							set {_returned} to {_shown}
+							set amount of {_returned} to {_returnAmount}
+							give {_returned} to {_p}
+							if {_leftAmount} is less than or equal to 0:
+								set slot {_slot} of {_inventoryToSync} to air
+							else:
+								set amount of {_shown} to {_leftAmount}
+								set slot {_slot} of {_inventoryToSync} to {_shown}
+							subtract {_returnAmount} from {_overflow}
 			subtract 1 from {_slot}
 
 	set {_slot} to 0
@@ -1260,9 +1325,10 @@ function countryOpenStorageHub(p: player):
 	while {_slot} is less than or equal to 53:
 		set slot {_slot} of {_menu} to gray stained glass pane named " "
 		add 1 to {_slot}
-	set {_used} to countryStorageUsedSlots({_id})
-	set {_max} to countryStorageMaxSlots({_id})
-	set slot 4 of {_menu} to chest named "<gold><bold>ХРАНИЛИЩЕ СТРАНЫ" with lore "<gray>Занято: <white>%{_used}%/%{_max}% стаков" and "<gray>Лимит общий для всех категорий."
+	set {_usedItems} to countryStorageUsedItems({_id})
+	set {_maxItems} to countryStorageMaxItems({_id})
+	set {_maxStacks} to countryStorageMaxSlots({_id})
+	set slot 4 of {_menu} to chest named "<gold><bold>ХРАНИЛИЩЕ СТРАНЫ" with lore "<gray>Предметов: <white>%{_usedItems}%/%{_maxItems}%" and "<gray>Вместимость: <white>%{_maxStacks}% стаков по 64" and "<gray>Нестакаемые предметы тоже считаются по 1/64 стака."
 	set {_generalUsed} to countryStorageCategorySlots({_id}, "general")
 	set slot 10 of {_menu} to chest named "<white><bold>ОБЩЕЕ" with lore "<gray>Занято: <white>%{_generalUsed}% стаков" and "" and "<yellow>Нажмите, чтобы открыть"
 	set {country.storage5-menu-category::%uuid of {_p}%::10} to "general"
@@ -1339,10 +1405,10 @@ function countryOpenStorageCategory(p: player, category: text, page: number):
 			set name of {_iconButton} to "<aqua><bold>ИКОНКА КАТЕГОРИИ"
 			set lore of {_iconButton} to "<gray>Возьмите предмет в основную руку" and "<gray>и нажмите сюда, чтобы сделать" and "<gray>его иконкой категории." and "" and "<yellow>Пустая рука — сбросить иконку"
 			set slot 50 of {_menu} to {_iconButton}
-	set {_totalUsed} to countryStorageUsedSlots({_id})
-	set {_max} to countryStorageMaxSlots({_id})
-	set {_categoryUsed} to countryStorageCategorySlots({_id}, {_category})
-	set slot 49 of {_menu} to barrel named "<gold><bold>%{_name}%" with lore "<gray>В категории: <white>%{_categoryUsed}% стаков" and "<gray>Всего: <white>%{_totalUsed}%/%{_max}%" and "" and "<gray>Верхние 45 ячеек — обычный сундук." and "<gray>Роли только с одним правом используют Shift-клик." and "" and "<aqua>Нажмите, чтобы отсортировать как ClientSort"
+	set {_totalItems} to countryStorageUsedItems({_id})
+	set {_maxItems} to countryStorageMaxItems({_id})
+	set {_categoryItems} to countryStorageCategoryItems({_id}, {_category})
+	set slot 49 of {_menu} to barrel named "<gold><bold>%{_name}%" with lore "<gray>В категории: <white>%{_categoryItems}% предметов" and "<gray>Всего: <white>%{_totalItems}%/%{_maxItems}% предметов" and "" and "<gray>64 предмета = 1 стак вместимости." and "<gray>Нестакаемые предметы считаются так же." and "<gray>Роли только с одним правом используют Shift-клик." and "" and "<aqua>Нажмите, чтобы отсортировать как ClientSort"
 	if countryStorageCanDeposit({_p}) is true:
 		set slot 51 of {_menu} to hopper named "<aqua><bold>СЛОЖИТЬ ПОХОЖЕЕ"
 		set slot 52 of {_menu} to chest named "<light green><bold>СЛОЖИТЬ ВСЁ"
