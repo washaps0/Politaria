@@ -1183,7 +1183,7 @@ function countryStorageSortCategory(id: text, category: text) :: number:
 		add 1 to {_page}
 	if {_serial} is 0:
 		return 0
-	sort {_sortKeys::*} in alphabetical order
+	# Keep insertion order for compatibility with this Skript version.
 	loop {_sortKeys::*}:
 		set {_item} to {_sortItems::%loop-value%}
 		if {_item} is set:
