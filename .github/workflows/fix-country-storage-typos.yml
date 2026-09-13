@@ -1,0 +1,28 @@
+name: Fix storage sync typos
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-country-storage-typos.yml'
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - shell: bash
+        run: |
+          echo 'ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCnA9UGF0aCgnc2VydmVyL3BsdWdpbnMvU2tyaXB0L3NjcmlwdHMvY291bnRyaWVzX3N0b3JhZ2Uuc2snKQp0PXAucmVhZF90ZXh0KGVuY29kaW5nPSd1dGYtOCcpCnQ9dC5yZXBsYWNlKCdzZXQgc2xvdCB7X3ZpZXd9IG8ge19pbnZ9IHRvIGFpcicsJ3NldCBzbG90IHtfdmlld30gb2Yge19pbnZ9IHRvIGFpcicpCnQ9dC5yZXBsYWNlKCdzZW5kIGFjdGlvbiBiYXIgIjxyZWQ+0KTRgNCw0L3QuNC70LjRidC1INGB0YLRgNCw0L3RiyDQt9Cw0L/QvtC70L3QtdC90L4uIiB0byB7X3B9Jywnc2VuZCBhY3Rpb24gYmFyICI8cmVkPtCl0YDQsNC90LjQu9C40YnQtSDRgdGC0YDQsNC90Ysg0LfQsNC/0L7Qu9C90LXQvdC+LiIgdG8ge19wfScpCnQ9dC5yZXBsYWNlKCdcblx0XHRcdFx0XHRcdFx0c2V0IHtjb3VudHJ5LnN0b3JhZ2UtY2F0ZWdvcnktdHlwZTo6JXtfaWR9JTo6JXtfY2F0fSU6OiV7X3R5cGUtdGV4dH0lfSB0byB0cnVlJywnXG5cdFx0XHRcdFx0XHRzZXQge2NvdW50cnkuc3RvcmFnZS1jYXRlZ29yeS10eXBlOjole19pZH0lOjole19jYXR9JTo6JXtfdHlwZS10ZXh0fSV9IHRvIHRydWUnKQpwLndyaXRlX3RleHQodCxlbmNvZGluZz0ndXRmLTgnKQo=' | base64 -d > /tmp/fix.py
+          python /tmp/fix.py
+      - shell: bash
+        run: |
+          git rm .github/workflows/fix-country-storage-typos.yml
+          git config user.name "Politaria Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add server/plugins/Skript/scripts/countries_storage.sk
+          git commit -m "Fix country storage native sync syntax"
+          git push origin main
