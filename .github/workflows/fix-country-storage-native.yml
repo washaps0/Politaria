@@ -1,0 +1,167 @@
+name: Fix country storage native movement
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-country-storage-native.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix-storage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Patch countries_storage.sk
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('server/plugins/Skript/scripts/countries_storage.sk')
+          text = path.read_text(encoding='utf-8')
+
+          marker = '# =========================================================\n# NATIVE STORAGE MOVEMENT (integrated)\n# =========================================================\n'
+          if marker in text:
+              text = text.split(marker, 1)[0].rstrip() + '\n\n'
+
+          old_lore = '"<gray>ЛКМ снизу — положить весь стак." and "<gray>ПКМ снизу — положить 1 предмет." and "<gray>ЛКМ сверху — забрать весь стак." and "<gray>ПКМ сверху — забрать 1 предмет."'
+          new_lore = '"<gray>Работает как обычный сундук." and "<gray>ПКМ — разделить стак, Shift-клик — быстро переместить." and "<gray>Можно перетаскивать предметы мышкой."'
+          text = text.replace(old_lore, new_lore)
+
+          sync_code = r'''
+# =========================================================
+# NATIVE CATEGORY INVENTORY SYNC
+# The category chest behaves like a normal Minecraft chest.
+# After vanilla processes a click/drag, visible slots are written back
+# to the virtual country storage.
+# =========================================================
+
+function countryStorageSyncCategoryView(p: player):
+	if {_p} is not online:
+		stop
+	if {country.menu::%uuid of {_p}%} is not "storage-category":
+		stop
+	set {_id} to countryId({_p})
+	if {_id} is "":
+		stop
+	set {_cat} to {country.storage-current-category::%uuid of {_p}%}
+	if {_cat} is not set:
+		stop
+	set {_inv} to {_p}'s current inventory
+
+	loop integers between 0 and 44:
+		set {_view} to loop-value
+		set {_shown} to slot {_view} of {_inv}
+		set {_global} to {country.storage-view::%uuid of {_p}%::%{_view}%}
+
+		if {_global} is set:
+			if {_shown} is set:
+				if {_shown} is not air:
+					set {country.storage::%{_id}%::%{_global}%} to {_shown}
+					if {_cat} is "general":
+						delete {country.storage-category::%{_id}%::%{_global}%}
+					else:
+						set {country.storage-category::%{_id}%::%{_global}%} to {_cat}
+					set {_type-text} to "%type of {_shown}%"
+					set {country.storage-category-type::%{_id}%::%{_cat}%::%{_type-text}%} to true
+				else:
+					delete {country.storage::%{_id}%::%{_global}%}
+					delete {country.storage-category::%{_id}%::%{_global}%}
+			else:
+				delete {country.storage::%{_id}%::%{_global}%}
+				delete {country.storage-category::%{_id}%::%{_global}%}
+		else:
+			if {_shown} is set:
+				if {_shown} is not air:
+					set {_free} to countryStorageFindFreeGlobalSlot({_id})
+					if {_free} is less than 0:
+						give {_shown} to {_p}
+						set slot {_view} of {_inv} to air
+						send action bar "<red>Хранилище страны заполнено." to {_p}
+					else:
+						set {country.storage-view::%uuid of {_p}%::%{_view}%} to {_free}
+						set {country.storage::%{_id}%::%{_free}%} to {_shown}
+						if {_cat} is "general":
+							delete {country.storage-category::%{_id}%::%{_free}%}
+						else:
+							set {country.storage-category::%{_id}%::%{_free}%} to {_cat}
+						set {_type-text} to "%type of {_shown}%"
+						set {country.storage-category-type::%{_id}%::%{_cat}%::%{_type-text}%} to true
+
+on inventory click:
+	if {country.menu::%uuid of player%} is not "storage-category":
+		stop
+	if event-slot is not set:
+		stop
+	set {_raw} to raw index of event-slot
+
+	# Buttons remain handled by the main storage-category handler above.
+	if {_raw} is between 45 and 53:
+		stop
+
+	# Shift-click from storage -> player inventory.
+	if {_raw} is between 0 and 44:
+		if click type is left mouse button with shift:
+			if countryStorageCanWithdraw(player) is not true:
+				cancel event
+				send action bar "<red>У вашей роли нет права забирать вещи из хранилища." to player
+				stop
+		if click type is right mouse button with shift:
+			if countryStorageCanWithdraw(player) is not true:
+				cancel event
+				send action bar "<red>У вашей роли нет права забирать вещи из хранилища." to player
+				stop
+
+	# Shift-click from player inventory -> storage.
+	if {_raw} is greater than or equal to 54:
+		if click type is left mouse button with shift:
+			if countryStorageCanDeposit(player) is not true:
+				cancel event
+				send action bar "<red>У вашей роли нет права пополнять хранилище." to player
+				stop
+		if click type is right mouse button with shift:
+			if countryStorageCanDeposit(player) is not true:
+				cancel event
+				send action bar "<red>У вашей роли нет права пополнять хранилище." to player
+				stop
+
+	# Normal clicks are NOT cancelled. Minecraft moves/splits/swaps the item,
+	# then we save the resulting chest contents one tick later.
+	wait 1 tick
+	countryStorageSyncCategoryView(player)
+
+on inventory drag:
+	if {country.menu::%uuid of player%} is not "storage-category":
+		stop
+	if countryStorageCanDeposit(player) is not true:
+		cancel event
+		send action bar "<red>У вашей роли нет права пополнять хранилище." to player
+		stop
+	wait 1 tick
+	countryStorageSyncCategoryView(player)
+
+on inventory close:
+	if {country.menu::%uuid of player%} is "storage-category":
+		countryStorageSyncCategoryView(player)
+'''
+
+          text = text.rstrip() + '\n\n' + sync_code.strip() + '\n'
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Remove one-shot workflow and commit
+        shell: bash
+        run: |
+          git rm .github/workflows/fix-country-storage-native.yml
+          git config user.name "Politaria Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add server/plugins/Skript/scripts/countries_storage.sk
+          git commit -m "Fix normal item movement in country storage"
+          git push origin main
