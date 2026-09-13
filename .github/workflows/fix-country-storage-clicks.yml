@@ -1,0 +1,43 @@
+name: Fix country storage clicks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-country-storage-clicks.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Stop countries.sk from cancelling storage clicks
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('server/plugins/Skript/scripts/countries.sk')
+          t = p.read_text(encoding='utf-8')
+          old = '''on inventory click:\n\tif {country.menu::%uuid of player%} is not set:\n\t\tstop\n\tcancel event\n'''
+          new = '''on inventory click:\n\tif {country.menu::%uuid of player%} is not set:\n\t\tstop\n\tset {_country-menu-state} to {country.menu::%uuid of player%}\n\t# Storage categories intentionally behave like a normal Minecraft chest.\n\t# countries_storage.sk handles only its control row and permissions.\n\tif {_country-menu-state} is "storage-category":\n\t\tstop\n\tcancel event\n'''
+          if old not in t:
+              raise SystemExit('countries.sk inventory click header not found')
+          p.write_text(t.replace(old, new, 1), encoding='utf-8')
+          PY
+
+      - name: Commit fix and remove workflow
+        shell: bash
+        run: |
+          git rm .github/workflows/fix-country-storage-clicks.yml
+          git config user.name "Politaria Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add server/plugins/Skript/scripts/countries.sk
+          git commit -m "Allow native item movement in country storage"
+          git push origin main
