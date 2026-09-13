@@ -1,0 +1,54 @@
+name: Apply country storage V5
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-country-storage-v5.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Build clean V5 file
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import ast
+
+          carrier = Path('.github/workflows/rebuild-country-storage-v5.yml').read_text(encoding='utf-8')
+          p1 = carrier.index('prefix = """') + len('prefix = """')
+          p2 = carrier.index('"""\n\n          suffix = """', p1)
+          s1 = p2 + len('"""\n\n          suffix = """')
+          s2 = carrier.index('"""\n\n          new_text =', s1)
+          prefix_raw = carrier[p1:p2]
+          suffix_raw = carrier[s1:s2]
+          prefix = ast.literal_eval('"""' + prefix_raw + '"""')
+          suffix = ast.literal_eval('"""' + suffix_raw + '"""')
+
+          path = Path('server/plugins/Skript/scripts/countries_storage.sk')
+          old = path.read_text(encoding='utf-8')
+          development_start = old.index('function countryBuildingLevel')
+          storage_v4_marker = old.index('# =========================================================\n# COUNTRY STORAGE V4 - CLEAN REBUILD')
+          development = old[development_start:storage_v4_marker].rstrip()
+          path.write_text(prefix.rstrip() + '\n\n' + development + '\n\n' + suffix.lstrip(), encoding='utf-8')
+          PY
+      - name: Commit rebuilt storage
+        shell: bash
+        run: |
+          git rm .github/workflows/rebuild-country-storage-v5.yml
+          git rm .github/workflows/apply-country-storage-v5.yml
+          git config user.name "Politaria Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add server/plugins/Skript/scripts/countries_storage.sk
+          git commit -m "Rebuild country storage V5 from scratch"
+          git pull --rebase origin main
+          git push origin main
