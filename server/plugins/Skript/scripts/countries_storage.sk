@@ -1127,6 +1127,76 @@ function countryStorageAutoSortPlayer(p: player) :: number:
 		add 1 to {_slot}
 	return {_movedTotal}
 
+function countryStorageSortCategory(id: text, category: text) :: number:
+	countryStorageMigrate({_id})
+	delete {_sortKeys::*}
+	delete {_sortItems::*}
+	delete {_packed::*}
+	set {_serial} to 0
+	set {_pages} to countryStoragePages({_id})
+	set {_page} to 1
+	while {_page} is less than or equal to {_pages}:
+		set {_slot} to 0
+		while {_slot} is less than or equal to 44:
+			set {_item} to {country.storage5::%{_id}%::%{_category}%::%{_page}%::%{_slot}%}
+			if {_item} is set:
+				if {_item} is not air:
+					add 1 to {_serial}
+					set {_key} to "%type of {_item}%|%{_serial}%"
+					set {_sortItems::%{_key}%} to {_item}
+					add {_key} to {_sortKeys::*}
+			delete {country.storage5::%{_id}%::%{_category}%::%{_page}%::%{_slot}%}
+			add 1 to {_slot}
+		add 1 to {_page}
+	if {_serial} is 0:
+		return 0
+	sort {_sortKeys::*} in alphabetical order
+	loop {_sortKeys::*}:
+		set {_item} to {_sortItems::%loop-value%}
+		if {_item} is set:
+			set {_remaining} to amount of {_item}
+			set {_one} to {_item}
+			set amount of {_one} to 1
+			set {_itemType} to type of {_item}
+			set {_limit} to maximum stack size of {_itemType}
+			set {_packedIndex} to 1
+			while {_packedIndex} is less than or equal to size of {_packed::*}:
+				if {_remaining} is greater than 0:
+					set {_existing} to {_packed::%{_packedIndex}%}
+					set {_existingOne} to {_existing}
+					set amount of {_existingOne} to 1
+					if {_existingOne} is {_one}:
+						set {_existingAmount} to amount of {_existing}
+						if {_existingAmount} is less than {_limit}:
+							set {_space} to {_limit} - {_existingAmount}
+							set {_move} to {_remaining}
+							if {_move} is greater than {_space}:
+								set {_move} to {_space}
+							add {_move} to {_existingAmount}
+							set amount of {_existing} to {_existingAmount}
+							set {_packed::%{_packedIndex}%} to {_existing}
+							subtract {_move} from {_remaining}
+				add 1 to {_packedIndex}
+			while {_remaining} is greater than 0:
+				set {_part} to {_remaining}
+				if {_part} is greater than {_limit}:
+					set {_part} to {_limit}
+				set {_newStack} to {_item}
+				set amount of {_newStack} to {_part}
+				add {_newStack} to {_packed::*}
+				subtract {_part} from {_remaining}
+	set {_packedIndex} to 1
+	set {_page} to 1
+	while {_page} is less than or equal to {_pages}:
+		set {_slot} to 0
+		while {_slot} is less than or equal to 44:
+			if {_packedIndex} is less than or equal to size of {_packed::*}:
+				set {country.storage5::%{_id}%::%{_category}%::%{_page}%::%{_slot}%} to {_packed::%{_packedIndex}%}
+				add 1 to {_packedIndex}
+			add 1 to {_slot}
+		add 1 to {_page}
+	return size of {_packed::*}
+
 function countryStorageSyncInventory(p: player, id: text, category: text, page: number, inventoryToSync: inventory):
 	if {_id} is "":
 		stop
@@ -1272,7 +1342,7 @@ function countryOpenStorageCategory(p: player, category: text, page: number):
 	set {_totalUsed} to countryStorageUsedSlots({_id})
 	set {_max} to countryStorageMaxSlots({_id})
 	set {_categoryUsed} to countryStorageCategorySlots({_id}, {_category})
-	set slot 49 of {_menu} to barrel named "<gold><bold>%{_name}%" with lore "<gray>В категории: <white>%{_categoryUsed}% стаков" and "<gray>Всего: <white>%{_totalUsed}%/%{_max}%" and "" and "<gray>Верхние 45 ячеек — обычный сундук." and "<gray>Роли только с одним правом используют Shift-клик."
+	set slot 49 of {_menu} to barrel named "<gold><bold>%{_name}%" with lore "<gray>В категории: <white>%{_categoryUsed}% стаков" and "<gray>Всего: <white>%{_totalUsed}%/%{_max}%" and "" and "<gray>Верхние 45 ячеек — обычный сундук." and "<gray>Роли только с одним правом используют Shift-клик." and "" and "<aqua>Нажмите, чтобы отсортировать как ClientSort"
 	if countryStorageCanDeposit({_p}) is true:
 		set slot 51 of {_menu} to hopper named "<aqua><bold>СЛОЖИТЬ ПОХОЖЕЕ"
 		set slot 52 of {_menu} to chest named "<light green><bold>СЛОЖИТЬ ВСЁ"
@@ -1406,6 +1476,11 @@ on inventory click:
 						delete {country.storage-category-icon::%{_id}%::%{_cat}%}
 						delete {country.storage5::%{_id}%::%{_cat}%::*}
 						countryOpenStorageHub(player)
+			stop
+		if {_raw} is 49:
+			set {_sortedStacks} to countryStorageSortCategory({_id}, {_cat})
+			send formatted "<aqua>Категория отсортирована. <gray>Стаков: <white>%{_sortedStacks}%" to player
+			countryOpenStorageCategory(player, {_cat}, 1)
 			stop
 		if {_raw} is 50:
 			if {_cat} is not "general":
