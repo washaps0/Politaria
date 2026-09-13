@@ -1541,8 +1541,10 @@ on inventory click:
 	if {country.menu::%uuid of player%} is not set:
 		stop
 	set {_country-menu-state} to {country.menu::%uuid of player%}
-	# Storage categories intentionally behave like a normal Minecraft chest.
-	# countries_storage.sk handles only its control row and permissions.
+	# Country storage has its own click handling in countries_storage.sk.
+	# Do not cancel either the storage hub or the real chest-like category view here.
+	if {_country-menu-state} is "storage-hub":
+		stop
 	if {_country-menu-state} is "storage-category":
 		stop
 	cancel event
