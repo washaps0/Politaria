@@ -1,16 +1,14 @@
 # =========================================================
 # POLITARIA COUNTRY STORAGE + PROGRESSION
-# Extension for countries.sk
+# Country storage V5 - clean implementation from scratch
 # =========================================================
-# Country levels:
-#   I   - 45 storage slots, Mine and Farm
-#   II  - 90 storage slots, Sawmill and Quarry, building level II
-#   III - Ranch, building level III
+# Canonical storage data:
+# {country.storage5::<country>::<category>::<page>::<slot>} = item
 #
-# Role permissions stored in the existing country role system:
-#   STORAGE_DEPOSIT     - put items into country storage
-#   STORAGE_WITHDRAW    - take items from country storage
-#   MANAGE_DEVELOPMENT  - upgrade country and buildings
+# Top GUI slots 0..44 are real storage slots.
+# Bottom GUI slots 45..53 are controls only.
+# Country level I: 45 occupied stacks total across all categories.
+# Country level II+: 90 occupied stacks total across all categories.
 # =========================================================
 
 function countryLevel(id: text) :: number:
@@ -24,8 +22,7 @@ function countryStoragePages(id: text) :: number:
 	return 1
 
 function countryStorageMaxSlots(id: text) :: number:
-	set {_pages} to countryStoragePages({_id})
-	return {_pages} * 45
+	return countryStoragePages({_id}) * 45
 
 function countryStorageCanDeposit(p: player) :: boolean:
 	set {_id} to countryId({_p})
@@ -63,21 +60,155 @@ function countryCanManageDevelopment(p: player) :: boolean:
 		return true
 	return false
 
-function countryStorageMaterialCount(id: text, materialName: text) :: number:
-	countryStorageMigrate({_id})
-	set {_type} to {_materialName} parsed as item type
-	if {_type} is not set:
+function countryStorageCanManageCategories(p: player) :: boolean:
+	set {_id} to countryId({_p})
+	if {_id} is "":
+		return false
+	if countryIsAdmin({_p}) is true:
+		return true
+	if {country.owner::%{_id}%} is "%uuid of {_p}%":
+		return true
+	if countryHasPermission({_p}, "MANAGE_DEVELOPMENT") is true:
+		return true
+	return false
+
+function countryStorageCategoryName(id: text, category: text) :: text:
+	if {_category} is "general":
+		return "Общее"
+	if {country.storage-category-name::%{_id}%::%{_category}%} is set:
+		return {country.storage-category-name::%{_id}%::%{_category}%}
+	return "Категория"
+
+function countryStorageCategoryCount(id: text) :: number:
+	set {_count} to 1
+	loop {country.storage-category-name::%{_id}%::*}:
+		add 1 to {_count}
+	return {_count}
+
+function countryStoragePageSlots(id: text, category: text, page: number) :: number:
+	set {_used} to 0
+	set {_slot} to 0
+	while {_slot} is less than or equal to 44:
+		set {_item} to {country.storage5::%{_id}%::%{_category}%::%{_page}%::%{_slot}%}
+		if {_item} is set:
+			if {_item} is not air:
+				add 1 to {_used}
+		add 1 to {_slot}
+	return {_used}
+
+function countryStorageCategorySlots(id: text, category: text) :: number:
+	set {_used} to 0
+	set {_page} to 1
+	set {_pages} to countryStoragePages({_id})
+	while {_page} is less than or equal to {_pages}:
+		add countryStoragePageSlots({_id}, {_category}, {_page}) to {_used}
+		add 1 to {_page}
+	return {_used}
+
+function countryStorageUsedSlots(id: text) :: number:
+	set {_used} to countryStorageCategorySlots({_id}, "general")
+	loop {country.storage-category-name::%{_id}%::*}:
+		set {_cat} to loop-index
+		add countryStorageCategorySlots({_id}, {_cat}) to {_used}
+	return {_used}
+
+function countryStorageCategoryHasType(id: text, category: text, typeText: text) :: boolean:
+	set {_wanted} to {_typeText} parsed as item type
+	if {_wanted} is not set:
+		return false
+	set {_page} to 1
+	set {_pages} to countryStoragePages({_id})
+	while {_page} is less than or equal to {_pages}:
+		set {_slot} to 0
+		while {_slot} is less than or equal to 44:
+			set {_item} to {country.storage5::%{_id}%::%{_category}%::%{_page}%::%{_slot}%}
+			if {_item} is set:
+				if type of {_item} is {_wanted}:
+					return true
+			add 1 to {_slot}
+		add 1 to {_page}
+	return false
+
+function countryStorageInsertAmount(id: text, category: text, stack: item) :: number:
+	set {_item} to {_stack}
+	if {_item} is not set:
 		return 0
-	set {_count} to 0
+	if {_item} is air:
+		return 0
+	set {_original} to amount of {_item}
+	set {_remaining} to {_original}
+	set {_one} to {_item}
+	set amount of {_one} to 1
+	set {_item-type} to type of {_item}
+	set {_limit} to maximum stack size of {_item-type}
+	set {_pages} to countryStoragePages({_id})
+
+	# First merge into existing compatible stacks.
+	set {_page} to 1
+	while {_page} is less than or equal to {_pages}:
+		set {_slot} to 0
+		while {_slot} is less than or equal to 44:
+			if {_remaining} is greater than 0:
+				set {_stored} to {country.storage5::%{_id}%::%{_category}%::%{_page}%::%{_slot}%}
+				if {_stored} is set:
+					set {_stored-one} to {_stored}
+					set amount of {_stored-one} to 1
+					if {_stored-one} is {_one}:
+						set {_current} to amount of {_stored}
+						if {_current} is less than {_limit}:
+							set {_space} to {_limit} - {_current}
+							set {_moving} to {_remaining}
+							if {_moving} is greater than {_space}:
+								set {_moving} to {_space}
+							add {_moving} to {_current}
+							set amount of {_stored} to {_current}
+							set {country.storage5::%{_id}%::%{_category}%::%{_page}%::%{_slot}%} to {_stored}
+							subtract {_moving} from {_remaining}
+			add 1 to {_slot}
+		add 1 to {_page}
+
+	# Then occupy new slots while the shared country capacity allows it.
+	while {_remaining} is greater than 0:
+		if countryStorageUsedSlots({_id}) is greater than or equal to countryStorageMaxSlots({_id}):
+			return {_original} - {_remaining}
+		set {_placed} to false
+		set {_page} to 1
+		while {_page} is less than or equal to {_pages}:
+			if {_placed} is false:
+				set {_slot} to 0
+				while {_slot} is less than or equal to 44:
+					if {_placed} is false:
+						if {country.storage5::%{_id}%::%{_category}%::%{_page}%::%{_slot}%} is not set:
+							set {_moving} to {_remaining}
+							if {_moving} is greater than {_limit}:
+								set {_moving} to {_limit}
+							set {_new} to {_item}
+							set amount of {_new} to {_moving}
+							set {country.storage5::%{_id}%::%{_category}%::%{_page}%::%{_slot}%} to {_new}
+							subtract {_moving} from {_remaining}
+							set {_placed} to true
+					add 1 to {_slot}
+			add 1 to {_page}
+		if {_placed} is false:
+			return {_original} - {_remaining}
+	return {_original}
+
+function countryStoragePutItemInCategory(id: text, category: text, itemToStore: item) :: boolean:
+	countryStorageMigrate({_id})
+	set {_amount} to amount of {_itemToStore}
+	set {_moved} to countryStorageInsertAmount({_id}, {_category}, {_itemToStore})
+	if {_moved} is greater than or equal to {_amount}:
+		return true
+	return false
+
+function countryStorageHasV4Data(id: text) :: boolean:
 	set {_pages} to countryStoragePages({_id})
 	set {_page} to 1
 	while {_page} is less than or equal to {_pages}:
 		set {_slot} to 0
 		while {_slot} is less than or equal to 44:
-			set {_item} to {country.storage4::%{_id}%::general::%{_page}%::%{_slot}%}
-			if {_item} is set:
-				if type of {_item} is {_type}:
-					add amount of {_item} to {_count}
+			if {country.storage4::%{_id}%::general::%{_page}%::%{_slot}%} is set:
+				return true
 			add 1 to {_slot}
 		add 1 to {_page}
 	loop {country.storage-category-name::%{_id}%::*}:
@@ -86,13 +217,107 @@ function countryStorageMaterialCount(id: text, materialName: text) :: number:
 		while {_page} is less than or equal to {_pages}:
 			set {_slot} to 0
 			while {_slot} is less than or equal to 44:
-				set {_item} to {country.storage4::%{_id}%::%{_cat}%::%{_page}%::%{_slot}%}
-				if {_item} is set:
-					if type of {_item} is {_type}:
-						add amount of {_item} to {_count}
+				if {country.storage4::%{_id}%::%{_cat}%::%{_page}%::%{_slot}%} is set:
+					return true
 				add 1 to {_slot}
 			add 1 to {_page}
+	return false
+
+function countryStorageMigrate(id: text):
+	if {country.storage5-migrated::%{_id}%} is true:
+		stop
+	set {_pages} to countryStoragePages({_id})
+	if countryStorageHasV4Data({_id}) is true:
+		# Copy V4 real slots directly. UI filler panes are never copied.
+		set {_page} to 1
+		while {_page} is less than or equal to {_pages}:
+			set {_slot} to 0
+			while {_slot} is less than or equal to 44:
+				set {_old} to {country.storage4::%{_id}%::general::%{_page}%::%{_slot}%}
+				if {_old} is set:
+					if {_old} is not air:
+						if type of {_old} is not gray stained glass pane:
+							set {country.storage5::%{_id}%::general::%{_page}%::%{_slot}%} to {_old}
+				add 1 to {_slot}
+			add 1 to {_page}
+		loop {country.storage-category-name::%{_id}%::*}:
+			set {_cat} to loop-index
+			set {_page} to 1
+			while {_page} is less than or equal to {_pages}:
+				set {_slot} to 0
+				while {_slot} is less than or equal to 44:
+					set {_old} to {country.storage4::%{_id}%::%{_cat}%::%{_page}%::%{_slot}%}
+					if {_old} is set:
+						if {_old} is not air:
+							if type of {_old} is not gray stained glass pane:
+								set {country.storage5::%{_id}%::%{_cat}%::%{_page}%::%{_slot}%} to {_old}
+					add 1 to {_slot}
+				add 1 to {_page}
+	else:
+		# Very old storage is imported only when no V4 data exists, preventing duplicates.
+		loop {country.storage::%{_id}%::*}:
+			set {_old} to loop-value
+			if {_old} is set:
+				if {_old} is not air:
+					if type of {_old} is not gray stained glass pane:
+						countryStorageInsertAmount({_id}, "general", {_old})
+	set {country.storage5-migrated::%{_id}%} to true
+
+function countryStorageMaterialCountInCategory(id: text, category: text, materialName: text) :: number:
+	set {_type} to {_materialName} parsed as item type
+	if {_type} is not set:
+		return 0
+	set {_count} to 0
+	set {_page} to 1
+	set {_pages} to countryStoragePages({_id})
+	while {_page} is less than or equal to {_pages}:
+		set {_slot} to 0
+		while {_slot} is less than or equal to 44:
+			set {_item} to {country.storage5::%{_id}%::%{_category}%::%{_page}%::%{_slot}%}
+			if {_item} is set:
+				if type of {_item} is {_type}:
+					add amount of {_item} to {_count}
+			add 1 to {_slot}
+		add 1 to {_page}
 	return {_count}
+
+function countryStorageMaterialCount(id: text, materialName: text) :: number:
+	countryStorageMigrate({_id})
+	set {_count} to countryStorageMaterialCountInCategory({_id}, "general", {_materialName})
+	loop {country.storage-category-name::%{_id}%::*}:
+		set {_cat} to loop-index
+		add countryStorageMaterialCountInCategory({_id}, {_cat}, {_materialName}) to {_count}
+	return {_count}
+
+function countryStorageTakeFromCategory(id: text, category: text, materialName: text, wanted: number) :: number:
+	set {_type} to {_materialName} parsed as item type
+	if {_type} is not set:
+		return 0
+	set {_removed} to 0
+	set {_left} to {_wanted}
+	set {_page} to 1
+	set {_pages} to countryStoragePages({_id})
+	while {_page} is less than or equal to {_pages}:
+		set {_slot} to 0
+		while {_slot} is less than or equal to 44:
+			if {_left} is greater than 0:
+				set {_item} to {country.storage5::%{_id}%::%{_category}%::%{_page}%::%{_slot}%}
+				if {_item} is set:
+					if type of {_item} is {_type}:
+						set {_amount} to amount of {_item}
+						if {_amount} is less than or equal to {_left}:
+							add {_amount} to {_removed}
+							subtract {_amount} from {_left}
+							delete {country.storage5::%{_id}%::%{_category}%::%{_page}%::%{_slot}%}
+						else:
+							add {_left} to {_removed}
+							set {_newAmount} to {_amount} - {_left}
+							set amount of {_item} to {_newAmount}
+							set {country.storage5::%{_id}%::%{_category}%::%{_page}%::%{_slot}%} to {_item}
+							set {_left} to 0
+			add 1 to {_slot}
+		add 1 to {_page}
+	return {_removed}
 
 function countryStorageTakeMaterial(id: text, materialName: text, wanted: number) :: boolean:
 	if {_wanted} is less than or equal to 0:
@@ -100,67 +325,34 @@ function countryStorageTakeMaterial(id: text, materialName: text, wanted: number
 	countryStorageMigrate({_id})
 	if countryStorageMaterialCount({_id}, {_materialName}) is less than {_wanted}:
 		return false
-	set {_type} to {_materialName} parsed as item type
 	set {_left} to {_wanted}
-	set {_pages} to countryStoragePages({_id})
-	set {_page} to 1
-	while {_page} is less than or equal to {_pages}:
-		set {_slot} to 0
-		while {_slot} is less than or equal to 44:
-			if {_left} is greater than 0:
-				set {_item} to {country.storage4::%{_id}%::general::%{_page}%::%{_slot}%}
-				if {_item} is set:
-					if type of {_item} is {_type}:
-						set {_amount} to amount of {_item}
-						if {_amount} is less than or equal to {_left}:
-							subtract {_amount} from {_left}
-							delete {country.storage4::%{_id}%::general::%{_page}%::%{_slot}%}
-						else:
-							set {_new} to {_amount} - {_left}
-							set amount of {_item} to {_new}
-							set {country.storage4::%{_id}%::general::%{_page}%::%{_slot}%} to {_item}
-							set {_left} to 0
-			add 1 to {_slot}
-		add 1 to {_page}
+	set {_removed} to countryStorageTakeFromCategory({_id}, "general", {_materialName}, {_left})
+	subtract {_removed} from {_left}
 	loop {country.storage-category-name::%{_id}%::*}:
 		if {_left} is greater than 0:
 			set {_cat} to loop-index
-			set {_page} to 1
-			while {_page} is less than or equal to {_pages}:
-				set {_slot} to 0
-				while {_slot} is less than or equal to 44:
-					if {_left} is greater than 0:
-						set {_item} to {country.storage4::%{_id}%::%{_cat}%::%{_page}%::%{_slot}%}
-						if {_item} is set:
-							if type of {_item} is {_type}:
-								set {_amount} to amount of {_item}
-								if {_amount} is less than or equal to {_left}:
-									subtract {_amount} from {_left}
-									delete {country.storage4::%{_id}%::%{_cat}%::%{_page}%::%{_slot}%}
-								else:
-									set {_new} to {_amount} - {_left}
-									set amount of {_item} to {_new}
-									set {country.storage4::%{_id}%::%{_cat}%::%{_page}%::%{_slot}%} to {_item}
-									set {_left} to 0
-					add 1 to {_slot}
-				add 1 to {_page}
+			set {_removed} to countryStorageTakeFromCategory({_id}, {_cat}, {_materialName}, {_left})
+			subtract {_removed} from {_left}
 	return true
 
 function countryStorageAddMaterial(id: text, materialName: text, amountToAdd: number) :: number:
+	if {_amountToAdd} is less than or equal to 0:
+		return 0
 	countryStorageMigrate({_id})
 	set {_type} to {_materialName} parsed as item type
 	if {_type} is not set:
 		return {_amountToAdd}
 	set {_left} to {_amountToAdd}
+	set {_limit} to maximum stack size of {_type}
 	while {_left} is greater than 0:
-		set {_put} to {_left}
-		if {_put} is greater than 64:
-			set {_put} to 64
+		set {_part} to {_left}
+		if {_part} is greater than {_limit}:
+			set {_part} to {_limit}
 		set {_stack} to {_type}
-		set amount of {_stack} to {_put}
-		if countryStoragePutItemInCategory({_id}, "general", {_stack}) is true:
-			subtract {_put} from {_left}
-		else:
+		set amount of {_stack} to {_part}
+		set {_moved} to countryStorageInsertAmount({_id}, "general", {_stack})
+		subtract {_moved} from {_left}
+		if {_moved} is less than {_part}:
 			return {_left}
 	return 0
 
@@ -863,194 +1055,127 @@ on quit:
 	delete {country.building-menu::%uuid of player%::*}
 
 # =========================================================
-# COUNTRY STORAGE V4 - CLEAN REBUILD
-# Canonical data:
-# {country.storage4::<country>::<category>::<page>::<slot>} = item
-# Slots 0..44 are real chest slots. Slots 45..53 are controls only.
+# COUNTRY STORAGE V5 - GUI AND EVENTS
 # =========================================================
-
-function countryStorageCanManageCategories(p: player) :: boolean:
-	set {_id} to countryId({_p})
-	if {_id} is "":
-		return false
-	if countryIsAdmin({_p}) is true:
-		return true
-	if {country.owner::%{_id}%} is "%uuid of {_p}%":
-		return true
-	if countryHasPermission({_p}, "MANAGE_DEVELOPMENT") is true:
-		return true
-	return false
-
-function countryStorageCategoryName(id: text, category: text) :: text:
-	if {_category} is "general":
-		return "Общее"
-	if {country.storage-category-name::%{_id}%::%{_category}%} is set:
-		return {country.storage-category-name::%{_id}%::%{_category}%}
-	return "Категория"
-
-function countryStorageCategoryCount(id: text) :: number:
-	set {_count} to 1
-	loop {country.storage-category-name::%{_id}%::*}:
-		add 1 to {_count}
-	return {_count}
-
-function countryStorageCategoryKnowsType(id: text, category: text, typeText: text) :: boolean:
-	if {country.storage4-type::%{_id}%::%{_category}%::%{_typeText}%} is true:
-		return true
-	return false
-
-function countryStorageRememberType(id: text, category: text, storedItem: item):
-	set {_type-text} to "%type of {_storedItem}%"
-	set {country.storage4-type::%{_id}%::%{_category}%::%{_type-text}%} to true
-
-function countryStorageUsedSlots(id: text) :: number:
-	set {_used} to 0
-	set {_pages} to countryStoragePages({_id})
-	set {_page} to 1
-	while {_page} is less than or equal to {_pages}:
-		set {_slot} to 0
-		while {_slot} is less than or equal to 44:
-			if {country.storage4::%{_id}%::general::%{_page}%::%{_slot}%} is set:
-				add 1 to {_used}
-			add 1 to {_slot}
-		add 1 to {_page}
-	loop {country.storage-category-name::%{_id}%::*}:
-		set {_cat} to loop-index
-		set {_page} to 1
-		while {_page} is less than or equal to {_pages}:
-			set {_slot} to 0
-			while {_slot} is less than or equal to 44:
-				if {country.storage4::%{_id}%::%{_cat}%::%{_page}%::%{_slot}%} is set:
-					add 1 to {_used}
-				add 1 to {_slot}
-			add 1 to {_page}
-	return {_used}
-
-function countryStorageCategorySlots(id: text, category: text) :: number:
-	set {_used} to 0
-	set {_pages} to countryStoragePages({_id})
-	set {_page} to 1
-	while {_page} is less than or equal to {_pages}:
-		set {_slot} to 0
-		while {_slot} is less than or equal to 44:
-			if {country.storage4::%{_id}%::%{_category}%::%{_page}%::%{_slot}%} is set:
-				add 1 to {_used}
-			add 1 to {_slot}
-		add 1 to {_page}
-	return {_used}
-
-function countryStoragePutItemInCategory(id: text, category: text, itemToStore: item) :: boolean:
-	set {_item} to {_itemToStore}
-	if {_item} is not set:
-		return false
-	if {_item} is air:
-		return false
-	set {_one} to {_item}
-	set amount of {_one} to 1
-	set {_pages} to countryStoragePages({_id})
-	set {_page} to 1
-	while {_page} is less than or equal to {_pages}:
-		set {_slot} to 0
-		while {_slot} is less than or equal to 44:
-			set {_stored} to {country.storage4::%{_id}%::%{_category}%::%{_page}%::%{_slot}%}
-			if {_stored} is set:
-				set {_stored-one} to {_stored}
-				set amount of {_stored-one} to 1
-				if {_stored-one} is {_one}:
-					set {_stored-type} to type of {_stored}
-					set {_limit} to maximum stack size of {_stored-type}
-					set {_current} to amount of {_stored}
-					if {_current} is less than {_limit}:
-						set {_space} to {_limit} - {_current}
-						set {_moving} to amount of {_item}
-						if {_moving} is greater than {_space}:
-							set {_moving} to {_space}
-						add {_moving} to {_current}
-						set amount of {_stored} to {_current}
-						set {country.storage4::%{_id}%::%{_category}%::%{_page}%::%{_slot}%} to {_stored}
-						set {_remaining} to amount of {_item} - {_moving}
-						if {_remaining} is less than or equal to 0:
-							countryStorageRememberType({_id}, {_category}, {_item})
-							return true
-						set amount of {_item} to {_remaining}
-			add 1 to {_slot}
-		add 1 to {_page}
-	if countryStorageUsedSlots({_id}) is greater than or equal to countryStorageMaxSlots({_id}):
-		return false
-	set {_page} to 1
-	while {_page} is less than or equal to {_pages}:
-		set {_slot} to 0
-		while {_slot} is less than or equal to 44:
-			if {country.storage4::%{_id}%::%{_category}%::%{_page}%::%{_slot}%} is not set:
-				set {country.storage4::%{_id}%::%{_category}%::%{_page}%::%{_slot}%} to {_item}
-				countryStorageRememberType({_id}, {_category}, {_item})
-				return true
-			add 1 to {_slot}
-		add 1 to {_page}
-	return false
-
-function countryStorageMigrate(id: text):
-	if {country.storage4-migrated::%{_id}%} is true:
-		stop
-	loop {country.storage::%{_id}%::*}:
-		set {_old} to loop-value
-		if {_old} is set:
-			if {_old} is not air:
-				if type of {_old} is not gray stained glass pane:
-					countryStoragePutItemInCategory({_id}, "general", {_old})
-	delete {country.storage::%{_id}%::*}
-	delete {country.storage-category::%{_id}%::*}
-	delete {country.storage-pos::%{_id}%::*}
-	set {country.storage4-migrated::%{_id}%} to true
 
 function countryStorageQuickDeposit(p: player, category: text, mode: text) :: number:
 	set {_id} to countryId({_p})
 	if {_id} is "":
 		return 0
+	if countryStorageCanDeposit({_p}) is not true:
+		return 0
 	countryStorageMigrate({_id})
-	set {_moved} to 0
-	loop integers between 0 and 35:
-		set {_item} to slot loop-value of {_p}'s inventory
+	set {_movedTotal} to 0
+	set {_slot} to 0
+	while {_slot} is less than or equal to 35:
+		set {_item} to slot {_slot} of {_p}'s inventory
 		if {_item} is set:
 			if {_item} is not air:
 				set {_allowed} to true
 				if {_mode} is "MATCHING":
-					set {_type-text} to "%type of {_item}%"
-					if countryStorageCategoryKnowsType({_id}, {_category}, {_type-text}) is not true:
+					set {_typeText} to "%type of {_item}%"
+					if countryStorageCategoryHasType({_id}, {_category}, {_typeText}) is not true:
 						set {_allowed} to false
 				if {_allowed} is true:
-					if countryStoragePutItemInCategory({_id}, {_category}, {_item}) is true:
-						set slot loop-value of {_p}'s inventory to air
-						add 1 to {_moved}
-					else:
-						return {_moved}
-	return {_moved}
+					set {_before} to amount of {_item}
+					set {_moved} to countryStorageInsertAmount({_id}, {_category}, {_item})
+					if {_moved} is greater than 0:
+						add {_moved} to {_movedTotal}
+						set {_left} to {_before} - {_moved}
+						if {_left} is less than or equal to 0:
+							set slot {_slot} of {_p}'s inventory to air
+						else:
+							set amount of {_item} to {_left}
+							set slot {_slot} of {_p}'s inventory to {_item}
+		add 1 to {_slot}
+	return {_movedTotal}
 
 function countryStorageAutoSortPlayer(p: player) :: number:
 	set {_id} to countryId({_p})
 	if {_id} is "":
 		return 0
+	if countryStorageCanDeposit({_p}) is not true:
+		return 0
 	countryStorageMigrate({_id})
-	set {_moved} to 0
-	loop integers between 0 and 35:
-		set {_item} to slot loop-value of {_p}'s inventory
+	set {_movedTotal} to 0
+	set {_slot} to 0
+	while {_slot} is less than or equal to 35:
+		set {_item} to slot {_slot} of {_p}'s inventory
 		if {_item} is set:
 			if {_item} is not air:
-				set {_type-text} to "%type of {_item}%"
+				set {_typeText} to "%type of {_item}%"
 				set {_target} to ""
-				if countryStorageCategoryKnowsType({_id}, "general", {_type-text}) is true:
+				if countryStorageCategoryHasType({_id}, "general", {_typeText}) is true:
 					set {_target} to "general"
 				if {_target} is "":
 					loop {country.storage-category-name::%{_id}%::*}:
 						set {_cat} to loop-index
-						if countryStorageCategoryKnowsType({_id}, {_cat}, {_type-text}) is true:
+						if countryStorageCategoryHasType({_id}, {_cat}, {_typeText}) is true:
 							set {_target} to {_cat}
 							stop loop
-				if {_target} is not "":
-					if countryStoragePutItemInCategory({_id}, {_target}, {_item}) is true:
-						set slot loop-value of {_p}'s inventory to air
-						add 1 to {_moved}
-	return {_moved}
+				if {_target} is "":
+					set {_target} to "general"
+				set {_before} to amount of {_item}
+				set {_moved} to countryStorageInsertAmount({_id}, {_target}, {_item})
+				if {_moved} is greater than 0:
+					add {_moved} to {_movedTotal}
+					set {_left} to {_before} - {_moved}
+					if {_left} is less than or equal to 0:
+						set slot {_slot} of {_p}'s inventory to air
+					else:
+						set amount of {_item} to {_left}
+						set slot {_slot} of {_p}'s inventory to {_item}
+		add 1 to {_slot}
+	return {_movedTotal}
+
+function countryStorageSyncInventory(p: player, id: text, category: text, page: number, inventoryToSync: inventory):
+	if {_id} is "":
+		stop
+	if {_category} is not set:
+		stop
+	if {_page} is less than 1:
+		stop
+
+	# Enforce the shared country slot limit without deleting previously stored items.
+	set {_oldPageUsed} to countryStoragePageSlots({_id}, {_category}, {_page})
+	set {_otherUsed} to countryStorageUsedSlots({_id}) - {_oldPageUsed}
+	set {_allowedOnPage} to countryStorageMaxSlots({_id}) - {_otherUsed}
+	if {_allowedOnPage} is less than {_oldPageUsed}:
+		set {_allowedOnPage} to {_oldPageUsed}
+	set {_shownUsed} to 0
+	set {_slot} to 0
+	while {_slot} is less than or equal to 44:
+		set {_shown} to slot {_slot} of {_inventoryToSync}
+		if {_shown} is set:
+			if {_shown} is not air:
+				add 1 to {_shownUsed}
+		add 1 to {_slot}
+
+	if {_shownUsed} is greater than {_allowedOnPage}:
+		set {_slot} to 44
+		while {_slot} is greater than or equal to 0:
+			if {_shownUsed} is greater than {_allowedOnPage}:
+				set {_shown} to slot {_slot} of {_inventoryToSync}
+				set {_old} to {country.storage5::%{_id}%::%{_category}%::%{_page}%::%{_slot}%}
+				if {_shown} is set:
+					if {_shown} is not air:
+						if {_old} is not set:
+							give {_shown} to {_p}
+							set slot {_slot} of {_inventoryToSync} to air
+							subtract 1 from {_shownUsed}
+			subtract 1 from {_slot}
+
+	set {_slot} to 0
+	while {_slot} is less than or equal to 44:
+		set {_shown} to slot {_slot} of {_inventoryToSync}
+		if {_shown} is set:
+			if {_shown} is not air:
+				set {country.storage5::%{_id}%::%{_category}%::%{_page}%::%{_slot}%} to {_shown}
+			else:
+				delete {country.storage5::%{_id}%::%{_category}%::%{_page}%::%{_slot}%}
+		else:
+			delete {country.storage5::%{_id}%::%{_category}%::%{_page}%::%{_slot}%}
+		add 1 to {_slot}
 
 function countryOpenStorageHub(p: player):
 	set {_id} to countryId({_p})
@@ -1058,32 +1183,37 @@ function countryOpenStorageHub(p: player):
 		send "<red>Вы не состоите в стране." to {_p}
 		stop
 	countryStorageMigrate({_id})
+	delete {country.storage5-menu-category::%uuid of {_p}%::*}
+	delete {country.storage5-current-category::%uuid of {_p}%}
+	delete {country.storage5-current-page::%uuid of {_p}%}
 	set {_menu} to chest inventory with 6 rows named "<dark gray>Хранилище страны"
-	loop integers between 0 and 53:
-		set slot loop-value of {_menu} to gray stained glass pane named " "
-	delete {country.storage-menu-category::%uuid of {_p}%::*}
+	set {_slot} to 0
+	while {_slot} is less than or equal to 53:
+		set slot {_slot} of {_menu} to gray stained glass pane named " "
+		add 1 to {_slot}
 	set {_used} to countryStorageUsedSlots({_id})
-	set {_capacity} to countryStorageMaxSlots({_id})
-	set slot 4 of {_menu} to chest named "<gold><bold>ХРАНИЛИЩЕ СТРАНЫ" with lore "<gray>Занято: <white>%{_used}%/%{_capacity}% слотов" and "<gray>Внутри категорий пустые ячейки — воздух."
-	set {_general-used} to countryStorageCategorySlots({_id}, "general")
-	set slot 10 of {_menu} to chest named "<white><bold>ОБЩЕЕ" with lore "<gray>Занято: <white>%{_general-used}% слотов" and "" and "<yellow>Нажмите, чтобы открыть"
-	set {country.storage-menu-category::%uuid of {_p}%::10} to "general"
+	set {_max} to countryStorageMaxSlots({_id})
+	set slot 4 of {_menu} to chest named "<gold><bold>ХРАНИЛИЩЕ СТРАНЫ" with lore "<gray>Занято: <white>%{_used}%/%{_max}% стаков" and "<gray>Лимит общий для всех категорий."
+	set {_generalUsed} to countryStorageCategorySlots({_id}, "general")
+	set slot 10 of {_menu} to chest named "<white><bold>ОБЩЕЕ" with lore "<gray>Занято: <white>%{_generalUsed}% стаков" and "" and "<yellow>Нажмите, чтобы открыть"
+	set {country.storage5-menu-category::%uuid of {_p}%::10} to "general"
 	set {_slots::*} to 11, 12, 13, 14, 15, 16, 19 and 20
-	set {_pos} to 1
+	set {_position} to 1
 	loop {country.storage-category-name::%{_id}%::*}:
-		if {_pos} is greater than size of {_slots::*}:
+		if {_position} is greater than size of {_slots::*}:
 			stop loop
 		set {_cat} to loop-index
-		set {_slot} to {_slots::%{_pos}%}
-		set {_cat-used} to countryStorageCategorySlots({_id}, {_cat})
-		set slot {_slot} of {_menu} to barrel named "<yellow><bold>%loop-value%" with lore "<gray>Занято: <white>%{_cat-used}% слотов" and "" and "<yellow>Нажмите, чтобы открыть"
-		set {country.storage-menu-category::%uuid of {_p}%::%{_slot}%} to {_cat}
-		add 1 to {_pos}
-	set {_cat-count} to countryStorageCategoryCount({_id})
-	if {_cat-count} is less than 9:
-		set slot 31 of {_menu} to name tag named "<light green><bold>СОЗДАТЬ КАТЕГОРИЮ" with lore "<gray>Категорий: <white>%{_cat-count}%/9" and "" and "<yellow>Нажмите, чтобы создать"
-	set slot 32 of {_menu} to hopper named "<aqua><bold>АВТОСОРТИРОВКА"
-	set slot 33 of {_menu} to chest named "<gold><bold>СЛОЖИТЬ ВСЁ В ОБЩЕЕ"
+		set {_menuSlot} to {_slots::%{_position}%}
+		set {_catUsed} to countryStorageCategorySlots({_id}, {_cat})
+		set slot {_menuSlot} of {_menu} to barrel named "<yellow><bold>%loop-value%" with lore "<gray>Занято: <white>%{_catUsed}% стаков" and "" and "<yellow>Нажмите, чтобы открыть"
+		set {country.storage5-menu-category::%uuid of {_p}%::%{_menuSlot}%} to {_cat}
+		add 1 to {_position}
+	if countryStorageCanManageCategories({_p}) is true:
+		if countryStorageCategoryCount({_id}) is less than 9:
+			set slot 31 of {_menu} to name tag named "<light green><bold>СОЗДАТЬ КАТЕГОРИЮ" with lore "<gray>Максимум 9 категорий вместе с Общим" and "" and "<yellow>Нажмите, чтобы создать"
+	if countryStorageCanDeposit({_p}) is true:
+		set slot 32 of {_menu} to hopper named "<aqua><bold>АВТОСОРТИРОВКА" with lore "<gray>Предметы отправятся в категорию," and "<gray>где уже есть такой тип предмета." and "<gray>Остальное попадёт в Общее."
+		set slot 33 of {_menu} to chest named "<light green><bold>СЛОЖИТЬ ВСЁ В ОБЩЕЕ"
 	set slot 45 of {_menu} to arrow named "<yellow>Назад"
 	open {_menu} to {_p}
 	set {country.menu::%uuid of {_p}%} to "storage-hub"
@@ -1093,77 +1223,68 @@ function countryOpenStorageCategory(p: player, category: text, page: number):
 	if {_id} is "":
 		stop
 	countryStorageMigrate({_id})
+	if {_category} is not "general":
+		if {country.storage-category-name::%{_id}%::%{_category}%} is not set:
+			countryOpenStorageHub({_p})
+			stop
 	set {_pages} to countryStoragePages({_id})
 	if {_page} is less than 1:
 		set {_page} to 1
 	if {_page} is greater than {_pages}:
 		set {_page} to {_pages}
 	set {_name} to countryStorageCategoryName({_id}, {_category})
-	set {_count} to countryStorageCategorySlots({_id}, {_category})
 	set {_menu} to chest inventory with 6 rows named "<dark gray>%{_name}% • %{_page}%/%{_pages}%"
-	loop integers between 0 and 44:
-		set {_stored} to {country.storage4::%{_id}%::%{_category}%::%{_page}%::%loop-value%}
+	set {_slot} to 0
+	while {_slot} is less than or equal to 44:
+		set {_stored} to {country.storage5::%{_id}%::%{_category}%::%{_page}%::%{_slot}%}
 		if {_stored} is set:
-			set slot loop-value of {_menu} to {_stored}
+			set slot {_slot} of {_menu} to {_stored}
 		else:
-			set slot loop-value of {_menu} to air
-	loop integers between 45 and 53:
-		set slot loop-value of {_menu} to gray stained glass pane named " "
+			set slot {_slot} of {_menu} to air
+		add 1 to {_slot}
+	set {_slot} to 45
+	while {_slot} is less than or equal to 53:
+		set slot {_slot} of {_menu} to gray stained glass pane named " "
+		add 1 to {_slot}
 	set slot 45 of {_menu} to arrow named "<yellow>К категориям"
 	if {_page} is greater than 1:
 		set slot 46 of {_menu} to arrow named "<yellow>Предыдущая страница"
 	if {_category} is not "general":
-		set slot 47 of {_menu} to name tag named "<yellow><bold>ПЕРЕИМЕНОВАТЬ"
-		if {_count} is 0:
-			set slot 48 of {_menu} to barrier named "<red><bold>УДАЛИТЬ КАТЕГОРИЮ"
-	set {_used-total} to countryStorageUsedSlots({_id})
-	set {_capacity-total} to countryStorageMaxSlots({_id})
-	set slot 49 of {_menu} to barrel named "<gold><bold>%{_name}%" with lore "<gray>В категории: <white>%{_count}% стаков" and "<gray>Общий лимит: <white>%{_used-total}%/%{_capacity-total}%" and "" and "<green>Верхние 45 слотов работают как обычный сундук."
-	set slot 51 of {_menu} to hopper named "<aqua><bold>СЛОЖИТЬ ПОХОЖЕЕ"
-	set slot 52 of {_menu} to chest named "<light green><bold>СЛОЖИТЬ ВСЁ"
+		if countryStorageCanManageCategories({_p}) is true:
+			set slot 47 of {_menu} to name tag named "<yellow><bold>ПЕРЕИМЕНОВАТЬ"
+			if countryStorageCategorySlots({_id}, {_category}) is 0:
+				set slot 48 of {_menu} to barrier named "<red><bold>УДАЛИТЬ КАТЕГОРИЮ"
+	set {_totalUsed} to countryStorageUsedSlots({_id})
+	set {_max} to countryStorageMaxSlots({_id})
+	set {_categoryUsed} to countryStorageCategorySlots({_id}, {_category})
+	set slot 49 of {_menu} to barrel named "<gold><bold>%{_name}%" with lore "<gray>В категории: <white>%{_categoryUsed}% стаков" and "<gray>Всего: <white>%{_totalUsed}%/%{_max}%" and "" and "<gray>Верхние 45 ячеек — обычный сундук." and "<gray>Роли только с одним правом используют Shift-клик."
+	if countryStorageCanDeposit({_p}) is true:
+		set slot 51 of {_menu} to hopper named "<aqua><bold>СЛОЖИТЬ ПОХОЖЕЕ"
+		set slot 52 of {_menu} to chest named "<light green><bold>СЛОЖИТЬ ВСЁ"
 	if {_page} is less than {_pages}:
 		set slot 53 of {_menu} to arrow named "<yellow>Следующая страница"
-	set {country.storage-current-category::%uuid of {_p}%} to {_category}
-	set {country.storage-category-page::%uuid of {_p}%} to {_page}
 	open {_menu} to {_p}
+	set {country.storage5-current-category::%uuid of {_p}%} to {_category}
+	set {country.storage5-current-page::%uuid of {_p}%} to {_page}
 	set {country.menu::%uuid of {_p}%} to "storage-category"
 
-function countryStorageSyncOpenCategory(p: player):
-	if {_p} is not online:
-		stop
-	if {country.menu::%uuid of {_p}%} is not "storage-category":
-		stop
-	set {_id} to countryId({_p})
-	set {_cat} to {country.storage-current-category::%uuid of {_p}%}
-	set {_page} to {country.storage-category-page::%uuid of {_p}%}
-	if {_id} is "":
-		stop
-	if {_cat} is not set:
-		stop
-	if {_page} is not set:
-		stop
-	set {_inv} to {_p}'s current inventory
-	loop integers between 0 and 44:
-		set {_shown} to slot loop-value of {_inv}
-		if {_shown} is set:
-			if {_shown} is not air:
-				set {country.storage4::%{_id}%::%{_cat}%::%{_page}%::%loop-value%} to {_shown}
-				countryStorageRememberType({_id}, {_cat}, {_shown})
-			else:
-				delete {country.storage4::%{_id}%::%{_cat}%::%{_page}%::%loop-value%}
-		else:
-			delete {country.storage4::%{_id}%::%{_cat}%::%{_page}%::%loop-value%}
+# Compatibility for older callers.
+function countryOpenStorage2(p: player, page: number):
+	countryOpenStorageCategory({_p}, "general", {_page})
 
 on chat:
-	if {country.storage-input::%uuid of player%} is not set:
+	if {country.storage5-input::%uuid of player%} is not set:
 		stop
 	cancel event
-	set {_mode} to {country.storage-input::%uuid of player%}
-	delete {country.storage-input::%uuid of player%}
+	set {_mode} to {country.storage5-input::%uuid of player%}
+	delete {country.storage5-input::%uuid of player%}
 	set {_id} to countryId(player)
 	if {_id} is "":
 		stop
 	set {_input} to message
+	if length of {_input} is less than 1:
+		send "<red>Название не может быть пустым." to player
+		stop
 	if length of {_input} is greater than 20:
 		send "<red>Название категории не должно быть длиннее 20 символов." to player
 		stop
@@ -1175,18 +1296,22 @@ on chat:
 		if {country.storage-category-seq::%{_id}%} is not set:
 			set {country.storage-category-seq::%{_id}%} to 0
 		add 1 to {country.storage-category-seq::%{_id}%}
-		set {_seq} to {country.storage-category-seq::%{_id}%}
-		set {_cat} to "c%{_seq}%"
+		set {_cat} to "c%{country.storage-category-seq::%{_id}%}%"
 		set {country.storage-category-name::%{_id}%::%{_cat}%} to {_input}
+		wait 1 tick
 		countryOpenStorageHub(player)
 		stop
 	if {_mode} is "rename":
-		set {_cat} to {country.storage-current-category::%uuid of player%}
+		set {_cat} to {country.storage5-rename-category::%uuid of player%}
+		delete {country.storage5-rename-category::%uuid of player%}
 		if {_cat} is not set:
 			stop
 		if {_cat} is "general":
 			stop
+		if countryStorageCanManageCategories(player) is not true:
+			stop
 		set {country.storage-category-name::%{_id}%::%{_cat}%} to {_input}
+		wait 1 tick
 		countryOpenStorageCategory(player, {_cat}, 1)
 
 on inventory click:
@@ -1196,25 +1321,26 @@ on inventory click:
 		if event-slot is not set:
 			stop
 		set {_raw} to raw index of event-slot
-		set {_id} to countryId(player)
-		set {_cat} to {country.storage-menu-category::%uuid of player%::%{_raw}%}
+		set {_cat} to {country.storage5-menu-category::%uuid of player%::%{_raw}%}
 		if {_cat} is set:
 			countryOpenStorageCategory(player, {_cat}, 1)
 			stop
 		if {_raw} is 31:
 			if countryStorageCanManageCategories(player) is true:
-				set {country.storage-input::%uuid of player%} to "create"
+				set {country.storage5-input::%uuid of player%} to "create"
 				close player's inventory
 				send "<yellow>Введите название новой категории в чат." to player
 			stop
 		if {_raw} is 32:
 			if countryStorageCanDeposit(player) is true:
 				set {_moved} to countryStorageAutoSortPlayer(player)
+				send formatted "<green>Перемещено предметов: <white>%{_moved}%" to player
 				countryOpenStorageHub(player)
 			stop
 		if {_raw} is 33:
 			if countryStorageCanDeposit(player) is true:
 				set {_moved} to countryStorageQuickDeposit(player, "general", "ALL")
+				send formatted "<green>Перемещено предметов: <white>%{_moved}%" to player
 				countryOpenStorageHub(player)
 			stop
 		if {_raw} is 45:
@@ -1227,12 +1353,24 @@ on inventory click:
 	if event-slot is not set:
 		stop
 	set {_raw} to raw index of event-slot
+	set {_id} to countryId(player)
+	set {_cat} to {country.storage5-current-category::%uuid of player%}
+	set {_page} to {country.storage5-current-page::%uuid of player%}
+	if {_id} is "":
+		cancel event
+		stop
+	if {_cat} is not set:
+		cancel event
+		stop
+	if {_page} is not set:
+		cancel event
+		stop
+
+	# Bottom row is controls only.
 	if {_raw} is between 45 and 53:
 		cancel event
-		countryStorageSyncOpenCategory(player)
-		set {_id} to countryId(player)
-		set {_cat} to {country.storage-current-category::%uuid of player%}
-		set {_page} to {country.storage-category-page::%uuid of player%}
+		set {_openInventory} to player's current inventory
+		countryStorageSyncInventory(player, {_id}, {_cat}, {_page}, {_openInventory})
 		if {_raw} is 45:
 			countryOpenStorageHub(player)
 			stop
@@ -1243,7 +1381,8 @@ on inventory click:
 		if {_raw} is 47:
 			if {_cat} is not "general":
 				if countryStorageCanManageCategories(player) is true:
-					set {country.storage-input::%uuid of player%} to "rename"
+					set {country.storage5-rename-category::%uuid of player%} to {_cat}
+					set {country.storage5-input::%uuid of player%} to "rename"
 					close player's inventory
 					send "<yellow>Введите новое название категории в чат." to player
 			stop
@@ -1252,8 +1391,7 @@ on inventory click:
 				if countryStorageCanManageCategories(player) is true:
 					if countryStorageCategorySlots({_id}, {_cat}) is 0:
 						delete {country.storage-category-name::%{_id}%::%{_cat}%}
-						delete {country.storage4-type::%{_id}%::%{_cat}%::*}
-						delete {country.storage4::%{_id}%::%{_cat}%::*}
+						delete {country.storage5::%{_id}%::%{_cat}%::*}
 						countryOpenStorageHub(player)
 			stop
 		if {_raw} is 51:
@@ -1272,28 +1410,45 @@ on inventory click:
 			stop
 		stop
 
-	# Owners/admins and roles with both rights get fully native chest behaviour.
-	if countryStorageCanDeposit(player) is true:
-		if countryStorageCanWithdraw(player) is true:
+	set {_canDeposit} to countryStorageCanDeposit(player)
+	set {_canWithdraw} to countryStorageCanWithdraw(player)
+	set {_openInventory} to player's current inventory
+
+	# Full-right users get normal chest behaviour.
+	if {_canDeposit} is true:
+		if {_canWithdraw} is true:
 			wait 1 tick
-			countryStorageSyncOpenCategory(player)
+			countryStorageSyncInventory(player, {_id}, {_cat}, {_page}, {_openInventory})
 			stop
-	# Restricted roles use directional Shift-click only.
+
+	# Single-right roles deliberately use Shift-click only. This prevents bypassing permissions with the cursor.
 	if {_raw} is between 0 and 44:
-		if countryStorageCanWithdraw(player) is not true:
-			cancel event
-			stop
-	else if {_raw} is greater than or equal to 54:
 		if click type is left mouse button with shift:
-			if countryStorageCanDeposit(player) is not true:
-				cancel event
+			if {_canWithdraw} is true:
+				wait 1 tick
+				countryStorageSyncInventory(player, {_id}, {_cat}, {_page}, {_openInventory})
 				stop
 		if click type is right mouse button with shift:
-			if countryStorageCanDeposit(player) is not true:
-				cancel event
+			if {_canWithdraw} is true:
+				wait 1 tick
+				countryStorageSyncInventory(player, {_id}, {_cat}, {_page}, {_openInventory})
 				stop
-	wait 1 tick
-	countryStorageSyncOpenCategory(player)
+		cancel event
+		stop
+
+	if {_raw} is greater than or equal to 54:
+		if click type is left mouse button with shift:
+			if {_canDeposit} is true:
+				wait 1 tick
+				countryStorageSyncInventory(player, {_id}, {_cat}, {_page}, {_openInventory})
+				stop
+		if click type is right mouse button with shift:
+			if {_canDeposit} is true:
+				wait 1 tick
+				countryStorageSyncInventory(player, {_id}, {_cat}, {_page}, {_openInventory})
+				stop
+		cancel event
+		stop
 
 on inventory drag:
 	if {country.menu::%uuid of player%} is not "storage-category":
@@ -1301,20 +1456,22 @@ on inventory drag:
 	if countryStorageCanDeposit(player) is not true:
 		cancel event
 		stop
+	set {_id} to countryId(player)
+	set {_cat} to {country.storage5-current-category::%uuid of player%}
+	set {_page} to {country.storage5-current-page::%uuid of player%}
+	set {_openInventory} to player's current inventory
+	if {_id} is "":
+		cancel event
+		stop
+	if {_cat} is not set:
+		cancel event
+		stop
 	wait 1 tick
-	countryStorageSyncOpenCategory(player)
-
-on inventory close:
-	if {country.menu::%uuid of player%} is "storage-category":
-		countryStorageSyncOpenCategory(player)
-	delete {country.storage-menu-category::%uuid of player%::*}
-	delete {country.storage-current-category::%uuid of player%}
-	delete {country.storage-category-page::%uuid of player%}
+	countryStorageSyncInventory(player, {_id}, {_cat}, {_page}, {_openInventory})
 
 on quit:
-	delete {country.storage-menu-category::%uuid of player%::*}
-	delete {country.storage-current-category::%uuid of player%}
-	delete {country.storage-category-page::%uuid of player%}
-	delete {country.storage-input::%uuid of player%}
-	delete {country.storage-view::%uuid of player%::*}
-
+	delete {country.storage5-menu-category::%uuid of player%::*}
+	delete {country.storage5-current-category::%uuid of player%}
+	delete {country.storage5-current-page::%uuid of player%}
+	delete {country.storage5-input::%uuid of player%}
+	delete {country.storage5-rename-category::%uuid of player%}
