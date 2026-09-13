@@ -1,0 +1,29 @@
+name: Replace member heads with role icons once
+
+on:
+  push:
+    paths:
+      - '.github/workflows/replace-member-heads-with-role-icons-once.yml'
+      - '.github/scripts/replace_member_heads_with_role_icons.py'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch country member icons
+        run: python .github/scripts/replace_member_heads_with_role_icons.py
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add server/plugins/Skript/scripts/countries.sk
+          git commit -m "Use highest-permission role icons for country members"
+          git push
