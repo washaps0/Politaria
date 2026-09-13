@@ -1204,14 +1204,21 @@ function countryOpenStorageHub(p: player):
 		set {_cat} to loop-index
 		set {_menuSlot} to {_slots::%{_position}%}
 		set {_catUsed} to countryStorageCategorySlots({_id}, {_cat})
-		set slot {_menuSlot} of {_menu} to barrel named "<yellow><bold>%loop-value%" with lore "<gray>Занято: <white>%{_catUsed}% стаков" and "" and "<yellow>Нажмите, чтобы открыть"
+		set {_icon} to {country.storage-category-icon::%{_id}%::%{_cat}%}
+		if {_icon} is not set:
+			set {_icon} to barrel
+		set {_displayIcon} to {_icon}
+		set amount of {_displayIcon} to 1
+		set name of {_displayIcon} to "<yellow><bold>%loop-value%"
+		set lore of {_displayIcon} to "<gray>Занято: <white>%{_catUsed}% стаков" and "" and "<yellow>Нажмите, чтобы открыть"
+		set slot {_menuSlot} of {_menu} to {_displayIcon}
 		set {country.storage5-menu-category::%uuid of {_p}%::%{_menuSlot}%} to {_cat}
 		add 1 to {_position}
 	if countryStorageCanManageCategories({_p}) is true:
 		if countryStorageCategoryCount({_id}) is less than 9:
 			set slot 31 of {_menu} to name tag named "<light green><bold>СОЗДАТЬ КАТЕГОРИЮ" with lore "<gray>Максимум 9 категорий вместе с Общим" and "" and "<yellow>Нажмите, чтобы создать"
 	if countryStorageCanDeposit({_p}) is true:
-		set slot 32 of {_menu} to hopper named "<aqua><bold>АВТОСОРТИРОВКА" with lore "<gray>Предметы отправятся в категорию," and "<gray>где уже есть такой тип предмета." and "<gray>Остальное попадёт в Общее."
+		set slot 32 of {_menu} to hopper named "<aqua><bold>АВТОСОРТИРОВКА" with lore "<gray>Предметы отправятся в категорию," and "<gray>где уже есть такой тип предмета." and "<gray>Остальные предметы останутся у вас."
 		set slot 33 of {_menu} to chest named "<light green><bold>СЛОЖИТЬ ВСЁ В ОБЩЕЕ"
 	set slot 45 of {_menu} to arrow named "<yellow>Назад"
 	open {_menu} to {_p}
@@ -1253,6 +1260,15 @@ function countryOpenStorageCategory(p: player, category: text, page: number):
 			set slot 47 of {_menu} to name tag named "<yellow><bold>ПЕРЕИМЕНОВАТЬ"
 			if countryStorageCategorySlots({_id}, {_category}) is 0:
 				set slot 48 of {_menu} to barrier named "<red><bold>УДАЛИТЬ КАТЕГОРИЮ"
+			set {_savedIcon} to {country.storage-category-icon::%{_id}%::%{_category}%}
+			if {_savedIcon} is set:
+				set {_iconButton} to {_savedIcon}
+			else:
+				set {_iconButton} to item frame
+			set amount of {_iconButton} to 1
+			set name of {_iconButton} to "<aqua><bold>ИКОНКА КАТЕГОРИИ"
+			set lore of {_iconButton} to "<gray>Возьмите предмет в основную руку" and "<gray>и нажмите сюда, чтобы сделать" and "<gray>его иконкой категории." and "" and "<yellow>Пустая рука — сбросить иконку"
+			set slot 50 of {_menu} to {_iconButton}
 	set {_totalUsed} to countryStorageUsedSlots({_id})
 	set {_max} to countryStorageMaxSlots({_id})
 	set {_categoryUsed} to countryStorageCategorySlots({_id}, {_category})
@@ -1387,8 +1403,25 @@ on inventory click:
 				if countryStorageCanManageCategories(player) is true:
 					if countryStorageCategorySlots({_id}, {_cat}) is 0:
 						delete {country.storage-category-name::%{_id}%::%{_cat}%}
+						delete {country.storage-category-icon::%{_id}%::%{_cat}%}
 						delete {country.storage5::%{_id}%::%{_cat}%::*}
 						countryOpenStorageHub(player)
+			stop
+		if {_raw} is 50:
+			if {_cat} is not "general":
+				if countryStorageCanManageCategories(player) is true:
+					set {_held} to player's tool
+					if {_held} is set:
+						if {_held} is not air:
+							set {_icon} to {_held}
+							set amount of {_icon} to 1
+							set {country.storage-category-icon::%{_id}%::%{_cat}%} to {_icon}
+							send "<green>Иконка категории изменена." to player
+							countryOpenStorageCategory(player, {_cat}, {_page})
+							stop
+					delete {country.storage-category-icon::%{_id}%::%{_cat}%}
+					send "<yellow>Иконка категории сброшена." to player
+					countryOpenStorageCategory(player, {_cat}, {_page})
 			stop
 		if {_raw} is 51:
 			if countryStorageCanDeposit(player) is true:
