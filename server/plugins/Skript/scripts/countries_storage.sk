@@ -949,13 +949,14 @@ on quit:
 	delete {country.storage-page::%uuid of player%}
 	delete {country.building-menu::%uuid of player%::*}
 
-
 # =========================================================
-# COUNTRY STORAGE CATEGORIES V2
-# Categories are virtual chests. They DO NOT add capacity:
-# country level I = 45 total occupied slots
-# country level II = 90 total occupied slots
-# Existing untagged items automatically belong to "general".
+# COUNTRY STORAGE CATEGORIES V3
+# Real chest-like slot layout.
+#
+# {country.storage::*} remains the canonical backing storage so country
+# development / production / upgrade code keeps working.
+# {country.storage-pos::<id>::<category>::<page>::<slot>} stores where each
+# backing slot is shown. Items are NOT compacted anymore.
 # =========================================================
 
 function countryStorageCanManageCategories(p: player) :: boolean:
@@ -1018,6 +1019,43 @@ function countryStorageCategoryKnowsType(id: text, category: text, typeText: tex
 		return true
 	return false
 
+function countryStorageRememberType(id: text, category: text, storedItem: item):
+	set {_type-text} to "%type of {_storedItem}%"
+	set {country.storage-category-type::%{_id}%::%{_category}%::%{_type-text}%} to true
+
+function countryStorageGlobalIsPositioned(id: text, category: text, globalSlot: number) :: boolean:
+	loop integers between 0 and 44:
+		if {country.storage-pos::%{_id}%::%{_category}%::1::%loop-value%} is {_globalSlot}:
+			return true
+	loop integers between 0 and 44:
+		if {country.storage-pos::%{_id}%::%{_category}%::2::%loop-value%} is {_globalSlot}:
+			return true
+	return false
+
+function countryStorageEnsurePositions(id: text, category: text):
+	set {_max} to countryStorageMaxSlots({_id}) - 1
+	set {_pages} to countryStoragePages({_id})
+	loop integers between 0 and {_max}:
+		set {_global} to loop-value
+		set {_stored} to {country.storage::%{_id}%::%{_global}%}
+		if {_stored} is set:
+			set {_cat} to countryStorageCategoryOfSlot({_id}, {_global})
+			if {_cat} is {_category}:
+				if countryStorageGlobalIsPositioned({_id}, {_category}, {_global}) is not true:
+					set {_placed} to false
+					loop integers between 0 and 44:
+						if {_placed} is false:
+							if {country.storage-pos::%{_id}%::%{_category}%::1::%loop-value%} is not set:
+								set {country.storage-pos::%{_id}%::%{_category}%::1::%loop-value%} to {_global}
+								set {_placed} to true
+					if {_placed} is false:
+						if {_pages} is greater than 1:
+							loop integers between 0 and 44:
+								if {_placed} is false:
+									if {country.storage-pos::%{_id}%::%{_category}%::2::%loop-value%} is not set:
+										set {country.storage-pos::%{_id}%::%{_category}%::2::%loop-value%} to {_global}
+										set {_placed} to true
+
 function countryStoragePutItemInCategory(id: text, category: text, itemToStore: item) :: boolean:
 	set {_free} to countryStorageFindFreeGlobalSlot({_id})
 	if {_free} is less than 0:
@@ -1027,33 +1065,8 @@ function countryStoragePutItemInCategory(id: text, category: text, itemToStore: 
 		delete {country.storage-category::%{_id}%::%{_free}%}
 	else:
 		set {country.storage-category::%{_id}%::%{_free}%} to {_category}
-	set {_type-text} to "%type of {_itemToStore}%"
-	set {country.storage-category-type::%{_id}%::%{_category}%::%{_type-text}%} to true
+	countryStorageRememberType({_id}, {_category}, {_itemToStore})
 	return true
-
-function countryStoragePutOneInCategory(id: text, category: text, itemToStore: item) :: boolean:
-	set {_one} to {_itemToStore}
-	set amount of {_one} to 1
-	set {_max} to countryStorageMaxSlots({_id}) - 1
-	loop integers between 0 and {_max}:
-		set {_stored} to {country.storage::%{_id}%::%loop-value%}
-		if {_stored} is set:
-			set {_stored-category} to countryStorageCategoryOfSlot({_id}, loop-value)
-			if {_stored-category} is {_category}:
-				set {_stored-one} to {_stored}
-				set amount of {_stored-one} to 1
-				if {_stored-one} is {_one}:
-					set {_stored-type} to type of {_stored}
-					set {_limit} to maximum stack size of {_stored-type}
-					set {_current} to amount of {_stored}
-					if {_current} is less than {_limit}:
-						add 1 to {_current}
-						set amount of {_stored} to {_current}
-						set {country.storage::%{_id}%::%loop-value%} to {_stored}
-						set {_type-text} to "%type of {_one}%"
-						set {country.storage-category-type::%{_id}%::%{_category}%::%{_type-text}%} to true
-						return true
-	return countryStoragePutItemInCategory({_id}, {_category}, {_one})
 
 function countryStorageQuickDeposit(p: player, category: text, mode: text) :: number:
 	set {_id} to countryId({_p})
@@ -1115,10 +1128,10 @@ function countryOpenStorageHub(p: player):
 	delete {country.storage-menu-category::%uuid of {_p}%::*}
 	set {_used} to countryStorageUsedSlots({_id})
 	set {_capacity} to countryStorageMaxSlots({_id})
-	set slot 4 of {_menu} to chest named "<gold><bold>ХРАНИЛИЩЕ СТРАНЫ" with lore "<gray>Занято: <white>%{_used}%/%{_capacity}% слотов" and "<gray>Категории используют общий лимит" and "" and "<gray>Категория запоминает типы предметов," and "<gray>которые вы в неё складываете."
+	set slot 4 of {_menu} to chest named "<gold><bold>ХРАНИЛИЩЕ СТРАНЫ" with lore "<gray>Занято: <white>%{_used}%/%{_capacity}% слотов" and "<gray>Предметы сохраняют своё место" and "<gray>как в обычном сундуке."
 
 	set {_general-used} to countryStorageCategorySlots({_id}, "general")
-	set slot 10 of {_menu} to chest named "<white><bold>ОБЩЕЕ" with lore "<gray>Занято: <white>%{_general-used}% слотов" and "<gray>Сюда попадают старые предметы" and "<gray>и продукция зданий." and "" and "<yellow>Нажмите, чтобы открыть"
+	set slot 10 of {_menu} to chest named "<white><bold>ОБЩЕЕ" with lore "<gray>Занято: <white>%{_general-used}% слотов" and "" and "<yellow>Нажмите, чтобы открыть"
 	set {country.storage-menu-category::%uuid of {_p}%::10} to "general"
 
 	set {_slots::*} to 11, 12, 13, 14, 15, 16, 19 and 20
@@ -1138,8 +1151,8 @@ function countryOpenStorageHub(p: player):
 		set slot 31 of {_menu} to name tag named "<light green><bold>СОЗДАТЬ КАТЕГОРИЮ" with lore "<gray>Категорий: <white>%{_cat-count}%/9" and "<gray>Название вводится в чат" and "" and "<yellow>Нажмите, чтобы создать"
 	else:
 		set slot 31 of {_menu} to barrier named "<red><bold>ЛИМИТ КАТЕГОРИЙ" with lore "<gray>Максимум: <white>9 категорий"
-	set slot 32 of {_menu} to hopper named "<aqua><bold>АВТОСОРТИРОВКА" with lore "<gray>Разложить предметы из инвентаря" and "<gray>по категориям, которые уже знают" and "<gray>эти типы предметов." and "" and "<yellow>Нажмите, чтобы разложить"
-	set slot 33 of {_menu} to chest named "<gold><bold>СЛОЖИТЬ ВСЁ В ОБЩЕЕ" with lore "<gray>Быстро перенести весь основной" and "<gray>инвентарь в категорию «Общее»." and "" and "<yellow>Нажмите, чтобы сложить"
+	set slot 32 of {_menu} to hopper named "<aqua><bold>АВТОСОРТИРОВКА" with lore "<gray>Разложить предметы из инвентаря" and "<gray>по уже известным категориям." and "" and "<yellow>Нажмите, чтобы разложить"
+	set slot 33 of {_menu} to chest named "<gold><bold>СЛОЖИТЬ ВСЁ В ОБЩЕЕ" with lore "<gray>Быстро перенести основной инвентарь" and "<gray>в категорию «Общее»." and "" and "<yellow>Нажмите, чтобы сложить"
 	set slot 45 of {_menu} to arrow named "<yellow>Назад"
 	open {_menu} to {_p}
 	set {country.menu::%uuid of {_p}%} to "storage-hub"
@@ -1148,58 +1161,115 @@ function countryOpenStorageCategory(p: player, category: text, page: number):
 	set {_id} to countryId({_p})
 	if {_id} is "":
 		stop
-	set {_name} to countryStorageCategoryName({_id}, {_category})
-	set {_count} to countryStorageCategorySlots({_id}, {_category})
-	set {_pages} to 1
-	if {_count} is greater than 45:
-		set {_pages} to 2
+	countryStorageEnsurePositions({_id}, {_category})
+	set {_pages} to countryStoragePages({_id})
 	if {_page} is less than 1:
 		set {_page} to 1
 	if {_page} is greater than {_pages}:
 		set {_page} to {_pages}
+	set {_name} to countryStorageCategoryName({_id}, {_category})
+	set {_count} to countryStorageCategorySlots({_id}, {_category})
+
 	set {_menu} to chest inventory with 6 rows named "<dark gray>%{_name}% • %{_page}%/%{_pages}%"
 	loop integers between 0 and 53:
 		set slot loop-value of {_menu} to gray stained glass pane named " "
-	delete {country.storage-view::%uuid of {_p}%::*}
-	set {_start} to ({_page} - 1) * 45
-	set {_finish} to {_start} + 44
-	set {_position} to 0
-	set {_max} to countryStorageMaxSlots({_id}) - 1
-	loop integers between 0 and {_max}:
-		set {_global} to loop-value
-		if {country.storage::%{_id}%::%{_global}%} is set:
-			set {_cat} to countryStorageCategoryOfSlot({_id}, {_global})
-			if {_cat} is {_category}:
-				if {_position} is between {_start} and {_finish}:
-					set {_view} to {_position} - {_start}
-					set slot {_view} of {_menu} to {country.storage::%{_id}%::%{_global}%}
-					set {country.storage-view::%uuid of {_p}%::%{_view}%} to {_global}
-				add 1 to {_position}
+
+	loop integers between 0 and 44:
+		set {_global} to {country.storage-pos::%{_id}%::%{_category}%::%{_page}%::%loop-value%}
+		if {_global} is set:
+			set {_stored} to {country.storage::%{_id}%::%{_global}%}
+			if {_stored} is set:
+				set {_actual-cat} to countryStorageCategoryOfSlot({_id}, {_global})
+				if {_actual-cat} is {_category}:
+					set slot loop-value of {_menu} to {_stored}
+				else:
+					delete {country.storage-pos::%{_id}%::%{_category}%::%{_page}%::%loop-value%}
+			else:
+				delete {country.storage-pos::%{_id}%::%{_category}%::%{_page}%::%loop-value%}
+
 	set slot 45 of {_menu} to arrow named "<yellow>К категориям"
 	if {_page} is greater than 1:
 		set slot 46 of {_menu} to arrow named "<yellow>Предыдущая страница"
 	else:
 		set slot 46 of {_menu} to gray dye named "<dark gray>Предыдущая страница"
+
 	if {_category} is not "general":
 		set slot 47 of {_menu} to name tag named "<yellow><bold>ПЕРЕИМЕНОВАТЬ" with lore "<gray>Текущее имя: <white>%{_name}%"
 		if {_count} is 0:
-			set slot 48 of {_menu} to barrier named "<red><bold>УДАЛИТЬ КАТЕГОРИЮ" with lore "<gray>Можно удалить только пустую категорию"
+			set slot 48 of {_menu} to barrier named "<red><bold>УДАЛИТЬ КАТЕГОРИЮ" with lore "<gray>Категория пуста"
 		else:
 			set slot 48 of {_menu} to gray dye named "<dark gray>Удалить категорию" with lore "<gray>Сначала заберите все предметы"
 	else:
 		set slot 47 of {_menu} to gray dye named "<dark gray>Системная категория"
 		set slot 48 of {_menu} to gray dye named "<dark gray>Нельзя удалить «Общее»"
-	set slot 49 of {_menu} to barrel named "<gold><bold>%{_name}%" with lore "<gray>Предметов-стаков: <white>%{_count}%" and "<gray>Общий лимит склада не меняется." and "" and "<gray>Работает как обычный сундук." and "<gray>ПКМ — разделить стак, Shift-клик — быстро переместить." and "<gray>Можно перетаскивать предметы мышкой."
-	set slot 51 of {_menu} to hopper named "<aqua><bold>СЛОЖИТЬ ПОХОЖЕЕ" with lore "<gray>Перенести из инвентаря только" and "<gray>те типы, которые эта категория" and "<gray>уже запомнила."
+
+	set {_used-total} to countryStorageUsedSlots({_id})
+	set {_capacity-total} to countryStorageMaxSlots({_id})
+	set slot 49 of {_menu} to barrel named "<gold><bold>%{_name}%" with lore "<gray>Занято: <white>%{_count}% слотов" and "<gray>Общий лимит: <white>%{_used-total}%/%{_capacity-total}%" and "" and "<green>Работает как обычный сундук." and "<gray>ЛКМ/ПКМ, Shift-клик и перетаскивание."
+	set slot 51 of {_menu} to hopper named "<aqua><bold>СЛОЖИТЬ ПОХОЖЕЕ" with lore "<gray>Перенести подходящие предметы" and "<gray>из инвентаря в эту категорию."
 	set slot 52 of {_menu} to chest named "<light green><bold>СЛОЖИТЬ ВСЁ" with lore "<gray>Перенести весь основной инвентарь" and "<gray>в эту категорию."
+
 	if {_page} is less than {_pages}:
 		set slot 53 of {_menu} to arrow named "<yellow>Следующая страница"
 	else:
 		set slot 53 of {_menu} to gray dye named "<dark gray>Следующая страница"
+
 	set {country.storage-current-category::%uuid of {_p}%} to {_category}
 	set {country.storage-category-page::%uuid of {_p}%} to {_page}
 	open {_menu} to {_p}
 	set {country.menu::%uuid of {_p}%} to "storage-category"
+
+# Save exactly what is visible on one category page.
+# Existing global slots for this page are reused, so moving a stack from
+# slot 3 to slot 20 only changes its visual position.
+function countryStorageSyncCategoryPage(p: player):
+	if {_p} is not online:
+		stop
+	if {country.menu::%uuid of {_p}%} is not "storage-category":
+		stop
+	set {_id} to countryId({_p})
+	if {_id} is "":
+		stop
+	set {_cat} to {country.storage-current-category::%uuid of {_p}%}
+	set {_page} to {country.storage-category-page::%uuid of {_p}%}
+	if {_cat} is not set:
+		stop
+	if {_page} is not set:
+		stop
+	set {_inv} to {_p}'s current inventory
+
+	delete {_old::*}
+	loop integers between 0 and 44:
+		set {_global} to {country.storage-pos::%{_id}%::%{_cat}%::%{_page}%::%loop-value%}
+		if {_global} is set:
+			add {_global} to {_old::*}
+			delete {country.storage::%{_id}%::%{_global}%}
+			delete {country.storage-category::%{_id}%::%{_global}%}
+	delete {country.storage-pos::%{_id}%::%{_cat}%::%{_page}%::*}
+
+	set {_reuse} to 1
+	loop integers between 0 and 44:
+		set {_view} to loop-value
+		set {_shown} to slot {_view} of {_inv}
+		if {_shown} is set:
+			if {_shown} is not air:
+				set {_global} to {_old::%{_reuse}%}
+				if {_global} is set:
+					add 1 to {_reuse}
+				else:
+					set {_global} to countryStorageFindFreeGlobalSlot({_id})
+				if {_global} is less than 0:
+					give {_shown} to {_p}
+					set slot {_view} of {_inv} to air
+					send action bar "<red>Хранилище страны заполнено." to {_p}
+				else:
+					set {country.storage::%{_id}%::%{_global}%} to {_shown}
+					if {_cat} is "general":
+						delete {country.storage-category::%{_id}%::%{_global}%}
+					else:
+						set {country.storage-category::%{_id}%::%{_global}%} to {_cat}
+					set {country.storage-pos::%{_id}%::%{_cat}%::%{_page}%::%{_view}%} to {_global}
+					countryStorageRememberType({_id}, {_cat}, {_shown})
 
 on chat:
 	if {country.storage-input::%uuid of player%} is not set:
@@ -1280,10 +1350,7 @@ on inventory click:
 				send "<red>У вашей роли нет права пополнять хранилище." to player
 				stop
 			set {_moved} to countryStorageAutoSortPlayer(player)
-			if {_moved} is greater than 0:
-				send formatted "<light green>Автосортировка переместила <white>%{_moved}% <light green>стаков." to player
-			else:
-				send "<gray>Не найдено предметов, для которых категории уже запомнили тип." to player
+			send formatted "<light green>Перемещено стаков: <white>%{_moved}%<light green>." to player
 			countryOpenStorageHub(player)
 			stop
 		if {_raw} is 33:
@@ -1300,246 +1367,123 @@ on inventory click:
 		stop
 
 	if {_state} is "storage-category":
-		# Item slots use normal Minecraft inventory behaviour. The native
-		# handler below synchronizes the resulting contents automatically.
-		if {_raw} is not between 45 and 53:
-			stop
-		cancel event
 		set {_id} to countryId(player)
 		if {_id} is "":
+			cancel event
 			close player's inventory
 			stop
 		set {_cat} to {country.storage-current-category::%uuid of player%}
+		set {_page} to {country.storage-category-page::%uuid of player%}
 		if {_cat} is not set:
+			cancel event
 			countryOpenStorageHub(player)
 			stop
-		set {_page} to {country.storage-category-page::%uuid of player%}
 		if {_page} is not set:
 			set {_page} to 1
+
+		# Bottom row is menu controls only.
+		if {_raw} is between 45 and 53:
+			cancel event
+			if {_raw} is 45:
+				countryOpenStorageHub(player)
+				stop
+			if {_raw} is 46:
+				if {_page} is greater than 1:
+					countryOpenStorageCategory(player, {_cat}, {_page} - 1)
+				stop
+			if {_raw} is 47:
+				if {_cat} is "general":
+					stop
+				if countryStorageCanManageCategories(player) is not true:
+					send "<red>У вас нет права переименовывать категории." to player
+					stop
+				set {country.storage-input::%uuid of player%} to "rename"
+				close player's inventory
+				send "<yellow>Введите новое название категории в чат." to player
+				stop
+			if {_raw} is 48:
+				if {_cat} is "general":
+					stop
+				if countryStorageCanManageCategories(player) is not true:
+					send "<red>У вас нет права удалять категории." to player
+					stop
+				if countryStorageCategorySlots({_id}, {_cat}) is greater than 0:
+					send "<red>Сначала освободите категорию." to player
+					stop
+				delete {country.storage-category-name::%{_id}%::%{_cat}%}
+				delete {country.storage-category-type::%{_id}%::%{_cat}%::*}
+				delete {country.storage-pos::%{_id}%::%{_cat}%::*}
+				send "<yellow>Категория удалена." to player
+				countryOpenStorageHub(player)
+				stop
+			if {_raw} is 51:
+				if countryStorageCanDeposit(player) is not true:
+					send "<red>У вашей роли нет права пополнять хранилище." to player
+					stop
+				set {_moved} to countryStorageQuickDeposit(player, {_cat}, "MATCHING")
+				send formatted "<light green>Перенесено похожих стаков: <white>%{_moved}%<light green>." to player
+				countryOpenStorageCategory(player, {_cat}, {_page})
+				stop
+			if {_raw} is 52:
+				if countryStorageCanDeposit(player) is not true:
+					send "<red>У вашей роли нет права пополнять хранилище." to player
+					stop
+				set {_moved} to countryStorageQuickDeposit(player, {_cat}, "ALL")
+				send formatted "<light green>В категорию перенесено <white>%{_moved}% <light green>стаков." to player
+				countryOpenStorageCategory(player, {_cat}, {_page})
+				stop
+			if {_raw} is 53:
+				if {_page} is less than countryStoragePages({_id}):
+					countryOpenStorageCategory(player, {_cat}, {_page} + 1)
+				stop
+			stop
+
+		# Storage area: behaves like a normal chest. Owner has both rights.
 		if {_raw} is between 0 and 44:
-			if countryStorageCanWithdraw(player) is not true:
-				send action bar "<red>У вашей роли нет права забирать вещи из хранилища." to player
-				stop
-			set {_global} to {country.storage-view::%uuid of player%::%{_raw}%}
-			if {_global} is not set:
-				stop
-			set {_stored} to {country.storage::%{_id}%::%{_global}%}
-			if {_stored} is not set:
-				stop
-			set {_right-click} to false
-			if click type is right mouse button:
-				set {_right-click} to true
-			if click type is right mouse button with shift:
-				set {_right-click} to true
-			if {_right-click} is true:
-				set {_one} to {_stored}
-				set amount of {_one} to 1
-				give {_one} to player
-				set {_amount} to amount of {_stored}
-				if {_amount} is less than or equal to 1:
-					delete {country.storage::%{_id}%::%{_global}%}
-					delete {country.storage-category::%{_id}%::%{_global}%}
-				else:
-					subtract 1 from {_amount}
-					set amount of {_stored} to {_amount}
-					set {country.storage::%{_id}%::%{_global}%} to {_stored}
+			if click type is left mouse button with shift:
+				if countryStorageCanWithdraw(player) is not true:
+					cancel event
+					send action bar "<red>У вашей роли нет права забирать вещи из хранилища." to player
+					stop
+			else if click type is right mouse button with shift:
+				if countryStorageCanWithdraw(player) is not true:
+					cancel event
+					send action bar "<red>У вашей роли нет права забирать вещи из хранилища." to player
+					stop
 			else:
-				give {_stored} to player
-				delete {country.storage::%{_id}%::%{_global}%}
-				delete {country.storage-category::%{_id}%::%{_global}%}
-			countryOpenStorageCategory(player, {_cat}, {_page})
-			stop
+				if countryStorageCanDeposit(player) is not true:
+					cancel event
+					send action bar "<red>Для ручного перемещения нужно право пополнять хранилище." to player
+					stop
+				if countryStorageCanWithdraw(player) is not true:
+					cancel event
+					send action bar "<red>Для ручного перемещения нужно право забирать из хранилища." to player
+					stop
+
+		# Shift-click from the player inventory deposits automatically.
 		if {_raw} is greater than or equal to 54:
-			if countryStorageCanDeposit(player) is not true:
-				send action bar "<red>У вашей роли нет права пополнять хранилище." to player
-				stop
-			set {_item} to event-item
-			if {_item} is not set:
-				stop
-			if {_item} is air:
-				stop
-			set {_right-click} to false
-			if click type is right mouse button:
-				set {_right-click} to true
-			if click type is right mouse button with shift:
-				set {_right-click} to true
-			if {_right-click} is true:
-				if countryStoragePutOneInCategory({_id}, {_cat}, {_item}) is not true:
-					send action bar "<red>Хранилище заполнено." to player
+			if click type is left mouse button with shift:
+				if countryStorageCanDeposit(player) is not true:
+					cancel event
+					send action bar "<red>У вашей роли нет права пополнять хранилище." to player
 					stop
-				set {_remaining} to {_item}
-				set {_amount} to amount of {_remaining}
-				if {_amount} is less than or equal to 1:
-					set event-slot to air
-				else:
-					subtract 1 from {_amount}
-					set amount of {_remaining} to {_amount}
-					set event-slot to {_remaining}
-			else:
-				if countryStoragePutItemInCategory({_id}, {_cat}, {_item}) is not true:
-					send action bar "<red>Хранилище заполнено." to player
+			else if click type is right mouse button with shift:
+				if countryStorageCanDeposit(player) is not true:
+					cancel event
+					send action bar "<red>У вашей роли нет права пополнять хранилище." to player
 					stop
-				set event-slot to air
-			countryOpenStorageCategory(player, {_cat}, {_page})
-			stop
-		if {_raw} is 45:
-			countryOpenStorageHub(player)
-			stop
-		if {_raw} is 46:
-			if {_page} is greater than 1:
-				countryOpenStorageCategory(player, {_cat}, {_page} - 1)
-			stop
-		if {_raw} is 47:
-			if {_cat} is "general":
-				stop
-			if countryStorageCanManageCategories(player) is not true:
-				send "<red>У вас нет права переименовывать категории." to player
-				stop
-			set {country.storage-input::%uuid of player%} to "rename"
-			close player's inventory
-			send "<yellow>Введите новое название категории в чат." to player
-			stop
-		if {_raw} is 48:
-			if {_cat} is "general":
-				stop
-			if countryStorageCanManageCategories(player) is not true:
-				send "<red>У вас нет права удалять категории." to player
-				stop
-			if countryStorageCategorySlots({_id}, {_cat}) is greater than 0:
-				send "<red>Сначала освободите категорию." to player
-				stop
-			delete {country.storage-category-name::%{_id}%::%{_cat}%}
-			delete {country.storage-category-type::%{_id}%::%{_cat}%::*}
-			send "<yellow>Категория удалена." to player
-			countryOpenStorageHub(player)
-			stop
-		if {_raw} is 51:
-			if countryStorageCanDeposit(player) is not true:
-				send "<red>У вашей роли нет права пополнять хранилище." to player
-				stop
-			set {_moved} to countryStorageQuickDeposit(player, {_cat}, "MATCHING")
-			send formatted "<light green>Перенесено похожих стаков: <white>%{_moved}%<light green>." to player
-			countryOpenStorageCategory(player, {_cat}, {_page})
-			stop
-		if {_raw} is 52:
-			if countryStorageCanDeposit(player) is not true:
-				send "<red>У вашей роли нет права пополнять хранилище." to player
-				stop
-			set {_moved} to countryStorageQuickDeposit(player, {_cat}, "ALL")
-			send formatted "<light green>В категорию перенесено <white>%{_moved}% <light green>стаков." to player
-			countryOpenStorageCategory(player, {_cat}, {_page})
-			stop
-		if {_raw} is 53:
-			if countryStorageCategorySlots({_id}, {_cat}) is greater than 45:
-				if {_page} is 1:
-					countryOpenStorageCategory(player, {_cat}, 2)
-			stop
+
+		# Do NOT cancel normal inventory movement.
+		wait 1 tick
+		if player is online:
+			if {country.menu::%uuid of player%} is "storage-category":
+				countryStorageSyncCategoryPage(player)
 		stop
 
 on inventory drag:
-	set {_state} to {country.menu::%uuid of player%}
-	if {_state} is "storage-hub":
+	if {country.menu::%uuid of player%} is "storage-hub":
 		cancel event
-
-on quit:
-	delete {country.storage-menu-category::%uuid of player%::*}
-	delete {country.storage-view::%uuid of player%::*}
-	delete {country.storage-current-category::%uuid of player%}
-	delete {country.storage-category-page::%uuid of player%}
-	delete {country.storage-input::%uuid of player%}
-
-# =========================================================
-# NATIVE CATEGORY INVENTORY SYNC
-# The category chest behaves like a normal Minecraft chest.
-# =========================================================
-
-function countryStorageSyncCategoryView(p: player):
-	if {_p} is not online:
 		stop
-	if {country.menu::%uuid of {_p}%} is not "storage-category":
-		stop
-	set {_id} to countryId({_p})
-	if {_id} is "":
-		stop
-	set {_cat} to {country.storage-current-category::%uuid of {_p}%}
-	if {_cat} is not set:
-		stop
-	set {_inv} to {_p}'s current inventory
-
-	loop integers between 0 and 44:
-		set {_view} to loop-value
-		set {_shown} to slot {_view} of {_inv}
-		set {_global} to {country.storage-view::%uuid of {_p}%::%{_view}%}
-
-		if {_global} is set:
-			if {_shown} is set:
-				if {_shown} is not air:
-					set {country.storage::%{_id}%::%{_global}%} to {_shown}
-					if {_cat} is "general":
-						delete {country.storage-category::%{_id}%::%{_global}%}
-					else:
-						set {country.storage-category::%{_id}%::%{_global}%} to {_cat}
-					set {_type-text} to "%type of {_shown}%"
-					set {country.storage-category-type::%{_id}%::%{_cat}%::%{_type-text}%} to true
-				else:
-					delete {country.storage::%{_id}%::%{_global}%}
-					delete {country.storage-category::%{_id}%::%{_global}%}
-		else:
-			if {_shown} is set:
-				if {_shown} is not air:
-					set {_free} to countryStorageFindFreeGlobalSlot({_id})
-					if {_free} is less than 0:
-						give {_shown} to {_p}
-						set slot {_view} of {_inv} to air
-						send action bar "<red>Хранилище страны заполнено." to {_p}
-					else:
-						set {country.storage-view::%uuid of {_p}%::%{_view}%} to {_free}
-						set {country.storage::%{_id}%::%{_free}%} to {_shown}
-						if {_cat} is "general":
-							delete {country.storage-category::%{_id}%::%{_free}%}
-						else:
-							set {country.storage-category::%{_id}%::%{_free}%} to {_cat}
-						set {_type-text} to "%type of {_shown}%"
-						set {country.storage-category-type::%{_id}%::%{_cat}%::%{_type-text}%} to true
-
-on inventory click:
-	if {country.menu::%uuid of player%} is not "storage-category":
-		stop
-	if event-slot is not set:
-		stop
-	set {_raw} to raw index of event-slot
-
-	if {_raw} is between 45 and 53:
-		stop
-
-	if {_raw} is between 0 and 44:
-		if click type is left mouse button with shift:
-			if countryStorageCanWithdraw(player) is not true:
-				cancel event
-				send action bar "<red>У вашей роли нет права забирать вещи из хранилища." to player
-				stop
-		if click type is right mouse button with shift:
-			if countryStorageCanWithdraw(player) is not true:
-				cancel event
-				send action bar "<red>У вашей роли нет права забирать вещи из хранилища." to player
-				stop
-
-	if {_raw} is greater than or equal to 54:
-		if click type is left mouse button with shift:
-			if countryStorageCanDeposit(player) is not true:
-				cancel event
-				send action bar "<red>У вашей роли нет права пополнять хранилище." to player
-				stop
-		if click type is right mouse button with shift:
-			if countryStorageCanDeposit(player) is not true:
-				cancel event
-				send action bar "<red>У вашей роли нет права пополнять хранилище." to player
-				stop
-
-	wait 1 tick
-	countryStorageSyncCategoryView(player)
-
-on inventory drag:
 	if {country.menu::%uuid of player%} is not "storage-category":
 		stop
 	if countryStorageCanDeposit(player) is not true:
@@ -1547,8 +1491,12 @@ on inventory drag:
 		send action bar "<red>У вашей роли нет права пополнять хранилище." to player
 		stop
 	wait 1 tick
-	countryStorageSyncCategoryView(player)
+	if player is online:
+		if {country.menu::%uuid of player%} is "storage-category":
+			countryStorageSyncCategoryPage(player)
 
-on inventory close:
-	if {country.menu::%uuid of player%} is "storage-category":
-		countryStorageSyncCategoryView(player)
+on quit:
+	delete {country.storage-menu-category::%uuid of player%::*}
+	delete {country.storage-current-category::%uuid of player%}
+	delete {country.storage-category-page::%uuid of player%}
+	delete {country.storage-input::%uuid of player%}
