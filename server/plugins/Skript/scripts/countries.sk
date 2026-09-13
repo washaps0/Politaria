@@ -1540,6 +1540,11 @@ on chat:
 on inventory click:
 	if {country.menu::%uuid of player%} is not set:
 		stop
+	set {_country-menu-state} to {country.menu::%uuid of player%}
+	# Storage categories intentionally behave like a normal Minecraft chest.
+	# countries_storage.sk handles only its control row and permissions.
+	if {_country-menu-state} is "storage-category":
+		stop
 	cancel event
 	if {auth.logged-in::%name of player%} is not true:
 		close player's inventory
