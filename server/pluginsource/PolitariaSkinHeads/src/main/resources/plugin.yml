@@ -1,6 +1,0 @@
-name: PolitariaSkinHeads
-version: 1.0.0
-main: ru.politaria.skinheads.PolitariaSkinHeadsPlugin
-api-version: '1.21'
-softdepend: [SkinsRestorer]
-description: Uses SkinsRestorer skins for Politaria GUI player heads.
