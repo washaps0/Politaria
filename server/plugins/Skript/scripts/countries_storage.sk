@@ -69,22 +69,29 @@ function countryStorageMaterialCount(id: text, materialName: text) :: number:
 	if {_type} is not set:
 		return 0
 	set {_count} to 0
-	loop integers between 1 and countryStoragePages({_id}):
-		set {_page} to loop-value
-		loop integers between 0 and 44:
-			set {_item} to {country.storage4::%{_id}%::general::%{_page}%::%loop-value%}
+	set {_pages} to countryStoragePages({_id})
+	set {_page} to 1
+	while {_page} is less than or equal to {_pages}:
+		set {_slot} to 0
+		while {_slot} is less than or equal to 44:
+			set {_item} to {country.storage4::%{_id}%::general::%{_page}%::%{_slot}%}
 			if {_item} is set:
 				if type of {_item} is {_type}:
 					add amount of {_item} to {_count}
+			add 1 to {_slot}
+		add 1 to {_page}
 	loop {country.storage-category-name::%{_id}%::*}:
 		set {_cat} to loop-index
-		loop integers between 1 and countryStoragePages({_id}):
-			set {_page} to loop-value
-			loop integers between 0 and 44:
-				set {_item} to {country.storage4::%{_id}%::%{_cat}%::%{_page}%::%loop-value%}
+		set {_page} to 1
+		while {_page} is less than or equal to {_pages}:
+			set {_slot} to 0
+			while {_slot} is less than or equal to 44:
+				set {_item} to {country.storage4::%{_id}%::%{_cat}%::%{_page}%::%{_slot}%}
 				if {_item} is set:
 					if type of {_item} is {_type}:
 						add amount of {_item} to {_count}
+				add 1 to {_slot}
+			add 1 to {_page}
 	return {_count}
 
 function countryStorageTakeMaterial(id: text, materialName: text, wanted: number) :: boolean:
@@ -95,41 +102,48 @@ function countryStorageTakeMaterial(id: text, materialName: text, wanted: number
 		return false
 	set {_type} to {_materialName} parsed as item type
 	set {_left} to {_wanted}
-	loop integers between 1 and countryStoragePages({_id}):
-		set {_page} to loop-value
-		loop integers between 0 and 44:
+	set {_pages} to countryStoragePages({_id})
+	set {_page} to 1
+	while {_page} is less than or equal to {_pages}:
+		set {_slot} to 0
+		while {_slot} is less than or equal to 44:
 			if {_left} is greater than 0:
-				set {_item} to {country.storage4::%{_id}%::general::%{_page}%::%loop-value%}
+				set {_item} to {country.storage4::%{_id}%::general::%{_page}%::%{_slot}%}
 				if {_item} is set:
 					if type of {_item} is {_type}:
 						set {_amount} to amount of {_item}
 						if {_amount} is less than or equal to {_left}:
 							subtract {_amount} from {_left}
-							delete {country.storage4::%{_id}%::general::%{_page}%::%loop-value%}
+							delete {country.storage4::%{_id}%::general::%{_page}%::%{_slot}%}
 						else:
 							set {_new} to {_amount} - {_left}
 							set amount of {_item} to {_new}
-							set {country.storage4::%{_id}%::general::%{_page}%::%loop-value%} to {_item}
+							set {country.storage4::%{_id}%::general::%{_page}%::%{_slot}%} to {_item}
 							set {_left} to 0
+			add 1 to {_slot}
+		add 1 to {_page}
 	loop {country.storage-category-name::%{_id}%::*}:
 		if {_left} is greater than 0:
 			set {_cat} to loop-index
-			loop integers between 1 and countryStoragePages({_id}):
-				set {_page} to loop-value
-				loop integers between 0 and 44:
+			set {_page} to 1
+			while {_page} is less than or equal to {_pages}:
+				set {_slot} to 0
+				while {_slot} is less than or equal to 44:
 					if {_left} is greater than 0:
-						set {_item} to {country.storage4::%{_id}%::%{_cat}%::%{_page}%::%loop-value%}
+						set {_item} to {country.storage4::%{_id}%::%{_cat}%::%{_page}%::%{_slot}%}
 						if {_item} is set:
 							if type of {_item} is {_type}:
 								set {_amount} to amount of {_item}
 								if {_amount} is less than or equal to {_left}:
 									subtract {_amount} from {_left}
-									delete {country.storage4::%{_id}%::%{_cat}%::%{_page}%::%loop-value%}
+									delete {country.storage4::%{_id}%::%{_cat}%::%{_page}%::%{_slot}%}
 								else:
 									set {_new} to {_amount} - {_left}
 									set amount of {_item} to {_new}
-									set {country.storage4::%{_id}%::%{_cat}%::%{_page}%::%loop-value%} to {_item}
+									set {country.storage4::%{_id}%::%{_cat}%::%{_page}%::%{_slot}%} to {_item}
 									set {_left} to 0
+					add 1 to {_slot}
+				add 1 to {_page}
 	return true
 
 function countryStorageAddMaterial(id: text, materialName: text, amountToAdd: number) :: number:
@@ -891,27 +905,38 @@ function countryStorageRememberType(id: text, category: text, storedItem: item):
 
 function countryStorageUsedSlots(id: text) :: number:
 	set {_used} to 0
-	loop integers between 1 and countryStoragePages({_id}):
-		set {_page} to loop-value
-		loop integers between 0 and 44:
-			if {country.storage4::%{_id}%::general::%{_page}%::%loop-value%} is set:
+	set {_pages} to countryStoragePages({_id})
+	set {_page} to 1
+	while {_page} is less than or equal to {_pages}:
+		set {_slot} to 0
+		while {_slot} is less than or equal to 44:
+			if {country.storage4::%{_id}%::general::%{_page}%::%{_slot}%} is set:
 				add 1 to {_used}
+			add 1 to {_slot}
+		add 1 to {_page}
 	loop {country.storage-category-name::%{_id}%::*}:
 		set {_cat} to loop-index
-		loop integers between 1 and countryStoragePages({_id}):
-			set {_page} to loop-value
-			loop integers between 0 and 44:
-				if {country.storage4::%{_id}%::%{_cat}%::%{_page}%::%loop-value%} is set:
+		set {_page} to 1
+		while {_page} is less than or equal to {_pages}:
+			set {_slot} to 0
+			while {_slot} is less than or equal to 44:
+				if {country.storage4::%{_id}%::%{_cat}%::%{_page}%::%{_slot}%} is set:
 					add 1 to {_used}
+				add 1 to {_slot}
+			add 1 to {_page}
 	return {_used}
 
 function countryStorageCategorySlots(id: text, category: text) :: number:
 	set {_used} to 0
-	loop integers between 1 and countryStoragePages({_id}):
-		set {_page} to loop-value
-		loop integers between 0 and 44:
-			if {country.storage4::%{_id}%::%{_category}%::%{_page}%::%loop-value%} is set:
+	set {_pages} to countryStoragePages({_id})
+	set {_page} to 1
+	while {_page} is less than or equal to {_pages}:
+		set {_slot} to 0
+		while {_slot} is less than or equal to 44:
+			if {country.storage4::%{_id}%::%{_category}%::%{_page}%::%{_slot}%} is set:
 				add 1 to {_used}
+			add 1 to {_slot}
+		add 1 to {_page}
 	return {_used}
 
 function countryStoragePutItemInCategory(id: text, category: text, itemToStore: item) :: boolean:
@@ -922,10 +947,12 @@ function countryStoragePutItemInCategory(id: text, category: text, itemToStore: 
 		return false
 	set {_one} to {_item}
 	set amount of {_one} to 1
-	loop integers between 1 and countryStoragePages({_id}):
-		set {_page} to loop-value
-		loop integers between 0 and 44:
-			set {_stored} to {country.storage4::%{_id}%::%{_category}%::%{_page}%::%loop-value%}
+	set {_pages} to countryStoragePages({_id})
+	set {_page} to 1
+	while {_page} is less than or equal to {_pages}:
+		set {_slot} to 0
+		while {_slot} is less than or equal to 44:
+			set {_stored} to {country.storage4::%{_id}%::%{_category}%::%{_page}%::%{_slot}%}
 			if {_stored} is set:
 				set {_stored-one} to {_stored}
 				set amount of {_stored-one} to 1
@@ -940,21 +967,26 @@ function countryStoragePutItemInCategory(id: text, category: text, itemToStore: 
 							set {_moving} to {_space}
 						add {_moving} to {_current}
 						set amount of {_stored} to {_current}
-						set {country.storage4::%{_id}%::%{_category}%::%{_page}%::%loop-value%} to {_stored}
+						set {country.storage4::%{_id}%::%{_category}%::%{_page}%::%{_slot}%} to {_stored}
 						set {_remaining} to amount of {_item} - {_moving}
 						if {_remaining} is less than or equal to 0:
 							countryStorageRememberType({_id}, {_category}, {_item})
 							return true
 						set amount of {_item} to {_remaining}
+			add 1 to {_slot}
+		add 1 to {_page}
 	if countryStorageUsedSlots({_id}) is greater than or equal to countryStorageMaxSlots({_id}):
 		return false
-	loop integers between 1 and countryStoragePages({_id}):
-		set {_page} to loop-value
-		loop integers between 0 and 44:
-			if {country.storage4::%{_id}%::%{_category}%::%{_page}%::%loop-value%} is not set:
-				set {country.storage4::%{_id}%::%{_category}%::%{_page}%::%loop-value%} to {_item}
+	set {_page} to 1
+	while {_page} is less than or equal to {_pages}:
+		set {_slot} to 0
+		while {_slot} is less than or equal to 44:
+			if {country.storage4::%{_id}%::%{_category}%::%{_page}%::%{_slot}%} is not set:
+				set {country.storage4::%{_id}%::%{_category}%::%{_page}%::%{_slot}%} to {_item}
 				countryStorageRememberType({_id}, {_category}, {_item})
 				return true
+			add 1 to {_slot}
+		add 1 to {_page}
 	return false
 
 function countryStorageMigrate(id: text):
