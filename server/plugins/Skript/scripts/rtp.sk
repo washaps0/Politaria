@@ -48,9 +48,9 @@ command /spawn:
 		# Фиксированная точка спавна
 		# Блок под ногами: 28 69 528
 		# Игрок стоит на нём: 28.5 70 528.5
-		set {_x} to 28.5
-		set {_y} to 69
-		set {_z} to 528.5
+		set {_x} to -48
+		set {_y} to 64
+		set {_z} to -161
 
 		# Уникальный токен телепортации
 		set {_spawn-request} to "%random uuid%"
@@ -87,7 +87,7 @@ command /spawn:
 			stop
 
 		# Телепортация строго в Overworld на 28.5 70 528.5
-		execute console command "minecraft:execute in minecraft:overworld run minecraft:tp %player% 28.5 70 528.5"
+		execute console command "minecraft:execute in minecraft:overworld run minecraft:tp %player% -48 64 -161 0 0"
 
 		questComplete(player, 4)
 
