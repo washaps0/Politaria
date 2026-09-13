@@ -1,6 +1,0 @@
-# Same world and spawn point as /spawn in rtp.sk.
-world: world
-# Horizontal circle, inclusive boundary, all heights.
-radius: 50.0
-# Gradual removal of existing fire in loaded chunks; never loads/generates chunks.
-fire-scan-blocks-per-tick: 4096

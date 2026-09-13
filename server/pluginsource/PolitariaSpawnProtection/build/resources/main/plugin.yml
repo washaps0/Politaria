@@ -1,6 +1,0 @@
-name: PolitariaSpawnProtection
-version: 1.0.0
-main: ru.politaria.spawn.SpawnProtectionPlugin
-api-version: '1.21'
-description: Protects the spawn area from combat, explosions, mob spawning and fire.
-loadbefore: [Skript]
