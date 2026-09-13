@@ -1,0 +1,12 @@
+command /broadcast <text>:
+    permission: op
+    permission message: &cУ вас нет доступа к этой команде.
+    usage: &cИспользование: /broadcast <сообщение>
+    trigger:
+        broadcast ""
+        broadcast "<#87CEFA>&lPOLITARIA<reset> <#555555>»<reset> <gray>Объявление от <white>%player%"
+        broadcast "<white>%arg-1%"
+        broadcast ""
+
+        loop all players:
+            play sound "block.note_block.pling" with volume 1 and pitch 1.2 to loop-player
