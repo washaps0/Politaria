@@ -1,0 +1,97 @@
+/* Subtle screenshot accents for Politaria pages */
+.page-hero-image {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.page-hero-image::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: .22;
+  filter: saturate(.8) contrast(1.04);
+}
+
+.page-hero-image::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(90deg, #171717 0%, rgba(23,23,23,.90) 52%, rgba(23,23,23,.58) 100%);
+}
+
+.page-hero-town::before { background-image: url('../images/town.webp'); }
+.page-hero-guide::before { background-image: url('../images/guide.webp'); }
+
+.mechanic-item,
+.prose-section {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.mechanic-item::before,
+.prose-section.visual-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: min(42%, 420px);
+  z-index: -2;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: .14;
+  filter: saturate(.75) contrast(1.05);
+}
+
+.mechanic-item::after,
+.prose-section.visual-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(90deg, #222 0%, #222 54%, rgba(34,34,34,.92) 70%, rgba(34,34,34,.72) 100%);
+}
+
+.visual-town::before { background-image: url('../images/town.webp'); }
+.visual-guide::before { background-image: url('../images/guide.webp'); }
+.visual-shop::before { background-image: url('../images/shop.webp'); }
+.visual-storage::before { background-image: url('../images/storage.webp'); }
+
+.mechanic-item > *,
+.prose-section.visual-card > * {
+  position: relative;
+  z-index: 1;
+  max-width: 72%;
+}
+
+@media (max-width: 760px) {
+  .page-hero-image::before {
+    opacity: .16;
+  }
+
+  .page-hero-image::after {
+    background: linear-gradient(180deg, rgba(23,23,23,.72), #171717 86%);
+  }
+
+  .mechanic-item::before,
+  .prose-section.visual-card::before {
+    width: 100%;
+    opacity: .08;
+  }
+
+  .mechanic-item::after,
+  .prose-section.visual-card::after {
+    background: rgba(34,34,34,.90);
+  }
+
+  .mechanic-item > *,
+  .prose-section.visual-card > * {
+    max-width: 100%;
+  }
+}
